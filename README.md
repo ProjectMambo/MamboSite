@@ -1,9 +1,3 @@
----
-title: MamboSite
-description: Markdown-first static site compiler for Project Mambo websites.
-listed: false
----
-
 # MamboSite
 
 MamboSite is a Markdown-first static site compiler for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data, renders it through a reusable web runtime, and will export static files for GitHub Pages.
