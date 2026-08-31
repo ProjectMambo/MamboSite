@@ -43,18 +43,24 @@ repository docs/
 
 ## Status
 
-The project is in specification and prototyping. Commands, packages, schemas, and generated files described here are contracts for the first implementation; they are not yet available.
+The initial Rust compiler is runnable. It discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves references and embeds, and generates deterministic typed TypeScript page modules. The React renderer and remaining asset pipeline are under active development.
 
-## Proposed command line
+## Command line
 
 ```bash
 mambosite check
 mambosite build
-mambosite inspect /mambodot/commands
-mambosite watch
 ```
 
-`check` validates without writing generated output. `build` performs a deterministic full compilation. `inspect` explains how one page, route, or link was resolved. `watch` is a later development convenience and is not required for the first release.
+`check` validates without writing generated output. `build` performs a deterministic full compilation.
+
+Install the development command wrapper from this checkout once:
+
+```bash
+./script/install.sh
+```
+
+It links `mambosite` into `${MAMBOSITE_BIN_DIR:-$HOME/.local/bin}` and runs the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different user-local command directory is preferred.
 
 ## Technology direction
 
