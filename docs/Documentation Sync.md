@@ -62,6 +62,15 @@ This also resolves the MamboWiki self-documentation case. `Docs/Projects/_sites/
 
 Current site profiles are MamboFolio and MamboWiki. MamboSite is currently an ordinary project profile: its documentation fills `MamboSite/docs/`, while its future Cargo workspace, TypeScript runtime, tests, and other source files remain untouched. If a repository later needs both site-owned pages and mounts, adding `siteSource` changes only how that repository's `docs/` is assembled.
 
+The Obsidian command palette exposes both the full `Sync Docs` command and a targeted `Sync MamboFolio Docs` command. The same adapter may be run from a terminal for validation or automation:
+
+```bash
+node Scripts/sync_docs.js --sync MamboFolio
+node Scripts/sync_docs.js --sync-all
+```
+
+A targeted sync stages and replaces only the named repositories and skips standalone exports. Unknown or empty selections fail before a destination is changed.
+
 ## Ordinary repository export
 
 For an ordinary project, the complete canonical directory becomes the repository's `docs/` directory:
@@ -164,6 +173,7 @@ The ordinary-page transformation is intentionally narrow:
 - Nested fields with the same name are preserved.
 - All other fields are preserved, including `title`, `description`, `categories`, `tags`, `mounts`, `data`, and custom page metadata.
 - If no frontmatter fields remain, the empty delimiters are removed.
+- When removing the complete block, leading blank separator lines are removed with it; authored Markdown is not globally trimmed by MamboSite.
 - Markdown bodies and non-Markdown files are otherwise copied as authored.
 
 `README.md` is the exception. Every file whose exact basename is `README.md` has its complete leading YAML frontmatter block removed, whether it is copied into `docs/`, to a repository root, or through a standalone file export. A byte-order mark is also removed. If a README begins a frontmatter block without closing it, the sync fails before replacing any destination.
