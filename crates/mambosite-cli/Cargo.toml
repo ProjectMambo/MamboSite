@@ -1,0 +1,22 @@
+[package]
+name = "mambosite-cli"
+description = "Command-line interface for MamboSite"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "mambosite"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+mambosite-codegen-ts = { path = "../mambosite-codegen-ts" }
+mambosite-core = { path = "../mambosite-core" }
+serde_json.workspace = true
+
+[lints]
+workspace = true
+

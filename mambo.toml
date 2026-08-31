@@ -1,0 +1,21 @@
+schema = 1
+content_root = "docs"
+entry = "index.md"
+typescript_out = ".mambosite/generated"
+assets_out = ".mambosite/assets"
+
+[site]
+title = "MamboSite"
+base_path = ""
+trailing_slash = true
+language = "en-SG"
+
+[markdown]
+raw_html = false
+strict_links = true
+max_embed_depth = 16
+
+[frontmatter]
+strict = false
+ignored_fields = ["created", "project", "categories"]
+legacy_data_fields = ["period", "wikiUrl", "githubUrl"]
