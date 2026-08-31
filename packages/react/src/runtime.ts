@@ -1,5 +1,6 @@
 import {
   createContentStore,
+  deepFreeze,
   type ContentStore,
   type PageRecord,
   type SiteManifest,
@@ -44,6 +45,6 @@ export function createMamboRuntimeFromStore({
   return Object.freeze({
     store,
     registry,
-    options: Object.freeze({ ...options }),
+    options: deepFreeze({ ...options }),
   });
 }
