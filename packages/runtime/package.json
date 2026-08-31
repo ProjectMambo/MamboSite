@@ -1,0 +1,21 @@
+{
+  "name": "@mambosite/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Framework-neutral TypeScript contracts for MamboSite compiler output.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "check": "tsc --noEmit"
+  }
+}
