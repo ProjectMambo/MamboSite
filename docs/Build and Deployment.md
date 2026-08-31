@@ -6,10 +6,6 @@ order: 60
 
 # Build and Deployment
 
-## Current checkpoint
-
-`mambosite check` and `mambosite build` are implemented through the Cargo CLI. Both now validate directives and the initial page/reference/embed graph. `build` currently emits guarded, atomic TypeScript content output; asset copying, structural embed/component lowering, the Next.js shell, static HTML export, and GitHub Pages workflow remain later milestones in the flow below.
-
 ## End-to-end flow
 
 MamboSite starts from a self-contained content tree inside the website repository. How that tree is authored or synchronized is deliberately separate from compilation:
@@ -87,7 +83,7 @@ Configuration precedence is deliberately small:
 
 Environment variables may provide deployment-specific values such as the final base path, but they should not redefine content semantics.
 
-## Commands
+## Proposed commands
 
 ### `mambosite check`
 
@@ -95,11 +91,11 @@ Runs discovery, parsing, resolution, and validation without modifying generated 
 
 ### `mambosite build`
 
-Runs the currently implemented validated compile and publishes generated TypeScript atomically. The schema-1 command will also copy resolved assets atomically once the asset pass is implemented.
+Runs a full validated compile, generates TypeScript, and copies assets atomically.
 
 ### `mambosite inspect <target>`
 
-Planned command. It will explain a page or reference: source path, route, mount, metadata derivation, children, links, embeds, assets, and diagnostics. Targets may be source paths, routes, or wikilinks.
+Explains a page or reference: source path, route, mount, metadata derivation, children, links, embeds, assets, and diagnostics. Targets may be source paths, routes, or wikilinks.
 
 ### `mambosite watch`
 

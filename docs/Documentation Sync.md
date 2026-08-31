@@ -60,7 +60,7 @@ This also resolves the MamboWiki self-documentation case. `Docs/Projects/_sites/
 - A repository destination at `~/ProjectMambo/<Project>/`.
 - Optionally, a site source at `Docs/Projects/_sites/<Site>/`.
 
-Current site profiles are MamboFolio and MamboWiki. MamboSite is currently an ordinary project profile: its documentation fills `MamboSite/docs/`, while its Cargo workspace, TypeScript runtime, tests, and other source files remain untouched. If a repository later needs both site-owned pages and mounts, adding `siteSource` changes only how that repository's `docs/` is assembled.
+Current site profiles are MamboFolio and MamboWiki. MamboSite is currently an ordinary project profile: its documentation fills `MamboSite/docs/`, while its future Cargo workspace, TypeScript runtime, tests, and other source files remain untouched. If a repository later needs both site-owned pages and mounts, adding `siteSource` changes only how that repository's `docs/` is assembled.
 
 ## Ordinary repository export
 

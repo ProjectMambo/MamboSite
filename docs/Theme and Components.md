@@ -1,6 +1,6 @@
 ---
-title: Theme and Components
 description: Replaceable presentation system using MamboFolio as the initial visual reference.
+title: Theme and Components
 order: 55
 ---
 

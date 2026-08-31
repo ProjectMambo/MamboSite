@@ -10,7 +10,7 @@ MamboSite is a Markdown-first static site compiler for Project Mambo. It reads a
 
 MamboSite does not require Obsidian or prescribe where authors maintain their original notes. Project Mambo uses a separate `sync-docs` workflow to export selected documents from an Obsidian vault into each repository's `docs/` tree.
 
-The project now has a runnable Rust compiler and TypeScript generator with directive validation and initial reference/embed graphs. The design documents remain the schema-1 contract; [[Roadmap]] distinguishes this checkpoint from the remaining asset, semantic-lowering, runtime, and deployment work:
+The project is currently in the design phase. The first implementation should follow these documents:
 
 - [[Architecture]] — system boundaries, repositories, packages, and build stages.
 - [[Content Model]] — repository content structure, routing, mounts, frontmatter, and navigation.

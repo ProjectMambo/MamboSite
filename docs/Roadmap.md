@@ -6,18 +6,6 @@ order: 80
 
 # Roadmap
 
-## Current checkpoint — initial compiler slice
-
-As of 31 August 2026, Phase 1 is runnable and selected later-stage foundations are in place:
-
-- The Cargo workspace, `mambo.toml` loader, `check`/`build` CLI, structured diagnostics, discovery exclusions, explicit entry mounts, frontmatter normalization, route collisions, and source spans are implemented.
-- Comrak is isolated behind an owned, serializable Markdown tree. Schema-1 leaf/container directives are parsed and semantically validated, and the dialect pass lowers the supported Obsidian-style comments, note embeds, and block IDs. This is an explicit subset rather than full Obsidian compatibility.
-- Routes, headings, descriptions, stable page IDs, and nearest-page child relationships are derived. Standard Markdown links, wikilinks, aliases, heading/block fragments, outgoing links, backlinks, and the embed dependency graph are resolved and validated. Structural transclusion and the asset graph remain.
-- Rust emits deterministic `manifest.ts`, per-page modules, and a page index through a guarded atomic writer. Navigation/search/build-info modules and asset copying remain.
-- A separate `@mambosite/runtime` package now defines the framework-neutral parser/page/site interfaces before renderer components. Directive/component lowering, production filtering of drafts, React/Next.js rendering, static export, and GitHub Pages deployment remain and are not claimed at this checkpoint.
-
-The repository's 11 documentation pages pass strict checking. A repository-local compatibility fixture for all 17 current MamboFolio Markdown pages also parses and generates TypeScript in non-strict link mode; it reports ten expected unresolved links caused by the legacy singular `/project/...` URLs. This result covers content ingestion and TypeScript generation, not visual or URL-level parity with the existing application.
-
 ## Phase 0 — specification
 
 - Agree on repository content-root and site hierarchy.
@@ -43,8 +31,6 @@ Deliverable: `mambosite check` understands files, metadata, and route conflicts 
 
 ## Phase 2 — Markdown and directives
 
-Status: implemented for the current schema-1 directive registry and documented parser subset; broader Obsidian callout/fold compatibility and renderer component lowering remain.
-
 - Integrate Comrak behind an adapter.
 - Lower CommonMark/GFM nodes into the owned MamboSite AST.
 - Implement leaf and container directive parsing.
@@ -55,20 +41,16 @@ Deliverable: golden AST fixtures for every supported syntax feature.
 
 ## Phase 3 — graph and reference resolution
 
-Status: partially implemented. Page, route, mount, link, alias, heading/block-fragment, backlink, and embed-dependency resolution are in place. Structural transclusion, asset processing, navigation, and related-content derivation remain.
-
-- Build page, route, mount, link, and embed indexes; add the asset index.
+- Build page, route, mount, link, embed, and asset indexes.
 - Resolve wikilinks, aliases, standard Markdown links, headings, and blocks.
 - Implement mount semantics and final site routes.
-- Expand resolved embeds by mode with heading shifting and instance provenance; cycle/depth validation is implemented.
+- Implement embed modes, heading shifting, provenance, and cycle detection.
 - Resolve and hash local assets.
-- Derive navigation and related-content inputs; children and backlinks are implemented.
+- Derive children, navigation, backlinks, and related-content inputs.
 
 Deliverable: `mambosite inspect` explains complete resolution for repository-local Wiki-shaped fixtures.
 
 ## Phase 4 — TypeScript generation
-
-Status: partially implemented. Schema-versioned interfaces, deterministic manifest/page/index modules, the guarded atomic writer, and end-to-end type checking of current generated modules exist. Navigation/build information, assets, and complete golden-output fixtures remain.
 
 - Implement schema-versioned runtime types.
 - Emit manifest, page modules, navigation, and build information.
@@ -80,10 +62,8 @@ Deliverable: Rust-generated TypeScript representing complete fixture sites witho
 
 ## Phase 5 — runtime and initial theme
 
-Status: not implemented beyond the framework-neutral TypeScript data interfaces. The Rust directive registry validates authored directives, but no renderer registry or component implementation exists yet.
-
 - Implement semantic content-node rendering.
-- Mirror the Rust directive contract in a renderer registry and implement its components.
+- Implement the core directive registry.
 - Build page layouts and site override registry.
 - Extract MamboColour tokens and MamboFont integration.
 - Adapt MamboFolio's bordered cards, grid/list collections, canvas treatment, metadata, navigation, and TOC into cleaner reusable components.
@@ -168,21 +148,21 @@ MamboSite only consumes the resulting repository tree. The compiler does not own
 | Generated output committed | Prefer no; rebuild in CI |
 | First compiler mode | Deterministic full build |
 
-## Remaining implementation decisions
+## Open decisions before implementation
 
 These should be answered with fixtures or small isolated prototypes rather than production code:
 
 ### Directive attribute tokenizer
 
-Resolved for schema 1: use a dedicated tokenizer isolated from semantic registry validation. It accepts double-quoted strings, finite decimal numbers, booleans, and scalar arrays; preserves raw spelling and source offsets; and reports malformed or duplicate properties without changing the authoring syntax.
+Confirm whether to implement a small dedicated tokenizer or adopt an attribute parser whose grammar exactly matches this specification. Do not change author syntax to fit an implementation shortcut.
 
 ### YAML backend
 
-Resolved for the initial compiler: use `serde-saphyr` behind the frontmatter module, deserialize into a JSON-compatible value model, then normalize core fields manually. The backend remains outside the public content contract.
+Choose a maintained Rust YAML backend compatible with Serde and enforce the restricted value model described in [[Content Model]]. The backend is not part of the public content contract.
 
 ### Unicode slug normalization
 
-Resolved for schema 1's initial implementation: normalize to NFC, lowercase ASCII letters, preserve non-ASCII letters, convert separators/punctuation to a collapsed hyphen, and fixture the result. Once published routes depend on this behaviour, changes require migration tooling.
+Choose and fixture the exact Unicode normalization and case-folding behaviour. Once published routes depend on it, changes require migration tooling.
 
 ### Syntax highlighting
 

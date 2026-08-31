@@ -20,12 +20,6 @@ This is the initial architecture contract for MamboSite. The words **must**, **s
 - **Runtime**: the TypeScript package that renders generated content nodes.
 - **Web shell**: the site-specific Next.js application, theme, components, and configuration.
 
-## Implementation checkpoint
-
-The current compiler reaches deterministic TypeScript generation for parsed pages. It implements discovery and mounts, frontmatter/routes, an owned CommonMark/GFM AST, schema-1 directive parsing and validation, Obsidian-style comments/note embeds/block IDs, Markdown-link and wikilink resolution, aliases/fragments, outgoing links/backlinks, and embed graph cycle/depth validation.
-
-Resolved directives and embeds have not yet been lowered into final renderer/component or structurally transcluded nodes. Local asset processing and copying, production filtering of draft pages, navigation/search derivation, React/Next.js rendering, static export, and GitHub Pages deployment remain outside this implemented slice. “Obsidian-compatible” therefore refers only to the explicitly supported syntax, not full Obsidian or plugin compatibility.
-
 ## Architectural boundary
 
 MamboSite should be a compiler, not a content management system and not a second Markdown editor. It accepts content plus configuration and produces deterministic web data.
@@ -59,20 +53,19 @@ MamboSite/
 ├── crates/
 │   ├── mambosite-core/
 │   │   └── src/
-│   │       ├── ast.rs
-│   │       ├── compiler.rs
 │   │       ├── config.rs
-│   │       ├── diagnostic.rs
-│   │       ├── dialect.rs
-│   │       ├── directive.rs
-│   │       ├── directive_registry.rs
 │   │       ├── source.rs
 │   │       ├── frontmatter.rs
 │   │       ├── markdown.rs
-│   │       ├── model.rs
-│   │       ├── reference.rs
+│   │       ├── directive.rs
 │   │       ├── route.rs
-│   │       └── lib.rs
+│   │       ├── mount.rs
+│   │       ├── link.rs
+│   │       ├── embed.rs
+│   │       ├── asset.rs
+│   │       ├── graph.rs
+│   │       ├── compile.rs
+│   │       └── diagnostic.rs
 │   ├── mambosite-codegen-ts/
 │   │   └── src/
 │   │       ├── lib.rs
@@ -83,17 +76,11 @@ MamboSite/
 ├── packages/
 │   └── runtime/
 │       ├── package.json
-│       ├── tsconfig.json
 │       └── src/
-│           ├── index.ts
-│           ├── directive.ts
-│           ├── json.ts
-│           ├── markdown.ts
-│           ├── metadata.ts
-│           ├── page.ts
-│           ├── reference.ts
-│           ├── site.ts
-│           └── source.ts
+│           ├── types.ts
+│           ├── render.tsx
+│           ├── registry.ts
+│           └── components/
 ├── schemas/
 │   ├── content.schema.json
 │   └── manifest.schema.json
@@ -111,7 +98,7 @@ Responsibilities:
 - `mambosite-core` owns the compiler pipeline and all semantic models.
 - `mambosite-codegen-ts` converts the validated intermediate representation into deterministic TypeScript modules.
 - `mambosite-cli` handles commands, paths, terminal output, exit codes, and watch mode.
-- `packages/runtime` currently defines the framework-neutral TypeScript contract. Renderer registries and React components will be added as separate presentation modules rather than mixed into these interfaces.
+- `packages/runtime` defines the TypeScript contract and renders compiler nodes into React components.
 - `schemas` records versioned language-independent contracts for tooling and fixtures.
 - `examples` demonstrates the two initial site shapes without becoming production source.
 - `tests/fixtures` stores complete small content roots and expected diagnostics/output.
@@ -172,8 +159,6 @@ The compiler runs ordered stages with an explicit intermediate representation be
 11. Validate all invariants and stop on errors.
 12. Emit TypeScript and copy assets atomically.
 
-The working compiler path covers configuration/discovery, frontmatter, the owned Markdown AST, and the supported directive/Obsidian lowering in stages 1–6. The page/route/mount portions of stage 7, non-asset reference work in stage 8, embed graph validation, heading/description/children/backlink derivation, validation, and deterministic TypeScript writing are also implemented. Structural embed expansion or component lowering in stage 9, asset indexing/resolution/copying, navigation/search derivation, production draft filtering, and the presentation/deployment pipeline remain.
-
 A later stage must never silently repair an ambiguous earlier stage. For example, an ambiguous wikilink is an error, not a request to choose the first matching file.
 
 ## Configuration
@@ -223,7 +208,7 @@ The first implementation should perform a complete build on every invocation. Wa
 
 ### Safe defaults
 
-Raw HTML and arbitrary JavaScript expressions are disabled. Paths must remain inside configured roots. Current content traversal rejects symlinks; the future asset traversal must apply the same rule. External links are not fetched during a normal build.
+Raw HTML and arbitrary JavaScript expressions are disabled. Paths must remain inside configured roots. Symlinks are rejected by default during content-root and asset traversal. External links are not fetched during a normal build.
 
 ## Dependency direction
 
@@ -233,10 +218,10 @@ mambosite-cli
     -> mambosite-codegen-ts
 
 mambosite-codegen-ts
-    -> stable serialized site contract
+    -> stable core output model
 
 TypeScript runtime
-    <-> generated schema contract
+    -> generated schema contract
     -> no Rust dependency
 ```
 

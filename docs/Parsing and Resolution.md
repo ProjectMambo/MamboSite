@@ -1,20 +1,14 @@
 ---
-title: Parsing and Resolution
 description: Rust parsing pipeline and rules for links, embeds, headings, and assets.
+title: Parsing and Resolution
 order: 40
 ---
 
 # Parsing and Resolution
 
-## Implementation checkpoint
-
-The current Rust pipeline implements source/frontmatter parsing, the owned Markdown AST, schema-1 directive tokenization and semantic validation, Obsidian-style comment/embed/block-ID lowering, global Markdown-link and wikilink resolution, aliases, heading and block fragments, outgoing links, backlinks, and embed graph cycle/depth validation.
-
-Resolved embeds currently identify their target page and fragment; they do not yet expand or splice target AST nodes. Reference-bearing directive properties are registry-validated but are not yet resolved as graph edges. Directive-to-component lowering, structural transclusion and heading adjustment, directive-property resolution, local asset indexing/copying, production filtering of drafts, navigation/search derivation, renderer/runtime work, and deployment remain. This checkpoint covers only the documented Obsidian-compatible subset, not Obsidian properties, Dataview, Bases, Canvas, plugins, or general vault behaviour.
-
 ## Input guarantees
 
-Every source file must be valid UTF-8. An optional UTF-8 byte-order mark is accepted for frontmatter detection. LF, CRLF, and lone-CR line endings are recognized without rewriting the source; diagnostic byte offsets always refer to the original bytes and line/column positions treat each line-ending sequence as one break.
+Every source file must be valid UTF-8. An optional UTF-8 byte-order mark is accepted and removed. CRLF and CR line endings normalize internally to LF while source diagnostics retain correct line and column positions.
 
 The compiler reads source without modifying it. Parsing and build operations must never rewrite source Markdown or mutate the configured content root.
 
@@ -48,15 +42,13 @@ Custom syntax must not be implemented as global regular-expression replacement.
 
 Frontmatter is recognized only when the first non-BOM line is exactly `---`. The closing delimiter must also be exactly `---` on its own line. A missing closing delimiter is an error.
 
-YAML is deserialized into a generic value first and then validated into MamboSite fields. YAML anchors, aliases, merge keys, tagged values, and executable/custom types are rejected. Values passed into `data` must be representable as JSON.
+YAML is deserialized into a generic value first and then validated into MamboSite fields. YAML aliases, tagged values, and executable/custom types should be rejected. Values passed into `data` must be representable as JSON.
 
 ### 3. Directive tokenization
 
 Leaf directives are MamboSite-specific and must be tokenized with source spans before general Markdown lowering. Container directives may use Comrak's block-directive nodes, with MamboSite parsing the node's info string into a name and typed attributes.
 
 The scanner must recognize balanced quotes, arrays, and braces. A malformed directive is a syntax error even if CommonMark could otherwise treat it as text.
-
-This stage is implemented for schema 1. It preserves raw spelling and byte offsets, rejects duplicate properties and malformed syntax, and produces typed string, finite-number, boolean, and scalar-array values. A separate registry pass validates directive names, forms, contexts, property schemas, defaults, and cross-node `columns` rules.
 
 ### 4. Markdown AST
 
@@ -76,17 +68,13 @@ The owned AST retains:
 
 When Obsidian compatibility is enabled, the adapter recognizes syntax not fully represented by the base parser, including `![[...]]`, heading/block fragments, comments, aliases, and block IDs. It converts them into explicit unresolved nodes rather than rendered HTML. This is a Markdown dialect feature; it does not give the compiler knowledge of a vault, `.obsidian/`, or an Obsidian installation.
 
-The current dialect pass implements comments, note-embed syntax, and block IDs while respecting protected code/raw/directive nodes. Wikilink aliases and fragments are retained by the parser and interpreted during reference resolution.
-
 ### 6. Semantic resolution
 
 Resolution occurs only after every relevant file is indexed. This allows forward links, aliases, backlinks, route collision checks, and cycle detection to work across the entire site.
 
-This stage currently resolves standard Markdown note links, wikilinks, aliases, heading fragments, block fragments, and note embeds. It derives outgoing links and backlinks and validates the embed dependency graph for cycles and the configured maximum depth. Links and embeds authored in directive properties will join this stage when semantic directive lowering is implemented.
-
 ### 7. Validation and derivation
 
-The compiler currently validates nodes and derives routes, headings, summaries, nearest-page child relationships, link targets, outgoing links, backlinks, and embed dependency order. Asset destinations, navigation, related-content ranking, search text/indexes, and production draft filtering remain planned stages.
+The compiler validates nodes and derives routes, headings, summaries, child relationships, link targets, embed dependency order, asset destinations, navigation, and search text.
 
 ## Internal node model
 
@@ -119,7 +107,7 @@ Embed
 Asset
 ```
 
-The current checkpoint preserves authored parser nodes and emits resolved link/embed records beside the body tree in deterministic document order with source spans. The next semantic lowering pass must associate these results directly with renderer-oriented nodes rather than asking TypeScript to repeat resolution or perform fragile matching. Converting an asset embed into an image with an asset ID, public URL, and dimensions is part of the pending asset stage.
+Resolution transforms unresolved nodes rather than replacing them with strings. For example, `WikiLink { raw_target }` becomes `Link { page_id, route, fragment }`, and an asset embed becomes `Image { asset_id, public_url, dimensions }`.
 
 ## Wikilinks
 
@@ -157,7 +145,7 @@ Standard links remain supported:
 [External site](https://example.com)
 ```
 
-Relative `.md` links resolve through the content graph and are rewritten to site routes. Root-relative links are interpreted relative to the site root. HTTP(S), `mailto:`, `tel:`, and protocol-relative destinations remain external; scheme matching is ASCII-case-insensitive while the authored destination is preserved.
+Relative `.md` links resolve through the content graph and are rewritten to site routes. Root-relative links are interpreted relative to the site root. Absolute HTTP(S), `mailto`, and other allowed schemes remain external.
 
 Unsafe schemes such as `javascript:` and malformed control-character URLs are errors. External links are not fetched or validated during a normal build.
 
@@ -193,7 +181,7 @@ Supported note forms:
 ![[Page#^block-id]]
 ```
 
-An embed must never be implemented by copying a Markdown string into another string or adding whitespace indentation. Both operations can change list, code-block, and heading semantics. The current compiler creates an embed node with a resolved page/fragment reference and validates the embed graph. A later structural-transclusion pass will select and attach or splice the referenced AST fragment.
+An embed is never implemented by copying a Markdown string into another string or adding whitespace indentation. Both operations can change list, code-block, and heading semantics. Instead, the compiler creates an embed node referring to a resolved AST fragment.
 
 ### Default embed mode
 
@@ -225,8 +213,6 @@ Heading shifting is structural. If an include appears beneath a level-two headin
 The resolver builds a directed embed graph and checks it before expansion. `A -> B -> A` and longer cycles are errors showing the complete chain. A configurable maximum depth, default 16, protects against pathological acyclic expansion.
 
 ## Images and local assets
-
-This section specifies a pending compiler stage. Standard Markdown image nodes and asset-shaped Obsidian embed syntax are retained by parsing; asset-shaped link/embed destinations are currently deferred rather than emitted as graph records. Local asset lookup, existence validation, media classification, hashing, dimensions, public URL assignment, copying, and deduplication are not implemented yet.
 
 Supported examples:
 
@@ -268,13 +254,13 @@ Obsidian callouts use blockquote syntax:
 > Callout content with **Markdown**.
 ```
 
-The current Comrak adapter retains GitHub-style `note`, `tip`, `important`, `warning`, and `caution` alerts structurally. Supporting the broader Obsidian kind set (`abstract`, `todo`, `success`, `question`, `failure`, `danger`, `bug`, `example`, `quote`, and aliases), neutral fallback styling, and warnings for unknown kinds remains renderer/dialect work.
+Supported initial kinds are `note`, `abstract`, `info`, `todo`, `tip`, `success`, `question`, `warning`, `failure`, `danger`, `bug`, `example`, and `quote`. Unknown kinds remain callouts with a neutral style and produce a warning, allowing Obsidian-authored content to remain readable.
 
-Fold-marker compatibility is not implemented. When added, static output should render content expanded unless a runtime disclosure component is explicitly enabled.
+Fold markers may be parsed for compatibility, but static output should render content expanded unless a runtime disclosure component is explicitly enabled.
 
 ## Comments and authoring-only constructs
 
-Obsidian comments delimited by `%%` are removed from the visible parser tree. Unclosed comments are errors because they can hide the remainder of a page unexpectedly. Future search derivation must likewise exclude them.
+Obsidian comments delimited by `%%` are removed from visible output and search text. Unclosed comments are errors because they can hide the remainder of a page unexpectedly.
 
 Inline tags are preserved as text in the first release. Only frontmatter `tags` participate in taxonomy. Obsidian property widgets, Bases embeds, and plugin code blocks must not execute; an unsupported embed or executable block produces a clear diagnostic.
 

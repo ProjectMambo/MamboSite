@@ -6,12 +6,6 @@ order: 30
 
 # Markdown and Directives
 
-## Implementation checkpoint
-
-The compiler lowers CommonMark/GFM and the enabled Comrak extensions into a MamboSite-owned parser tree with source spans. Schema-1 leaf and container directives are tokenized into typed properties and validated against the core directive registry, including defaults, required properties, leaf/container form, page context, and `columns`/`column` nesting. Obsidian-style comments, note embeds, and block IDs are lowered, and Markdown links, wikilinks, aliases, heading/block fragments, backlinks, and the embed dependency graph are resolved and validated.
-
-This is a deliberately bounded Obsidian-compatible subset, not full Obsidian support. Directives still remain semantic parser nodes rather than renderer components, and note embeds are resolved references rather than expanded/transcluded AST fragments. Reference-bearing directive properties such as `include.source`, `button.href`, `hero.image`, and gallery sources are type-checked by the registry but do not yet enter the reference/asset graph. Structural component lowering and transclusion, directive-property resolution, local asset processing (including asset embeds), production filtering of draft pages, navigation/search derivation, runtime rendering, and deployment remain to be implemented.
-
 ## Design principles
 
 MamboSite documents should remain useful Markdown in editors including Obsidian, on GitHub, and as plain text. Custom syntax is reserved for features that Markdown cannot express: page layout, generated collections, site components, and controlled transclusion.
@@ -34,13 +28,13 @@ The baseline is CommonMark with these GitHub Flavored Markdown features enabled:
 - Task-list items.
 - Fenced code blocks.
 
-The initial Obsidian-compatible syntax contract is:
+The initial Obsidian-compatible extensions are:
 
 - Wikilinks and aliases: `[[Page]]`, `[[Page|Label]]`.
 - Heading links: `[[Page#Heading]]`.
 - Block links: `[[Page#^block-id]]`.
-- Note embeds: `![[Target]]`. Asset-shaped embeds use the same syntax, but local asset resolution and copying are not implemented in the current compiler slice.
-- Callouts using `> [!TYPE]` syntax. The current parser retains Comrak's GitHub-style alert subset; the broader mapping is still planned.
+- Note and asset embeds: `![[Target]]`.
+- Callouts using `> [!TYPE]` syntax.
 - Footnotes.
 - Highlight using `==text==`.
 - Inline and display math where supported by the renderer.
@@ -74,7 +68,7 @@ A leaf directive renders one component at its exact position and has no Markdown
 A container directive wraps Markdown or other directives:
 
 ```md
-:::section{width="wide" tone="subtle"}
+:::section{width="wide" tone="muted"}
 
 ## Featured projects
 
@@ -303,7 +297,7 @@ Properties:
 - `show-title`: boolean.
 - `show-source`: boolean.
 
-The schema-1 contract requires the source to resolve during compilation and forbids remote URLs. The current registry validates its shape, while semantic resolution and participation in the embed graph remain part of the next lowering pass.
+The source must resolve during compilation. Remote URLs are not supported by `include`.
 
 ### `button`
 
@@ -313,7 +307,7 @@ Renders a themed link while retaining link semantics.
 ::button{label="Source code" href="https://github.com/ProjectMambo/MamboSite" variant="primary" external=true}
 ```
 
-Properties: `label`, `href`, `variant` (`primary`, `secondary`, `quiet`), `external`, and optional `icon`. The schema-1 semantic pass will resolve an internal `href` with the same rules as Markdown links; the current registry does not yet perform that reference/scheme check.
+Properties: `label`, `href`, `variant` (`primary`, `secondary`, `quiet`), `external`, and optional `icon`. An internal `href` is resolved with the same rules as Markdown links.
 
 ### `section`
 
@@ -362,16 +356,16 @@ Right content.
 
 ## Component registry
 
-The Rust compiler has a schema-1 directive registry defining:
+The Rust compiler and TypeScript runtime share a versioned registry defining:
 
 - Directive name.
 - Leaf or container form.
 - Allowed contexts.
 - Property names, types, defaults, and enum values.
 - Whether Markdown children are allowed.
-- The normalized semantic properties that a future renderer component receives.
+- Output component node name and schema version.
 
-The compiler validates directives before generation and does not pass unknown properties onward. Mirroring this contract in the TypeScript renderer registry, lowering directives to renderable component nodes, and handling compiler/runtime schema mismatches remain presentation-layer work.
+The compiler validates directives before generation. The runtime must never receive unknown properties and should still render an explicit unsupported-component message when compiler/runtime schema versions do not match.
 
 The registry is a contract, not a style implementation. A `children` grid may be redesigned without changing Markdown as long as the semantic properties remain supported.
 
