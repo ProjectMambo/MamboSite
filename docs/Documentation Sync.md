@@ -150,7 +150,7 @@ Mounted content is copied once and is not recursively interpreted by the sync sc
 
 ## Markdown transformation
 
-Every exported Markdown file has only these top-level frontmatter properties removed:
+Ordinary exported Markdown files have only these top-level frontmatter properties removed:
 
 ```yaml
 created: ...
@@ -158,13 +158,15 @@ updated: ...
 project: ...
 ```
 
-The transformation is intentionally narrow:
+The ordinary-page transformation is intentionally narrow:
 
 - A selected field and its indented continuation lines are removed.
 - Nested fields with the same name are preserved.
 - All other fields are preserved, including `title`, `description`, `categories`, `tags`, `mounts`, `data`, and custom page metadata.
 - If no frontmatter fields remain, the empty delimiters are removed.
 - Markdown bodies and non-Markdown files are otherwise copied as authored.
+
+`README.md` is the exception. Every file whose exact basename is `README.md` has its complete leading YAML frontmatter block removed, whether it is copied into `docs/`, to a repository root, or through a standalone file export. A byte-order mark is also removed. If a README begins a frontmatter block without closing it, the sync fails before replacing any destination.
 
 Any file whose exact basename is `_info.md` is excluded at every depth. It is vault organisation metadata, not repository documentation or site content.
 
