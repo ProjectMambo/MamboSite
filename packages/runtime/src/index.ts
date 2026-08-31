@@ -1,4 +1,33 @@
 export type { JsonObject, JsonValue } from "./json.js";
+export {
+  assertCompatibleSchema,
+  SUPPORTED_SCHEMA_VERSIONS,
+} from "./compatibility.js";
+export {
+  createContentStore,
+  formatDate,
+  normalizeRoute,
+  objectValue,
+  pageValue,
+  routeFromSegments,
+  sameSourceSpan,
+  segmentsFromRoute,
+  stripWebTag,
+} from "./content-store.js";
+export type { ContentStore, ContentStoreInput } from "./content-store.js";
+export {
+  booleanProperty,
+  directiveProperties,
+  numberProperty,
+  resolvedDirectiveProperties,
+  stringArrayProperty,
+  stringProperty,
+  validatedDirectiveForNode,
+} from "./directive-values.js";
+export type {
+  DirectiveProperties,
+  DirectivePropertyValue,
+} from "./directive-values.js";
 export type {
   DirectiveForm,
   DirectiveProperty,

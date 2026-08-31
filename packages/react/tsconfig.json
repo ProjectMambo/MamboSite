@@ -4,6 +4,7 @@
     "declarationMap": true,
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noFallthroughCasesInSwitch": true,
@@ -14,11 +15,11 @@
     "rootDir": "src",
     "sourceMap": true,
     "strict": true,
-    "stripInternal": true,
     "target": "ES2022",
     "verbatimModuleSyntax": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

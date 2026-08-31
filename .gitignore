@@ -1,4 +1,5 @@
 /target/
 /.mambosite/
 /node_modules/
-/packages/runtime/dist/
+/packages/*/dist/
+/packages/*/*.tsbuildinfo

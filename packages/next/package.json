@@ -1,7 +1,7 @@
 {
-  "name": "@mambosite/runtime",
+  "name": "@mambosite/next",
   "version": "0.1.0",
-  "description": "Framework-neutral contracts and content graph helpers for MamboSite output.",
+  "description": "Thin Next.js static-export adapter for the MamboSite React runtime.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -19,5 +19,13 @@
     "build": "tsc -b",
     "check": "tsc --noEmit",
     "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@mambosite/react": "0.1.0",
+    "@mambosite/runtime": "0.1.0"
+  },
+  "peerDependencies": {
+    "next": ">=16.0.0",
+    "react": ">=19.0.0"
   }
 }

@@ -1,0 +1,35 @@
+{
+  "name": "@mambosite/theme-default",
+  "version": "0.1.0",
+  "description": "Accessible MamboFolio-inspired default components and styles for MamboSite.",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "src/styles/default.css"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./src/styles/default.css"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check": "tsc --noEmit",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@mambosite/react": "0.1.0",
+    "@mambosite/runtime": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  }
+}

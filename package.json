@@ -1,0 +1,23 @@
+{
+  "name": "mambosite-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build:packages": "npm run build -w @mambosite/runtime && npm run build -w @mambosite/react && npm run build -w @mambosite/theme-default && npm run build -w @mambosite/next",
+    "check:packages": "npm run build:packages && npm run check -w @mambosite/runtime && npm run check -w @mambosite/react && npm run check -w @mambosite/theme-default && npm run check -w @mambosite/next",
+    "test:packages": "npm run build:packages && npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "typescript": "^5.9.3"
+  }
+}

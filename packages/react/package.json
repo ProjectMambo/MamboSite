@@ -1,7 +1,7 @@
 {
-  "name": "@mambosite/runtime",
+  "name": "@mambosite/react",
   "version": "0.1.0",
-  "description": "Framework-neutral contracts and content graph helpers for MamboSite output.",
+  "description": "Framework-neutral React renderer and component registry for MamboSite.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -19,5 +19,11 @@
     "build": "tsc -b",
     "check": "tsc --noEmit",
     "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@mambosite/runtime": "0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0"
   }
 }
