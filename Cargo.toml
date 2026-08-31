@@ -3,6 +3,7 @@ members = [
     "crates/mambosite-core",
     "crates/mambosite-codegen-ts",
     "crates/mambosite-cli",
+    "crates/mambosite-theme",
 ]
 resolver = "3"
 
