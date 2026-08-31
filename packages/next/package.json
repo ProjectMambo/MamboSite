@@ -25,7 +25,7 @@
     "@mambosite/runtime": "0.1.0"
   },
   "peerDependencies": {
-    "next": ">=16.0.0",
-    "react": ">=19.0.0"
+    "next": ">=16.0.0 <17.0.0",
+    "react": ">=19.0.0 <20.0.0"
   }
 }
