@@ -514,6 +514,7 @@ const TOC: &[PropertyRule] = &[
 ];
 
 const CHILDREN: &[PropertyRule] = &[
+    property("source", STRING),
     defaulted(
         "view",
         ValueRule::Enumeration(&["list", "grid", "cards", "tree", "table", "hidden"]),
@@ -950,6 +951,19 @@ mod tests {
             DirectiveValue::Number(1.into())
         );
         assert!(!outcome.directives[2].properties.contains_key("direction"));
+    }
+
+    #[test]
+    fn accepts_an_explicit_children_source() {
+        let source = "::children{source=\"/project/\" view=\"grid\" limit=3}";
+        let root = document(vec![leaf(source)]);
+        let outcome = validate(&root, source, true);
+
+        assert!(outcome.diagnostics.is_empty());
+        assert_eq!(
+            outcome.directives[0].properties["source"],
+            DirectiveValue::String("/project/".into())
+        );
     }
 
     #[test]

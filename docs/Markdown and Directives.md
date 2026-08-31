@@ -221,16 +221,17 @@ Properties: `min-depth`, `max-depth`, `ordered`, `title`, and `collapse`. Headin
 
 ### `children`
 
-Renders descendant pages of the current index page.
+Renders descendant pages of the current index page or another index page.
 
 ```md
-::children{view="grid" columns=3 depth=1 sort="order" direction="asc" show=["cover","title","description"]}
+::children{source="/project/" view="grid" columns=3 depth=1 sort="order" direction="asc" show=["cover","title","description"]}
 ```
 
 Properties:
 
 | Property | Values | Default |
 |---|---|---|
+| `source` | index-page route or note reference | current page |
 | `view` | `list`, `grid`, `cards`, `tree`, `table`, `hidden` | `list` |
 | `depth` | positive integer or `-1` for all | `1` |
 | `sort` | `order`, `title`, `date`, `updated`, `path` | `order` |
@@ -241,7 +242,7 @@ Properties:
 | `include-unlisted` | boolean | `false` |
 | `empty` | `hide` or `message` | `hide` |
 
-`children` is valid only on `index.md` in the first release. It uses route children, so mounted and physical children behave consistently. `view="hidden"` declares that child routes exist without displaying them at this point.
+`children` is valid only on `index.md` in the first release. Without `source`, it uses the current page's route children. With `source`, it uses the children of the referenced index page; the source page itself is not rendered. The reference must resolve to a published index page during semantic compilation. Mounted and physical children behave consistently. `view="hidden"` declares that child routes exist without displaying them at this point.
 
 ### `related`
 
