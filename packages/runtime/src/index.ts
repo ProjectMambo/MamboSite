@@ -5,6 +5,7 @@ export {
 } from "./compatibility.js";
 export {
   createContentStore,
+  deepFreeze,
   formatDate,
   normalizeRoute,
   objectValue,

@@ -35,16 +35,35 @@ export interface ContentStore {
   resolvedHref(page: PageRecord, destination: string, span?: SourceSpan): string;
 }
 
+/** Recursively freezes compiler-shaped data without recursing forever on cycles. */
+export function deepFreeze<T>(value: T): T {
+  return freezeValue(value, new WeakSet<object>());
+}
+
 export function createContentStore({ manifest, pages }: ContentStoreInput): ContentStore {
   assertCompatibleSchema(manifest.schemaVersion, "the generated site manifest");
   for (const page of pages) {
     assertCompatibleSchema(page.schemaVersion, `generated page ${page.id}`);
   }
-  const immutablePages = Object.freeze([...pages]);
+  const immutableManifest = deepFreeze(manifest);
+  const immutablePages = deepFreeze([...pages]);
   const pagesById = new Map(immutablePages.map((page) => [page.id, page]));
   const pagesByRoute = new Map(
-    immutablePages.map((page) => [normalizeRoute(page.route, manifest.site.trailingSlash), page]),
+    immutablePages.map((page) => [
+      normalizeRoute(page.route, immutableManifest.site.trailingSlash),
+      page,
+    ]),
   );
+  const pagesBySource = indexPages(immutablePages, (page) =>
+    normalizeSourceReference(page.sourcePath));
+  const pagesByBasename = indexPages(immutablePages, (page) => {
+    const source = normalizeSourceReference(page.sourcePath);
+    return source?.slice(source.lastIndexOf("/") + 1);
+  });
+  const pagesByAlias = new Map<string, PageRecord[]>();
+  for (const page of immutablePages) {
+    for (const alias of page.aliases) addIndexedPage(pagesByAlias, normalizeAlias(alias), page);
+  }
 
   const getPageById = (id: string): PageRecord => {
     const page = pagesById.get(id);
@@ -53,7 +72,7 @@ export function createContentStore({ manifest, pages }: ContentStoreInput): Cont
   };
 
   const getPageByRoute = (route: string): PageRecord | undefined =>
-    pagesByRoute.get(normalizeRoute(route, manifest.site.trailingSlash));
+    pagesByRoute.get(normalizeRoute(route, immutableManifest.site.trailingSlash));
 
   const resolvePageReference = (
     reference: string,
@@ -75,20 +94,31 @@ export function createContentStore({ manifest, pages }: ContentStoreInput): Cont
     );
     if (compiled?.target.kind === "page") return pagesById.get(compiled.target.pageId);
 
-    const normalized = normalizeSourceReference(target);
-    const sourceDirectory = sourcePage?.sourcePath.includes("/")
-      ? sourcePage.sourcePath.slice(0, sourcePage.sourcePath.lastIndexOf("/"))
-      : "";
-    const relative = sourceDirectory
-      ? `${sourceDirectory}/${normalized}`.toLocaleLowerCase("en")
-      : normalized;
+    const sourceDirectory = sourcePage
+      ? normalizedSourceDirectory(sourcePage.sourcePath)
+      : undefined;
+    const relative = sourceDirectory === undefined
+      ? undefined
+      : normalizeSourceReference(sourceDirectory ? `${sourceDirectory}/${target}` : target);
+    if (relative !== undefined) {
+      const exactRelative = pagesBySource.get(relative);
+      if (exactRelative) return uniquePage(exactRelative);
+    }
 
-    const candidates = immutablePages.filter((page) => {
-      const source = normalizeSourceReference(page.sourcePath);
-      const basename = source.slice(source.lastIndexOf("/") + 1);
-      return source === relative || source === normalized || basename === normalized;
-    });
-    return candidates.length === 1 ? candidates[0] : undefined;
+    const normalized = normalizeSourceReference(target);
+    if (normalized !== undefined && normalized !== relative) {
+      const exactSource = pagesBySource.get(normalized);
+      if (exactSource) return uniquePage(exactSource);
+    }
+    if (relative === undefined && normalized === undefined) return undefined;
+
+    const aliases = pagesByAlias.get(normalizeAlias(target));
+    if (aliases) return uniquePage(aliases);
+
+    const basenameSource = relative ?? normalized;
+    if (basenameSource === undefined) return undefined;
+    const basename = basenameSource.slice(basenameSource.lastIndexOf("/") + 1);
+    return uniquePage(pagesByBasename.get(basename) ?? []);
   };
 
   const childPages = (page: PageRecord, source?: string): readonly PageRecord[] => {
@@ -150,9 +180,9 @@ export function createContentStore({ manifest, pages }: ContentStoreInput): Cont
     return destination;
   };
 
-  const entryPage = getPageById(manifest.entryPage);
+  const entryPage = getPageById(immutableManifest.entryPage);
   return Object.freeze({
-    manifest,
+    manifest: immutableManifest,
     pages: immutablePages,
     entryPage,
     getPageById,
@@ -233,12 +263,73 @@ export function sameSourceSpan(
     left.end.column === right.end.column;
 }
 
-function normalizeSourceReference(value: string): string {
-  return value
-    .replace(/\\/g, "/")
-    .replace(/\.md$/i, "")
+function normalizeSourceReference(value: string): string | undefined {
+  const normalized = normalizeLogicalPath(value);
+  return normalized
+    ?.replace(/\.md$/i, "")
     .replace(/\/index$/i, "")
     .toLocaleLowerCase("en");
+}
+
+function normalizedSourceDirectory(value: string): string | undefined {
+  const normalized = normalizeLogicalPath(value);
+  if (normalized === undefined) return undefined;
+  const separator = normalized.lastIndexOf("/");
+  return separator < 0 ? "" : normalized.slice(0, separator);
+}
+
+function normalizeLogicalPath(value: string): string | undefined {
+  const segments: string[] = [];
+  for (const segment of value.replace(/\\/g, "/").split("/")) {
+    if (!segment || segment === ".") continue;
+    if (segment === "..") {
+      if (segments.length === 0) return undefined;
+      segments.pop();
+    } else {
+      segments.push(segment);
+    }
+  }
+  return segments.join("/");
+}
+
+function normalizeAlias(value: string): string {
+  return value.trim().toLocaleLowerCase("en");
+}
+
+function indexPages(
+  pages: readonly PageRecord[],
+  keyFor: (page: PageRecord) => string | undefined,
+): Map<string, PageRecord[]> {
+  const index = new Map<string, PageRecord[]>();
+  for (const page of pages) addIndexedPage(index, keyFor(page), page);
+  return index;
+}
+
+function addIndexedPage(
+  index: Map<string, PageRecord[]>,
+  key: string | undefined,
+  page: PageRecord,
+): void {
+  if (!key) return;
+  const entries = index.get(key);
+  if (entries) entries.push(page);
+  else index.set(key, [page]);
+}
+
+function uniquePage(pages: readonly PageRecord[]): PageRecord | undefined {
+  return pages.length === 1 ? pages[0] : undefined;
+}
+
+function freezeValue<T>(value: T, seen: WeakSet<object>): T {
+  if (value === null || (typeof value !== "object" && typeof value !== "function")) return value;
+  const object = value as object;
+  if (seen.has(object)) return value;
+  seen.add(object);
+  for (const key of Reflect.ownKeys(object)) {
+    const descriptor = Object.getOwnPropertyDescriptor(object, key);
+    if (descriptor && "value" in descriptor) freezeValue(descriptor.value, seen);
+  }
+  return Object.freeze(value);
 }
 
 function comparePageValue(left: PageRecord, right: PageRecord, key: string): number {

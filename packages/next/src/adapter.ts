@@ -51,10 +51,10 @@ export function createNextRuntime({
 
 export function staticPageParams(
   runtime: MamboRuntime,
-): readonly { readonly slug: readonly string[] }[] {
+): { slug: string[] }[] {
   return runtime.store.pages
     .filter((page) => page.status === "published" && page.route !== "/")
-    .map((page) => ({ slug: segmentsFromRoute(page.route) }));
+    .map((page) => ({ slug: [...segmentsFromRoute(page.route)] }));
 }
 
 export function pageFromSegments(

@@ -5,10 +5,12 @@ import {
   type ReactNode,
 } from "react";
 import {
+  normalizeRoute,
   resolvedDirectiveProperties,
   routeFromSegments,
   sameSourceSpan,
   segmentsFromRoute,
+  validatedDirectiveForNode,
   type DirectiveNode,
   type MarkdownNode,
   type PageRecord,
@@ -93,7 +95,7 @@ export function MamboPage({ runtime, page }: MamboPageProps) {
   const showGeneratedTitle = !topLevelNodes(page).some(
     (node) =>
       (node.type === "heading" && node.level === 1) ||
-      (node.type === "directive" && node.invocation.name === "hero"),
+      heroShowsTitle(page, node),
   );
   const tocConfig: TocDirectiveConfig = {
     minDepth: 2,
@@ -258,11 +260,23 @@ function resolveNodeModel(
       break;
     }
     case "link":
-      model = { href: runtime.store.resolvedHref(page, node.destination, node.span) };
+      model = {
+        href: embeddedFragmentHref(
+          runtime.store.resolvedHref(page, node.destination, node.span),
+          page,
+          runtime,
+          state,
+        ),
+      };
       break;
     case "wikiLink": {
       model = {
-        href: runtime.store.resolvedHref(page, node.destination, node.span),
+        href: embeddedFragmentHref(
+          runtime.store.resolvedHref(page, node.destination, node.span),
+          page,
+          runtime,
+          state,
+        ),
         label: plainNodeText(node) || node.destination,
       };
       break;
@@ -356,7 +370,10 @@ function resolveDirectiveModel<K extends DirectiveName>(
       model = {
         headings: page.headings.filter(
           (heading) => heading.level >= toc.minDepth && heading.level <= toc.maxDepth,
-        ),
+        ).map((heading) => ({
+          ...heading,
+          id: `${state.idPrefix}${heading.id}`,
+        })),
       };
       break;
     }
@@ -379,7 +396,12 @@ function resolveDirectiveModel<K extends DirectiveName>(
       const button = config as ButtonDirectiveConfig;
       const href = button.external
           ? button.href
-          : runtime.store.resolvedHref(page, button.href);
+          : embeddedFragmentHref(
+            runtime.store.resolvedHref(page, button.href),
+            page,
+            runtime,
+            state,
+          );
       model = safeLinkHref(href)
         ? { href }
         : { href: "#", error: "unsafe" };
@@ -548,6 +570,12 @@ function isDirectiveName(name: string): name is DirectiveName {
   return DIRECTIVE_NAMES.has(name as DirectiveName);
 }
 
+function heroShowsTitle(page: PageRecord, node: MarkdownNode): boolean {
+  if (node.type !== "directive" || node.invocation.name !== "hero") return false;
+  if (!validatedDirectiveForNode(page, node)) return false;
+  return directiveConfig("hero", resolvedDirectiveProperties(page, node)).showTitle;
+}
+
 function defaultPageConfig(): PageDirectiveConfig {
   return { layout: "default", width: "normal", sidebar: true };
 }
@@ -574,6 +602,29 @@ function safeLinkHref(value: string): boolean {
   }
   const scheme = /^([A-Za-z][A-Za-z0-9+.-]*):/.exec(href)?.[1]?.toLowerCase();
   return scheme === undefined || ["http", "https", "mailto", "tel"].includes(scheme);
+}
+
+function embeddedFragmentHref(
+  href: string,
+  page: PageRecord,
+  runtime: MamboRuntime,
+  state: RenderState,
+): string {
+  if (!state.idPrefix) return href;
+  const hashIndex = href.indexOf("#");
+  if (hashIndex < 0 || hashIndex === href.length - 1) return href;
+
+  const target = href.slice(0, hashIndex);
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(target) || target.startsWith("//")) return href;
+  const targetPath = target.split("?", 1)[0] ?? "";
+  const sameTarget = targetPath === "" || normalizeRoute(
+    targetPath,
+    runtime.store.manifest.site.trailingSlash,
+  ) === normalizeRoute(page.route, runtime.store.manifest.site.trailingSlash);
+  if (!sameTarget) return href;
+
+  const fragment = href.slice(hashIndex + 1);
+  return `#${fragment.startsWith(state.idPrefix) ? fragment : `${state.idPrefix}${fragment}`}`;
 }
 
 function parentRoute(route: string, trailingSlash: boolean): string {

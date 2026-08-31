@@ -108,3 +108,174 @@ test("collection markup exposes requested columns without overriding responsive 
   assert.match(html, /data-columns="6"/);
   assert.doesNotMatch(html, /--mambo-collection-columns/);
 });
+
+test("a hero hides the generated title only when its validated show-title is true", () => {
+  const directiveSpan = sourceSpan(2, 10, 19);
+  const page = compiledPage({
+    id: "p_hero_without_title",
+    route: "/hero-without-title/",
+    title: "Generated title remains",
+    directives: [{
+      name: "hero",
+      form: "leaf",
+      properties: {
+        "show-title": { type: "boolean", value: false },
+        "show-description": { type: "boolean", value: false },
+        "show-meta": { type: "boolean", value: false },
+        align: { type: "string", value: "left" },
+      },
+      span: directiveSpan,
+    }],
+    body: {
+      type: "document",
+      children: [{
+        type: "directive",
+        invocation: {
+          name: "hero",
+          form: "leaf",
+          properties: [],
+          span: { start: 10, end: 19 },
+          nameSpan: { start: 12, end: 16 },
+          raw: "::hero{}",
+        },
+        span: directiveSpan,
+      }],
+    },
+  });
+
+  const html = renderCompiledPage(page);
+  assert.match(html, /<h1>Generated title remains<\/h1>/);
+  assert.equal(html.match(/<h1>/g)?.length, 1);
+});
+
+test("two embeds namespace same-page fragment links with their generated DOM ids", () => {
+  const firstEmbedSpan = sourceSpan(2, 10, 20);
+  const secondEmbedSpan = sourceSpan(3, 21, 31);
+  const headingSpan = sourceSpan(1, 0, 9);
+  const linkSpan = sourceSpan(2, 10, 28);
+  const target = compiledPage({
+    id: "p_embedded_target",
+    route: "/target/",
+    sourcePath: "target.md",
+    title: "Target",
+    headings: [{ id: "section", level: 1, text: "Section", span: headingSpan }],
+    outgoingLinks: [{
+      syntax: "markdown",
+      authoredDestination: "#section",
+      target: {
+        kind: "page",
+        pageId: "p_embedded_target",
+        route: "/target/",
+        fragment: { kind: "heading", id: "section" },
+      },
+      span: linkSpan,
+    }],
+    body: {
+      type: "document",
+      children: [{
+        type: "heading",
+        level: 1,
+        setext: false,
+        span: headingSpan,
+        children: [{ type: "text", value: "Section" }],
+      }, {
+        type: "paragraph",
+        children: [{
+          type: "link",
+          destination: "#section",
+          title: "",
+          span: linkSpan,
+          children: [{ type: "text", value: "Jump locally" }],
+        }],
+      }],
+    },
+  });
+  const host = compiledPage({
+    id: "p_embed_host",
+    route: "/",
+    sourcePath: "index.md",
+    title: "Host",
+    embeds: [{
+      authoredDestination: "target",
+      instanceId: "e_one",
+      target: { kind: "page", pageId: target.id, route: target.route },
+      span: firstEmbedSpan,
+    }, {
+      authoredDestination: "target",
+      instanceId: "e_two",
+      target: { kind: "page", pageId: target.id, route: target.route },
+      span: secondEmbedSpan,
+    }],
+    body: {
+      type: "document",
+      children: [{
+        type: "obsidianEmbed",
+        destination: "target",
+        option: null,
+        span: firstEmbedSpan,
+      }, {
+        type: "obsidianEmbed",
+        destination: "target",
+        option: null,
+        span: secondEmbedSpan,
+      }],
+    },
+  });
+
+  const html = renderCompiledPage(host, [host, target]);
+  assert.match(html, /id="e_one-section"/);
+  assert.match(html, /href="#e_one-section"/);
+  assert.match(html, /id="e_two-section"/);
+  assert.match(html, /href="#e_two-section"/);
+});
+
+function sourceSpan(line, startByte, endByte) {
+  return {
+    start: { line, column: 1 },
+    end: { line, column: endByte - startByte + 1 },
+    startByte,
+    endByte,
+  };
+}
+
+function compiledPage(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    id: "p_fixture",
+    route: "/fixture/",
+    sourcePath: "fixture.md",
+    title: "Fixture",
+    status: "published",
+    listed: true,
+    tags: [],
+    aliases: [],
+    data: {},
+    extra: {},
+    headings: [],
+    blocks: [],
+    directives: [],
+    body: { type: "document" },
+    children: [],
+    outgoingLinks: [],
+    embeds: [],
+    backlinks: [],
+    ...overrides,
+  };
+}
+
+function renderCompiledPage(page, pages = [page]) {
+  const manifest = {
+    schemaVersion: 1,
+    site: {
+      title: "Fixture",
+      basePath: "",
+      language: "en-SG",
+      trailingSlash: true,
+    },
+    entryPage: page.id,
+    routes: Object.fromEntries(pages.map((item) => [item.route, item.id])),
+    pages,
+  };
+  const runtime = createMamboRuntime({ manifest, pages, registry: defaultRegistry });
+  return renderToStaticMarkup(createElement(MamboPage, { runtime, page }));
+}
