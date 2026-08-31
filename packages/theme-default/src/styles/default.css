@@ -57,7 +57,6 @@ a:hover {
   background: var(--mambo-color-header-background);
   border-bottom: var(--mambo-border-strong) var(--mambo-border-style)
     var(--mambo-color-border);
-  display: var(--mambo-header-display);
   inset: 0 0 auto;
   min-height: var(--mambo-dimension-header-height);
   position: fixed;
@@ -72,7 +71,7 @@ a:hover {
 
 .mambo-site-header__inner {
   align-items: center;
-  display: grid;
+  display: var(--mambo-header-display);
   gap: var(--mambo-space-md);
   grid-template-columns: var(--mambo-header-grid-template);
   margin-inline: auto;
@@ -118,9 +117,11 @@ a:hover {
 
 .mambo-site-navigation {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--mambo-space-md);
-  justify-content: center;
+  justify-content: safe center;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .mambo-site-navigation a {

@@ -21,6 +21,15 @@ test("default styles do not duplicate generated theme values as literal fallback
     ["--mambo-color-accent-6", "var(--mambo-color-accent-1)"],
     ["--mambo-card-fit", "cover"],
   ]);
+  assert.match(
+    css,
+    /\.mambo-site-header__inner\s*\{[^}]*display: var\(--mambo-header-display\)/s,
+  );
+  assert.doesNotMatch(css, /\.mambo-site-header\s*\{[^}]*display:/s);
+  assert.match(
+    css,
+    /\.mambo-site-navigation\s*\{[^}]*overflow-x: auto/s,
+  );
 });
 
 test("default theme renders compiled Markdown and resolved directives", () => {

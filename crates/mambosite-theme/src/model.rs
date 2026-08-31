@@ -756,7 +756,7 @@ pub struct CollectionBehavior {
 impl Default for CollectionBehavior {
     fn default() -> Self {
         Self {
-            max_columns: responsive(1, Some(2), Some(6), None),
+            max_columns: responsive(1, Some(2), Some(2), Some(6)),
         }
     }
 }
