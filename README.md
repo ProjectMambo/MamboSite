@@ -60,7 +60,7 @@ Install the development command wrapper from this checkout once:
 ./script/install.sh
 ```
 
-It links `mambosite` into `${MAMBOSITE_BIN_DIR:-$HOME/.local/bin}` and runs the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different user-local command directory is preferred.
+It links `mambosite` into `/usr/local/bin` and runs the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different command directory is preferred; the installer uses `sudo` only when the selected directory is not writable.
 
 ## Technology direction
 
