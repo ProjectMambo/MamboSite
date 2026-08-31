@@ -73,6 +73,8 @@ Deliverable: both example sites render the same content schema with distinct lay
 
 MamboFolio's possible redesign does not block compiler work. The initial theme is a reference implementation and may evolve independently.
 
+Runtime distribution uses separately versioned `@mambosite/runtime`, `@mambosite/react`, `@mambosite/theme-default`, and framework-adapter packages. Sites pin compatible versions rather than copying versioned component directories.
+
 ## Phase 6 — website integration and deployment
 
 - Add `mambo.toml` to MamboFolio and MamboWiki.
@@ -81,6 +83,7 @@ MamboFolio's possible redesign does not block compiler work. The initial theme i
 - Configure static export, base paths, canonical URLs, sitemap, RSS where desired, and 404 handling.
 - Add GitHub Pages build/deploy workflows.
 - Verify custom-domain and repository-subpath deployments.
+- Provide safe `mambosite init`, complete `mambosite build`, and GitHub Pages `mambosite deploy` commands.
 
 Deliverable: both sites deploy from clean CI using static artifacts.
 

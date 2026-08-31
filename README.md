@@ -1,7 +1,7 @@
 
 # MamboSite
 
-MamboSite is a planned Markdown-first static site compiler for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data, renders it through a reusable web runtime, and exports static files for GitHub Pages.
+MamboSite is a Markdown-first static site platform for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data, renders it with MamboSite-owned React components, and exports static files for GitHub Pages.
 
 MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonical documentation in an Obsidian vault and exports it with a separate `sync-docs` workflow; other users may maintain `docs/` directly or provide their own synchronization process.
 
@@ -17,42 +17,46 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 - Validate every route, link, embed, component, and asset before the web build starts.
 - Produce a fully static Next.js export suitable for GitHub Pages.
 
-## Planned pipeline
+## Pipeline
 
 ```text
 repository docs/
     -> MamboSite Rust compiler
     -> generated TypeScript + copied assets
-    -> TypeScript rendering runtime
-    -> Next.js static export
+    -> versioned React runtime + selected theme
+    -> static web build
     -> GitHub Pages
 ```
 
+The compiler, React rendering engine, default components, theme contract, and static-framework adapter are maintained together in MamboSite. A website repository owns only its content, `mambo.toml`, `mambo.theme.toml`, and optional typed component overrides.
+
 ## Design documents
 
-- [Architecture](Architecture.md)
-- [Content Model](Content%20Model.md)
-- [Documentation Sync](Documentation%20Sync.md) — optional Project Mambo authoring workflow
-- [Markdown and Directives](Markdown%20and%20Directives.md)
-- [Parsing and Resolution](Parsing%20and%20Resolution.md)
-- [TypeScript Output](TypeScript%20Output.md)
-- [Theme and Components](Theme%20and%20Components.md)
-- [Build and Deployment](Build%20and%20Deployment.md)
-- [Diagnostics and Testing](Diagnostics%20and%20Testing.md)
-- [Roadmap](Roadmap.md)
+- [Architecture](docs/Architecture.md)
+- [Content Model](docs/Content%20Model.md)
+- [Documentation Sync](docs/Documentation%20Sync.md) — optional Project Mambo authoring workflow
+- [Markdown and Directives](docs/Markdown%20and%20Directives.md)
+- [Parsing and Resolution](docs/Parsing%20and%20Resolution.md)
+- [TypeScript Output](docs/TypeScript%20Output.md)
+- [Theme and Components](docs/Theme%20and%20Components.md)
+- [Build and Deployment](docs/Build%20and%20Deployment.md)
+- [Diagnostics and Testing](docs/Diagnostics%20and%20Testing.md)
+- [Roadmap](docs/Roadmap.md)
 
 ## Status
 
-The initial Rust compiler is runnable. It discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves references and embeds, and generates deterministic typed TypeScript page modules. The React renderer and remaining asset pipeline are under active development.
+The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves references and embeds, and generates deterministic typed TypeScript page modules. The reusable React runtime, default theme, project scaffolding, and end-to-end build/deploy commands are under active development.
 
 ## Command line
 
 ```bash
 mambosite check
 mambosite build
+mambosite init my-site
+mambosite deploy
 ```
 
-`check` validates without writing generated output. `build` performs a deterministic full compilation.
+`check` validates without writing output. `build` performs content compilation and the configured static web build. `init` creates a safe default site scaffold in an empty repository. `deploy` builds, pushes committed work, and starts the configured GitHub Pages workflow; `workflow_dispatch` allows the same commit to be deployed again when there is nothing new to push.
 
 Install the development command wrapper from this checkout once:
 

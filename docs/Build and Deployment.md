@@ -13,8 +13,8 @@ MamboSite starts from a self-contained content tree inside the website repositor
 ```text
 1. Prepare the repository-local docs/ tree
 2. Parse and validate docs/ with Rust
-3. Generate TypeScript and copy referenced assets
-4. Build the Next.js web shell as a static export
+3. Generate TypeScript, theme CSS, and copied assets
+4. Render through the versioned MamboSite React runtime and build a static export
 5. Upload the static artifact to GitHub Pages
 ```
 
@@ -83,7 +83,7 @@ Configuration precedence is deliberately small:
 
 Environment variables may provide deployment-specific values such as the final base path, but they should not redefine content semantics.
 
-## Proposed commands
+## Commands
 
 ### `mambosite check`
 
@@ -91,7 +91,27 @@ Runs discovery, parsing, resolution, and validation without modifying generated 
 
 ### `mambosite build`
 
-Runs a full validated compile, generates TypeScript, and copies assets atomically.
+Runs the complete repository-local build:
+
+1. Load and validate content and theme configuration.
+2. Parse, resolve, and validate the complete content graph.
+3. Generate TypeScript, theme CSS, and assets atomically.
+4. Invoke the configured framework adapter build without a shell.
+5. Verify that the configured static output directory exists.
+
+`mambosite build --content-only` stops after generated content and theme output. It exists for local development integration; normal production builds use the complete command.
+
+### `mambosite init [path]`
+
+Creates the default site in an empty or Git-only directory. The scaffold includes content, configuration, theme settings, optional component overrides, the framework adapter, package scripts, and a GitHub Pages workflow.
+
+Initialization never recursively cleans an unknown directory. Re-initialization may replace only files recorded as scaffold-owned, and refuses to destroy modified or unknown files. Dependency installation is an explicit option rather than an implicit network operation.
+
+### `mambosite deploy`
+
+Runs a complete local build, verifies repository and GitHub configuration, pushes committed work, and starts the configured GitHub Pages workflow. It does not synchronize an external vault and does not silently commit uncommitted work.
+
+When the current commit is already on the remote, deployment uses GitHub Actions `workflow_dispatch`. GitHub Pages can therefore rebuild and deploy the same commit; an empty commit is unnecessary. `--dry-run` reports the resolved build, push, and workflow operations without mutating external state.
 
 ### `mambosite inspect <target>`
 
@@ -109,14 +129,16 @@ The site shell should provide predictable wrappers:
 {
   "scripts": {
     "content:check": "mambosite check",
-    "content:build": "mambosite build",
-    "dev": "npm run content:build && next dev",
-    "build": "npm run content:build && next build"
+    "content:build": "mambosite build --content-only",
+    "predev": "mambosite build --content-only",
+    "dev": "next dev",
+    "build": "mambosite build",
+    "mambosite:render": "next build"
   }
 }
 ```
 
-The exact package manager is site-owned. MamboSite should not require npm specifically.
+The exact package manager is configured using a supported enum. Renderer scripts are validated names and are executed directly through the package manager, never interpolated into a shell command.
 
 ## Next.js integration
 

@@ -17,27 +17,50 @@ This is the initial architecture contract for MamboSite. The words **must**, **s
 - **Mount**: a mapping from another directory inside the content root into the site's route tree.
 - **Synchronized content**: repository-local files produced by an optional external authoring workflow.
 - **Compiler**: the Rust portion of MamboSite.
-- **Runtime**: the TypeScript package that renders generated content nodes.
-- **Web shell**: the site-specific Next.js application, theme, components, and configuration.
+- **Runtime**: the versioned TypeScript and React packages that resolve and render generated content nodes.
+- **Theme preset**: a versioned collection of default components and base styles.
+- **Web adapter**: the framework-specific package that turns a compiled site into static routes and metadata.
+- **Site customization**: repository-local theme settings and typed component overrides.
 
 ## Architectural boundary
 
 MamboSite should be a compiler, not a content management system and not a second Markdown editor. It accepts content plus configuration and produces deterministic web data.
 
 ```text
-Authoring                Compilation                          Presentation
+Authoring                Compilation                         Presentation
 
-repository docs/         Rust compiler                       Next.js web shell
+repository docs/         Rust compiler                       MamboSite runtime
 ----------------         -------------------------------     -----------------
-Markdown          --->   discover and parse            --->  typed renderer
-local assets             resolve links and mounts            site components
-site entry               validate graph                      theme and CSS
-                         emit TypeScript and assets           static HTML export
+Markdown          --->   discover and parse            --->  React renderer
+local assets             resolve links and mounts            component registry
+site entry               validate graph                      selected theme
+theme settings           emit TypeScript, assets, CSS         web adapter/export
 ```
 
-Rust owns meaning: routes, metadata, Markdown semantics, directives, links, embeds, assets, navigation, and diagnostics. TypeScript owns presentation: React elements, layouts, styling, client interactions, and static page rendering.
+Rust owns meaning: routes, metadata, Markdown semantics, directives, links, embeds, assets, navigation, theme validation, and diagnostics. TypeScript owns presentation: React elements, layouts, styling, client interactions, and static page rendering. MamboSite owns both sides of this boundary; consuming sites configure and override them through stable public APIs.
 
-The boundary must remain data-oriented. Rust must not generate React page source for every document, and React must not reparse Markdown.
+The boundary must remain data-oriented. Rust must not generate React page source for every document, and React must not reparse Markdown. Framework adapters must consume the same compiled data and component registry rather than inventing another content model.
+
+## Runtime package boundary
+
+The presentation implementation is split into independently versioned packages:
+
+```text
+@mambosite/runtime        schema contracts, content store, graph queries
+@mambosite/react          renderer engine and typed component registry
+@mambosite/theme-default  default components, shell, and styles
+@mambosite/next           static Next.js route and metadata adapter
+```
+
+The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. Both MamboFolio and MamboWiki initially use the default theme.
+
+Compatibility has three explicit versions:
+
+- `schemaVersion` identifies generated compiler data.
+- Runtime and adapter packages use semantic versions.
+- Theme packages use semantic versions independently of the compiler.
+
+Each site pins compatible package versions in its lockfile. MamboSite packages declare the schema versions they accept and fail clearly before rendering incompatible data.
 
 ## MamboSite repository structure
 

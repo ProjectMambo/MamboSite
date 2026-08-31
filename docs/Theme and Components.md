@@ -29,6 +29,37 @@ The current MamboFolio establishes a recognizable Project Mambo style:
 
 These are defaults, not parser rules. A future theme may change spacing, typography, shape, navigation, cards, or motion without recompiling Markdown under a new language.
 
+## Site settings
+
+Every site has a separate `mambo.theme.toml`. It contains presentation settings only and may inherit a named preset:
+
+```toml
+schema = 1
+preset = "default"
+
+[colors.dark]
+background = "#181615"
+foreground = "#faf7f2"
+brand = "#d44b36"
+
+[fonts]
+body = "MamboFont, ui-monospace, monospace"
+heading = "MamboFont, ui-monospace, monospace"
+
+[breakpoints]
+compact = "40rem"
+wide = "56.25rem"
+
+[layout]
+page_width = "74rem"
+article_width = "48rem"
+sidebar_width = "15rem"
+```
+
+MamboSite validates this file and generates resolved theme data plus CSS. Colours, fonts, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, and responsive choices are semantic tokens. Components consume tokens and do not contain site palette values.
+
+CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
+
 ## Layered runtime structure
 
 The TypeScript runtime should have five presentation layers:
@@ -135,7 +166,7 @@ The site repository owns:
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
 - Optional search UI.
 
-The shared runtime may provide defaults, but MamboFolio and MamboWiki may override layout/component implementations through a typed registry.
+MamboSite provides the default shell and registry. MamboFolio and MamboWiki may override layout/component implementations through a typed registry, but initially use the defaults.
 
 ## Component override contract
 
@@ -149,7 +180,18 @@ interface MamboComponentRegistry {
 }
 ```
 
-Each website starts with the default registry and replaces selected entries. Overrides receive the same validated node/prop types. They must not need access to raw Markdown or YAML.
+Each website starts with the default registry and replaces selected entries. Overrides receive the same validated node/prop types and resolved content models. They must not need access to raw Markdown or YAML.
+
+```ts
+export const components = createRegistry(
+  defaultRegistry,
+  defineOverrides({
+    directives: { children: ProjectCollection },
+  }),
+);
+```
+
+Registry composition is immutable and verifies that every required node, directive, layout, and shell entry exists. A component can change its markup or styling without changing parsing. Changing public component props or generated data is a versioned API change and must not be presented as an isolated implementation detail.
 
 This permits:
 
