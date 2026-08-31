@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
+use std::path::{Component, Path};
 
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -35,17 +36,64 @@ pub struct GeneratedFile {
     pub contents: String,
 }
 
-/// A complete in-memory output tree, sorted by normalized relative path.
+/// A complete managed output tree, sorted by normalized relative path.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct GeneratedSite {
+pub struct GeneratedTree {
     files: Vec<GeneratedFile>,
 }
 
-impl GeneratedSite {
+impl GeneratedTree {
+    /// Create a managed tree from generated files.
+    ///
+    /// The ownership marker is added automatically. Paths must be unique,
+    /// case-insensitively unique, and remain below the tree root.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error for unsafe, reserved, or colliding paths.
+    pub fn new(files: impl IntoIterator<Item = GeneratedFile>) -> Result<Self, Error> {
+        let mut output = vec![GeneratedFile {
+            path: OUTPUT_MARKER.into(),
+            contents: OUTPUT_MARKER_CONTENT.into(),
+        }];
+        for file in files {
+            validate_generated_path(&file.path)?;
+            output.push(file);
+        }
+        validate_collisions(&output)?;
+        output.sort_by(|left, right| left.path.cmp(&right.path));
+        Ok(Self { files: output })
+    }
+
     pub fn files(&self) -> &[GeneratedFile] {
         &self.files
     }
+
+    /// Add one generated file while preserving path invariants and sort order.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the path is unsafe, reserved, or collides with an
+    /// existing path.
+    pub fn insert(&mut self, file: GeneratedFile) -> Result<(), Error> {
+        validate_generated_path(&file.path)?;
+        let folded = file.path.to_ascii_lowercase();
+        if self.files.iter().any(|existing| {
+            let existing = existing.path.to_ascii_lowercase();
+            existing == folded
+                || existing.starts_with(&format!("{folded}/"))
+                || folded.starts_with(&format!("{existing}/"))
+        }) {
+            return Err(Error::DuplicatePath(file.path));
+        }
+        self.files.push(file);
+        self.files.sort_by(|left, right| left.path.cmp(&right.path));
+        Ok(())
+    }
 }
+
+/// Backward-compatible name for the TypeScript site output tree.
+pub type GeneratedSite = GeneratedTree;
 
 struct PageModule {
     id: String,
@@ -59,7 +107,7 @@ struct PageModule {
 ///
 /// Returns an error if serialization fails or the serialized model is not a
 /// site object containing pages with unique, non-empty string IDs.
-pub fn generate<T>(site: &T) -> Result<GeneratedSite, Error>
+pub fn generate<T>(site: &T) -> Result<GeneratedTree, Error>
 where
     T: Serialize,
 {
@@ -103,11 +151,7 @@ where
         .collect();
     root_object.insert("pages".into(), Value::Array(summaries));
 
-    let mut files = Vec::with_capacity(modules.len() + 3);
-    files.push(GeneratedFile {
-        path: OUTPUT_MARKER.into(),
-        contents: OUTPUT_MARKER_CONTENT.into(),
-    });
+    let mut files = Vec::with_capacity(modules.len() + 2);
     files.push(GeneratedFile {
         path: "manifest.ts".into(),
         contents: module_source(
@@ -133,28 +177,48 @@ where
         path: "pages/index.ts".into(),
         contents: page_index_source(&modules),
     });
-    files.sort_by(|left, right| left.path.cmp(&right.path));
+    GeneratedTree::new(files)
+}
 
-    let unique_paths: BTreeSet<_> = files.iter().map(|file| file.path.as_str()).collect();
-    if unique_paths.len() != files.len() {
-        let mut seen = BTreeSet::new();
-        let duplicate = files
-            .iter()
-            .find(|file| !seen.insert(file.path.as_str()))
-            .map_or_else(|| "unknown".to_owned(), |file| file.path.clone());
-        return Err(Error::DuplicatePath(duplicate));
+fn validate_generated_path(value: &str) -> Result<(), Error> {
+    let path = Path::new(value);
+    let safe = !value.is_empty()
+        && !value.contains('\\')
+        && !path.is_absolute()
+        && path
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)));
+    if !safe
+        || path
+            .components()
+            .next()
+            .is_some_and(|component| component.as_os_str() == OUTPUT_MARKER)
+    {
+        return Err(Error::InvalidGeneratedPath(value.to_owned()));
     }
-    let casefolded_paths: BTreeSet<_> = files
+    Ok(())
+}
+
+fn validate_collisions(files: &[GeneratedFile]) -> Result<(), Error> {
+    let paths: BTreeSet<_> = files
         .iter()
         .map(|file| file.path.to_ascii_lowercase())
         .collect();
-    if casefolded_paths.len() != files.len() {
+    if paths.len() != files.len() {
         return Err(Error::DuplicatePath(
             "case-insensitive generated path collision".to_owned(),
         ));
     }
-
-    Ok(GeneratedSite { files })
+    for path in &paths {
+        let mut candidate = path.as_str();
+        while let Some((parent, _)) = candidate.rsplit_once('/') {
+            if paths.contains(parent) {
+                return Err(Error::DuplicatePath(path.clone()));
+            }
+            candidate = parent;
+        }
+    }
+    Ok(())
 }
 
 fn page_summary(page: &Value) -> Value {
@@ -338,5 +402,85 @@ mod tests {
                     .extension()
                     .is_some_and(|extension| extension.eq_ignore_ascii_case("ts"))
         }));
+    }
+
+    #[test]
+    fn generated_trees_add_a_marker_and_accept_extra_files() {
+        let mut tree = GeneratedTree::new([GeneratedFile {
+            path: "theme.css".to_owned(),
+            contents: ":root {}\n".to_owned(),
+        }])
+        .unwrap();
+        tree.insert(GeneratedFile {
+            path: "metadata/theme.ts".to_owned(),
+            contents: "export {};\n".to_owned(),
+        })
+        .unwrap();
+
+        assert_eq!(tree.files()[0].path, OUTPUT_MARKER);
+        assert!(tree.files().iter().any(|file| file.path == "theme.css"));
+        assert!(
+            tree.files()
+                .iter()
+                .any(|file| file.path == "metadata/theme.ts")
+        );
+    }
+
+    #[test]
+    fn generated_trees_reject_unsafe_reserved_and_colliding_paths() {
+        for path in [
+            "",
+            "../outside.ts",
+            "/absolute.ts",
+            "dir\\file.ts",
+            OUTPUT_MARKER,
+            ".mambosite-generated/child",
+        ] {
+            assert!(
+                GeneratedTree::new([GeneratedFile {
+                    path: path.to_owned(),
+                    contents: String::new(),
+                }])
+                .is_err()
+            );
+        }
+
+        let mut tree = GeneratedTree::new([GeneratedFile {
+            path: "Theme.ts".to_owned(),
+            contents: String::new(),
+        }])
+        .unwrap();
+        assert!(
+            tree.insert(GeneratedFile {
+                path: "theme.ts".to_owned(),
+                contents: String::new(),
+            })
+            .is_err()
+        );
+        assert!(
+            tree.insert(GeneratedFile {
+                path: "Theme.ts/child".to_owned(),
+                contents: String::new(),
+            })
+            .is_err()
+        );
+
+        assert!(
+            GeneratedTree::new([
+                GeneratedFile {
+                    path: "a".to_owned(),
+                    contents: String::new(),
+                },
+                GeneratedFile {
+                    path: "a-b".to_owned(),
+                    contents: String::new(),
+                },
+                GeneratedFile {
+                    path: "a/child.ts".to_owned(),
+                    contents: String::new(),
+                },
+            ])
+            .is_err()
+        );
     }
 }

@@ -3,7 +3,32 @@ use std::path::{Path, PathBuf};
 
 use tempfile::Builder;
 
-use crate::{Error, GeneratedSite, OUTPUT_MARKER, OUTPUT_MARKER_CONTENT};
+use crate::{Error, GeneratedTree, OUTPUT_MARKER, OUTPUT_MARKER_CONTENT};
+
+/// Validate that an output and its recovery backup are absent, empty, or
+/// owned by `MamboSite` without changing the filesystem.
+///
+/// # Errors
+///
+/// Returns an error for invalid targets, symbolic links, unmanaged content, or
+/// filesystem inspection failures.
+pub fn validate_output(output_dir: &Path) -> Result<(), Error> {
+    let parent = output_dir
+        .parent()
+        .filter(|path| !path.as_os_str().is_empty())
+        .ok_or_else(|| Error::InvalidOutputDirectory(output_dir.display().to_string()))?;
+    let output_name = output_dir
+        .file_name()
+        .ok_or_else(|| Error::InvalidOutputDirectory(output_dir.display().to_string()))?;
+    let backup = backup_path(parent, output_name);
+    if path_present(output_dir)? {
+        validate_managed_or_empty(output_dir)?;
+    }
+    if path_present(&backup)? {
+        validate_managed_or_empty(&backup)?;
+    }
+    Ok(())
+}
 
 /// Write a complete generated tree and replace the previous tree only after all
 /// new files have been written successfully.
@@ -12,7 +37,7 @@ use crate::{Error, GeneratedSite, OUTPUT_MARKER, OUTPUT_MARKER_CONTENT};
 ///
 /// Returns an error if the target is not a directory-like path or any staging,
 /// writing, replacement, or cleanup operation fails.
-pub fn write(generated: &GeneratedSite, output_dir: &Path) -> Result<(), Error> {
+pub fn write(generated: &GeneratedTree, output_dir: &Path) -> Result<(), Error> {
     let parent = output_dir
         .parent()
         .filter(|path| !path.as_os_str().is_empty())
@@ -21,15 +46,10 @@ pub fn write(generated: &GeneratedSite, output_dir: &Path) -> Result<(), Error> 
         .file_name()
         .ok_or_else(|| Error::InvalidOutputDirectory(output_dir.display().to_string()))?;
 
+    validate_output(output_dir)?;
     fs::create_dir_all(parent).map_err(|error| Error::io("create output parent", parent, error))?;
     let backup = backup_path(parent, output_name);
-    let had_previous = output_dir.exists();
-    if had_previous {
-        validate_managed_or_empty(output_dir)?;
-    }
-    if backup.exists() {
-        validate_managed_or_empty(&backup)?;
-    }
+    let had_previous = path_present(output_dir)?;
 
     let staging = Builder::new()
         .prefix(".mambosite-stage-")
@@ -124,6 +144,14 @@ fn backup_path(parent: &Path, output_name: &std::ffi::OsStr) -> PathBuf {
     let mut name = std::ffi::OsString::from(".mambosite-previous-");
     name.push(output_name);
     parent.join(name)
+}
+
+fn path_present(path: &Path) -> Result<bool, Error> {
+    match fs::symlink_metadata(path) {
+        Ok(_) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(Error::io("inspect generated path", path, error)),
+    }
 }
 
 fn remove_path(path: &Path) -> Result<(), Error> {
@@ -276,6 +304,44 @@ mod tests {
 
         assert!(matches!(
             write(&generated, &output).unwrap_err(),
+            Error::UnmanagedOutputDirectory(_)
+        ));
+    }
+
+    #[test]
+    fn writes_a_managed_non_typescript_tree() {
+        let temporary = tempfile::tempdir().unwrap();
+        let output = temporary.path().join("assets");
+        let generated = GeneratedTree::new([crate::GeneratedFile {
+            path: "theme.css".to_owned(),
+            contents: ":root { --mambo-test: 1; }\n".to_owned(),
+        }])
+        .unwrap();
+
+        validate_output(&output).unwrap();
+        write(&generated, &output).unwrap();
+
+        assert_eq!(
+            fs::read_to_string(output.join("theme.css")).unwrap(),
+            ":root { --mambo-test: 1; }\n"
+        );
+        assert_eq!(
+            fs::read_to_string(output.join(OUTPUT_MARKER)).unwrap(),
+            OUTPUT_MARKER_CONTENT
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn refuses_a_broken_symlink_output() {
+        use std::os::unix::fs::symlink;
+
+        let temporary = tempfile::tempdir().unwrap();
+        let output = temporary.path().join("generated");
+        symlink(temporary.path().join("missing"), &output).unwrap();
+
+        assert!(matches!(
+            validate_output(&output).unwrap_err(),
             Error::UnmanagedOutputDirectory(_)
         ));
     }

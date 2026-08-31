@@ -7,8 +7,8 @@
 mod serializer;
 mod writer;
 
-pub use serializer::{GeneratedFile, GeneratedSite, generate};
-pub use writer::write;
+pub use serializer::{GeneratedFile, GeneratedSite, GeneratedTree, generate};
+pub use writer::{validate_output, write};
 
 use std::path::Path;
 
@@ -49,6 +49,9 @@ pub enum Error {
 
     #[error("generated path `{0}` occurs more than once")]
     DuplicatePath(String),
+
+    #[error("generated path `{0}` is unsafe or reserved")]
+    InvalidGeneratedPath(String),
 
     #[error("output directory `{0}` has no usable parent or file name")]
     InvalidOutputDirectory(String),
