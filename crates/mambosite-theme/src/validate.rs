@@ -135,6 +135,28 @@ pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
         ),
         ("dimensions.header_height", &theme.dimensions.header_height),
         ("dimensions.toc_offset", &theme.dimensions.toc_offset),
+        (
+            "layout.page_with_sidebar_columns",
+            &theme.layout.page_with_sidebar_columns,
+        ),
+        (
+            "layout.hero_split_columns",
+            &theme.layout.hero_split_columns,
+        ),
+        ("layout.list_card_columns", &theme.layout.list_card_columns),
+        ("layout.metadata_columns", &theme.layout.metadata_columns),
+        (
+            "layout.header_inline_padding",
+            &theme.layout.header_inline_padding,
+        ),
+        (
+            "layout.page_inline_padding",
+            &theme.layout.page_inline_padding,
+        ),
+        (
+            "layout.footer_inline_padding",
+            &theme.layout.footer_inline_padding,
+        ),
     ] {
         validate_responsive_css(field, value, &mut diagnostics);
     }

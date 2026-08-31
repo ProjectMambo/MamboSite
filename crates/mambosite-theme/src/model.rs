@@ -32,6 +32,7 @@ pub struct Theme {
     pub spacing: SpacingTokens,
     pub widths: WidthTokens,
     pub dimensions: DimensionTokens,
+    pub layout: LayoutTokens,
     pub borders: BorderTokens,
     pub radii: RadiusTokens,
     pub shadows: ShadowTokens,
@@ -53,6 +54,7 @@ impl Default for Theme {
             spacing: SpacingTokens::default(),
             widths: WidthTokens::default(),
             dimensions: DimensionTokens::default(),
+            layout: LayoutTokens::default(),
             borders: BorderTokens::default(),
             radii: RadiusTokens::default(),
             shadows: ShadowTokens::default(),
@@ -543,6 +545,97 @@ impl Default for DimensionTokens {
             toc_offset: Responsive::Value("6.5rem".to_owned()),
             hero_min_height: "18rem".to_owned(),
             control_min_height: "5rem".to_owned(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct LayoutTokens {
+    pub page_with_sidebar_columns: Responsive<String>,
+    pub hero_split_columns: Responsive<String>,
+    pub list_card_columns: Responsive<String>,
+    pub metadata_columns: Responsive<String>,
+    pub footer_direction: Responsive<FlexDirection>,
+    pub header_inline_padding: Responsive<String>,
+    pub page_inline_padding: Responsive<String>,
+    pub footer_inline_padding: Responsive<String>,
+}
+
+impl Default for LayoutTokens {
+    fn default() -> Self {
+        Self {
+            page_with_sidebar_columns: responsive(
+                "minmax(0, 1fr)".to_owned(),
+                None,
+                Some("minmax(0, 1fr) var(--mambo-width-sidebar)".to_owned()),
+                None,
+            ),
+            hero_split_columns: responsive(
+                "minmax(0, 1fr)".to_owned(),
+                None,
+                Some(
+                    "minmax(var(--mambo-width-hero-image-min), 0.75fr) minmax(0, 1.25fr)"
+                        .to_owned(),
+                ),
+                None,
+            ),
+            list_card_columns: responsive(
+                "minmax(0, 1fr)".to_owned(),
+                Some("minmax(8rem, 0.3fr) minmax(0, 1fr)".to_owned()),
+                None,
+                None,
+            ),
+            metadata_columns: responsive(
+                "minmax(0, 1fr)".to_owned(),
+                Some("minmax(7rem, 0.25fr) minmax(0, 1fr)".to_owned()),
+                None,
+                None,
+            ),
+            footer_direction: responsive(
+                FlexDirection::Column,
+                Some(FlexDirection::Row),
+                None,
+                None,
+            ),
+            header_inline_padding: responsive(
+                "1rem".to_owned(),
+                Some("1.5rem".to_owned()),
+                None,
+                None,
+            ),
+            page_inline_padding: responsive(
+                "1rem".to_owned(),
+                Some("1.5rem".to_owned()),
+                None,
+                None,
+            ),
+            footer_inline_padding: responsive(
+                "1rem".to_owned(),
+                Some("1.5rem".to_owned()),
+                None,
+                None,
+            ),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FlexDirection {
+    Row,
+    Column,
+    RowReverse,
+    ColumnReverse,
+}
+
+impl FlexDirection {
+    pub const fn as_css(self) -> &'static str {
+        match self {
+            Self::Row => "row",
+            Self::Column => "column",
+            Self::RowReverse => "row-reverse",
+            Self::ColumnReverse => "column-reverse",
         }
     }
 }

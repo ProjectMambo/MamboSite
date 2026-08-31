@@ -21,6 +21,7 @@ fn canonical_default_toml_round_trips() {
     assert!(source.contains("[breakpoints]"));
     assert!(source.contains("[components.header]"));
     assert!(source.contains("[typography.heading_1]"));
+    assert!(source.contains("[layout.page_with_sidebar_columns]"));
 }
 
 #[test]
@@ -111,9 +112,92 @@ fn emits_configured_font_faces_and_semantic_token_groups() {
         "--mambo-radius-medium",
         "--mambo-shadow-medium",
         "--mambo-motion-normal",
+        "--mambo-layout-page-with-sidebar-columns",
+        "--mambo-layout-hero-split-columns",
+        "--mambo-layout-list-card-columns",
+        "--mambo-layout-metadata-columns",
+        "--mambo-layout-footer-direction",
+        "--mambo-layout-header-inline-padding",
+        "--mambo-layout-page-inline-padding",
     ] {
         assert!(css.contains(variable), "missing {variable}");
     }
+}
+
+#[test]
+fn configured_breakpoints_drive_layout_and_finite_column_rules() {
+    let theme = Theme::from_toml(
+        r#"
+            [breakpoints]
+            compact = 520
+            content = 760
+            wide = 1120
+
+            [layout]
+            page_with_sidebar_columns = { base = "1fr", content = "3fr 1fr" }
+            hero_split_columns = { base = "1fr", content = "2fr 3fr" }
+            list_card_columns = { base = "1fr", compact = "9rem 1fr" }
+            metadata_columns = { base = "1fr", compact = "6rem 1fr" }
+            footer_direction = { base = "column", wide = "row" }
+            header_inline_padding = { base = "0.5rem", compact = "2rem" }
+            page_inline_padding = { base = "0.75rem", content = "3rem" }
+            footer_inline_padding = { base = "1rem", wide = "4rem" }
+
+            [components.collection]
+            max_columns = { base = 1, compact = 3, content = 4, wide = 5 }
+        "#,
+        "responsive.theme.toml",
+    )
+    .unwrap();
+    let css = theme.compile().unwrap().css;
+    let compact = media_section(&css, 520, Some(760));
+    let content = media_section(&css, 760, Some(1120));
+    let wide = media_section(&css, 1120, None);
+
+    assert!(css.contains("--mambo-layout-page-with-sidebar-columns: 1fr;"));
+    assert!(css.contains("--mambo-layout-footer-direction: column;"));
+    assert!(compact.contains("--mambo-layout-list-card-columns: 9rem 1fr;"));
+    assert!(compact.contains("--mambo-layout-metadata-columns: 6rem 1fr;"));
+    assert!(compact.contains("--mambo-layout-header-inline-padding: 2rem;"));
+    assert!(content.contains("--mambo-layout-page-with-sidebar-columns: 3fr 1fr;"));
+    assert!(content.contains("--mambo-layout-hero-split-columns: 2fr 3fr;"));
+    assert!(content.contains("--mambo-layout-page-inline-padding: 3rem;"));
+    assert!(wide.contains("--mambo-layout-footer-direction: row;"));
+    assert!(wide.contains("--mambo-layout-footer-inline-padding: 4rem;"));
+
+    assert!(css.contains(
+        "[data-mambo-collection][data-columns=\"6\"] { --mambo-collection-columns: 1; }"
+    ));
+    assert!(compact.contains(
+        "[data-mambo-collection][data-columns=\"6\"] { --mambo-collection-columns: 3; }"
+    ));
+    assert!(content.contains(
+        "[data-mambo-collection][data-columns=\"6\"] { --mambo-collection-columns: 4; }"
+    ));
+    assert!(wide.contains(
+        "[data-mambo-collection][data-columns=\"6\"] { --mambo-collection-columns: 5; }"
+    ));
+    assert_eq!(
+        css.matches("[data-mambo-collection][data-columns=").count(),
+        24
+    );
+
+    assert!(css.contains("[data-mambo-columns][data-collapse=\"never\"]"));
+    assert!(compact.contains("[data-mambo-columns][data-collapse=\"compact\"]"));
+    assert!(content.contains("[data-mambo-columns][data-collapse=\"content\"]"));
+    assert!(wide.contains("[data-mambo-columns][data-collapse=\"wide\"]"));
+    assert!(!css.contains("@media (max-width:"));
+}
+
+fn media_section(css: &str, width: u32, next_width: Option<u32>) -> &str {
+    let start_marker = format!("@media (min-width: {width}px)");
+    let start = css.find(&start_marker).expect("media query should exist");
+    let end = next_width
+        .and_then(|next| {
+            css[start + start_marker.len()..].find(&format!("@media (min-width: {next}px)"))
+        })
+        .map_or(css.len(), |offset| start + start_marker.len() + offset);
+    &css[start..end]
 }
 
 #[test]

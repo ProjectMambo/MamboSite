@@ -11,10 +11,11 @@ use std::path::{Path, PathBuf};
 pub use error::{ThemeDiagnostic, ThemeError};
 pub use model::{
     BorderStyle, BorderTokens, Breakpoints, CollectionBehavior, ColorPalette, ColorScheme,
-    ColorSchemes, DimensionTokens, FontDisplay, FontFace, FontFormat, FontStyle, FontTokens,
-    HeaderBehavior, HeaderMode, MotionTokens, RadiusTokens, Responsive, ResponsiveComponents,
-    ResponsivePoints, ShadowTokens, SidebarBehavior, SidebarMode, SpacingTokens,
-    THEME_SCHEMA_VERSION, TextStyle, Theme, TypographyTokens, Visibility, WidthTokens,
+    ColorSchemes, DimensionTokens, FlexDirection, FontDisplay, FontFace, FontFormat, FontStyle,
+    FontTokens, HeaderBehavior, HeaderMode, LayoutTokens, MotionTokens, RadiusTokens, Responsive,
+    ResponsiveComponents, ResponsivePoints, ShadowTokens, SidebarBehavior, SidebarMode,
+    SpacingTokens, THEME_SCHEMA_VERSION, TextStyle, Theme, TypographyTokens, Visibility,
+    WidthTokens,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
