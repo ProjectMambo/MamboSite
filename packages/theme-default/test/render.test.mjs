@@ -1,10 +1,27 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 
 import { createMamboRuntime, MamboPage } from "@mambosite/react";
 import { defaultRegistry } from "../dist/index.js";
+
+test("default styles do not duplicate generated theme values as literal fallbacks", async () => {
+  const css = await readFile(new URL("../src/styles/default.css", import.meta.url), "utf8");
+  const callsWithFallbacks = cssVariableCalls(css)
+    .filter(({ fallback }) => fallback !== null)
+    .map(({ name, fallback }) => [name, fallback]);
+
+  assert.deepEqual(callsWithFallbacks, [
+    ["--mambo-color-accent-2", "var(--mambo-color-accent-1)"],
+    ["--mambo-color-accent-3", "var(--mambo-color-accent-1)"],
+    ["--mambo-color-accent-4", "var(--mambo-color-accent-1)"],
+    ["--mambo-color-accent-5", "var(--mambo-color-accent-1)"],
+    ["--mambo-color-accent-6", "var(--mambo-color-accent-1)"],
+    ["--mambo-card-fit", "cover"],
+  ]);
+});
 
 test("default theme renders compiled Markdown and resolved directives", () => {
   const directiveSpan = {
@@ -278,4 +295,29 @@ function renderCompiledPage(page, pages = [page]) {
   };
   const runtime = createMamboRuntime({ manifest, pages, registry: defaultRegistry });
   return renderToStaticMarkup(createElement(MamboPage, { runtime, page }));
+}
+
+function cssVariableCalls(css) {
+  const calls = [];
+  const startPattern = /var\(\s*(--mambo-[\w-]+)/g;
+  let match;
+
+  while ((match = startPattern.exec(css)) !== null) {
+    let depth = 1;
+    let comma = -1;
+    let cursor = startPattern.lastIndex;
+
+    for (; cursor < css.length && depth > 0; cursor += 1) {
+      if (css[cursor] === "(") depth += 1;
+      if (css[cursor] === ")") depth -= 1;
+      if (css[cursor] === "," && depth === 1 && comma === -1) comma = cursor;
+    }
+
+    calls.push({
+      name: match[1],
+      fallback: comma === -1 ? null : css.slice(comma + 1, cursor - 1).trim(),
+    });
+  }
+
+  return calls;
 }
