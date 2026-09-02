@@ -13,7 +13,7 @@ MamboSite starts from a self-contained content tree inside the website repositor
 ```text
 1. Prepare the repository-local docs/ tree
 2. Parse and validate docs/ with Rust
-3. Generate TypeScript, theme CSS, and copied assets
+3. Generate TypeScript and theme CSS
 4. Render through the versioned MamboSite React runtime and build a static export
 5. Upload the static artifact to GitHub Pages
 ```
@@ -43,7 +43,8 @@ Before `mambosite check` or `mambosite build` runs, `docs/` must contain:
 - Every physical site page.
 - Every mounted documentation tree.
 - Every local link or embed target required by the site.
-- Every referenced local asset.
+
+Schema 1 does not validate or publish content assets. Authored image paths must already resolve through the website's `public/` tree or another site-owned copy step.
 
 All compiler paths are interpreted relative to this content root. Mounted copies may live under an excluded implementation directory such as `_mounts/`; an explicit mount makes their pages public at the mount's configured route. The compiler must not depend on where these files lived before they entered the repository.
 
@@ -69,19 +70,22 @@ base_path = ""
 trailing_slash = true
 language = "en-SG"
 
-[build]
-mode = "production"
-source_locations = false
-search = true
+[renderer]
+enabled = true
+kind = "next"
+package_manager = "npm"
+build_script = "mambosite:render"
+output_dir = "out"
+
+[deploy]
+remote = "origin"
+branch = "main"
+workflow = ".github/workflows/pages.yml"
 ```
 
-Configuration precedence is deliberately small:
+`--config` chooses the TOML file; omitted fields use schema defaults. A full build passes the configured `site.base_path` and `site.url` to the renderer as `MAMBOSITE_BASE_PATH` and `MAMBOSITE_SITE_URL`. There are no environment overrides for content semantics.
 
-1. CLI flags for the current invocation.
-2. `mambo.toml`.
-3. documented defaults.
-
-Environment variables may provide deployment-specific values such as the final base path, but they should not redefine content semantics.
+`site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of `public/`; its relative path becomes the browser-facing prefix for generated `theme.css`.
 
 ## Commands
 
@@ -95,29 +99,29 @@ Runs the complete repository-local build:
 
 1. Load and validate content and theme configuration.
 2. Parse, resolve, and validate the complete content graph.
-3. Generate TypeScript, theme CSS, and assets atomically.
+3. Generate TypeScript and theme CSS into separate managed output trees.
 4. Invoke the configured framework adapter build without a shell.
 5. Verify that the configured static output directory exists.
 
-`mambosite build --content-only` stops after generated content and theme output. It exists for local development integration; normal production builds use the complete command.
+`mambosite build --content-only` stops after generated content and theme output. It exists for local development integration; production builds use the complete command.
 
 ### `mambosite init [path]`
 
-Creates the default site in an empty or Git-only directory. The scaffold includes content, configuration, theme settings, optional component overrides, the framework adapter, package scripts, and a GitHub Pages workflow.
+Creates the default site in an empty or Git-only directory. The scaffold includes content, configuration, a complete `mambo.theme.toml`, the framework adapter, package scripts, and a GitHub Pages workflow.
 
-Initialization never recursively cleans an unknown directory. Re-initialization may replace only files recorded as scaffold-owned, and refuses to destroy modified or unknown files. Dependency installation is an explicit option rather than an implicit network operation.
+Initialization never recursively cleans an unknown directory. `--force` refreshes only paths recorded as scaffold-owned and preserves unknown files; it still refuses an arbitrary non-scaffold directory. Initialization does not access the network or install dependencies. Run the chosen package manager explicitly and commit its lockfile before using the generated deployment workflow.
 
 ### `mambosite deploy`
 
 Runs a complete local build, verifies repository and GitHub configuration, pushes committed work, and starts the configured GitHub Pages workflow. It does not synchronize an external vault and does not silently commit uncommitted work.
 
-When the current commit is already on the remote, deployment uses GitHub Actions `workflow_dispatch`. GitHub Pages can therefore rebuild and deploy the same commit; an empty commit is unnecessary. `--dry-run` reports the resolved build, push, and workflow operations without mutating external state.
+When the current commit is already on the remote, deployment uses GitHub Actions `workflow_dispatch`. GitHub Pages can therefore rebuild and deploy the same commit; an empty commit is unnecessary. `--dry-run` performs the local build and reports the resolved push or workflow action without fetching, pushing, or dispatching external state. It requires an existing local remote-tracking branch; fetch once before a dry run.
 
-### `mambosite inspect <target>`
+### Planned: `mambosite inspect <target>`
 
-Explains a page or reference: source path, route, mount, metadata derivation, children, links, embeds, assets, and diagnostics. Targets may be source paths, routes, or wikilinks.
+This future command will explain a page or reference: source path, route, mount, metadata derivation, children, links, embeds, assets, and diagnostics. Targets may be source paths, routes, or wikilinks. It is not part of the current CLI.
 
-### `mambosite watch`
+### Planned: `mambosite watch`
 
 Later command for local development. It watches the content root and configuration, rebuilds affected output, and reports diagnostics. The first release does not depend on it.
 
@@ -142,20 +146,21 @@ The exact package manager is configured using a supported enum. Renderer scripts
 
 ## Next.js integration
 
-The web shell uses one optional catch-all route instead of generated `page.tsx` files:
+The web shell uses one root route and one catch-all route instead of generating a `page.tsx` file for every Markdown page:
 
 ```text
-src/app/[[...slug]]/page.tsx
+src/app/page.tsx
+src/app/[...slug]/page.tsx
 ```
 
-That route:
+The root route renders the configured entry page. The catch-all route:
 
 1. Imports the generated manifest and page lookup.
-2. Exports `generateStaticParams()` from every production route.
+2. Exports `generateStaticParams()` for every non-root, non-draft route.
 3. Sets dynamic parameters to false.
 4. Resolves `/` and every slug to a generated `PageRecord`.
 5. Generates page metadata from the record.
-6. Renders the page through the runtime and site component registry.
+6. Renders the page through the MamboSite React runtime and selected component registry.
 7. Returns the normal not-found result for absent routes.
 
 The site config uses static export:
@@ -177,12 +182,12 @@ Static export does not support the default request-time image optimizer. The ini
 
 ## Base path and URLs
 
-MamboSite must generate URLs from the configured site URL and base path.
+The current Next adapter prepends the configured base path to internal links and image paths. It also uses `site.url`, when present, as Next.js metadata's base URL.
 
 - A custom domain such as `https://projectmambo.org` normally uses an empty base path.
 - A project Pages URL such as `https://projectmambo.github.io/MamboWiki` uses `/MamboWiki`.
 - Internal route identity remains `/mambodot/commands/`; the runtime prepends the deployment base path when creating browser URLs.
-- Canonical URLs, sitemap entries, RSS links, Open Graph metadata, and copied asset URLs use the same URL builder.
+- Canonical URL declarations, sitemap output, RSS, richer Open Graph data, and compiler-copied asset URLs are planned.
 - Content authors should not manually include the deployment base path in internal links.
 
 `trailing_slash = true` is the preferred initial policy because directory-style routes map naturally to `route/index.html` on static hosts.
@@ -198,10 +203,9 @@ Build job:
 3. Restore Cargo caches safely.
 4. Install or build the pinned MamboSite compiler.
 5. Install the pinned Node.js and package-manager versions.
-6. Run `mambosite check`.
-7. Run the website build, which regenerates content and runs `next build`.
-8. Verify that `out/` exists and contains no symbolic or hard links.
-9. Upload `out/` as the GitHub Pages artifact.
+6. Run one full `mambosite build`, which validates content, regenerates managed output, and invokes the configured static renderer.
+7. Verify that `out/` exists.
+8. Upload `out/` with the GitHub Pages artifact action, whose artifact contract rejects symbolic and hard links.
 
 Deployment job:
 
@@ -210,17 +214,19 @@ Deployment job:
 3. Request only `pages: write` and `id-token: write` in addition to read access.
 4. Deploy the uploaded artifact with GitHub's Pages deployment action.
 
-GitHub's official flow and current action versions are documented in [Using custom workflows with GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). That documentation also states that uploaded Pages artifacts must not contain symbolic or hard links, reinforcing the decision to emit materialized assets and static output.
+GitHub's official flow and current action versions are documented in [Using custom workflows with GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). Uploaded Pages artifacts must not contain symbolic or hard links.
 
 Action major versions should be pinned and updated deliberately, preferably with automated dependency update proposals. Design documents should not make old action versions part of the MamboSite content contract.
+
+The scaffold currently names the intended `v0.1.0` compiler tag and `0.1.0` npm packages. Those release coordinates are not published yet. Until they are, integration workflows must check out MamboSite explicitly and use workspace or file dependencies, as the MamboFolio migration does.
 
 ## Generated-file policy
 
 Preferred policy:
 
 - Commit the repository-local `docs/` tree because it is the public website content snapshot.
-- Do not commit `src/generated/mambo/` or `public/mambo/` generated copies.
-- Rebuild generated data and assets in local development and CI.
+- Do not commit `src/generated/mambo/` or generated `public/mambo/theme.css`.
+- Rebuild generated data and theme CSS in local development and CI.
 - Commit lockfiles for Rust and the website package manager.
 - Pin the MamboSite compiler version used by a website.
 
@@ -237,16 +243,20 @@ Build information may record compiler and schema versions in `build-info.ts`, bu
 - Compiler errors leave previous generated output intact.
 - Next.js build failure prevents artifact upload.
 - Deployment never runs after a failed build.
-- Warnings are shown in CI; selected warning codes may be elevated to errors.
-- A successful deployment identifies the exact source commit and compiler version in workflow metadata.
+- Warnings are shown in CI; a warning-escalation flag is planned.
+- A successful deployment identifies the exact source commit; explicit compiler-version build metadata remains planned.
 
 ## Local preview
 
-The supported first workflow is:
+After installing dependencies and the `mambosite` command, the supported workflows are:
 
 ```bash
-mambosite build
 npm run dev
+mambosite build
 ```
 
-The Next.js development server reads generated TypeScript. Later, `mambosite watch` may run alongside it, but direct runtime Markdown parsing should not be introduced for convenience.
+`npm run dev` uses `predev` to refresh generated content and theme output before starting Next.js. `mambosite build` performs the complete production pipeline and verifies `out/`. Later, `mambosite watch` may rebuild incrementally, but direct browser-side Markdown parsing should not be introduced for convenience.
+
+## Package and schema versions
+
+Generated data declares a schema version which `@mambosite/runtime` checks at startup. Website lockfiles will pin the independently versioned runtime, React registry, default theme, and framework adapter packages after their first publication. Different websites can then remain on different compatible package versions without copying MamboSite components.

@@ -1,7 +1,6 @@
-
 # MamboSite
 
-MamboSite is a Markdown-first static site platform for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data, renders it with MamboSite-owned React components, and exports static files for GitHub Pages.
+MamboSite is a Markdown-first static site platform for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data and theme CSS, renders it with MamboSite-owned React components, and exports static files for GitHub Pages.
 
 MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonical documentation in an Obsidian vault and exports it with a separate `sync-docs` workflow; other users may maintain `docs/` directly or provide their own synchronization process.
 
@@ -14,7 +13,7 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 - Support Obsidian links, embeds, callouts, block references, and selected extensions.
 - Put visible page components in body directives rather than large frontmatter objects.
 - Generate deterministic, strongly typed TypeScript data rather than one handwritten page module per Markdown file.
-- Validate every route, link, embed, component, and asset before the web build starts.
+- Validate routes, note links, note embeds, and component directives before the web build starts.
 - Produce a fully static Next.js export suitable for GitHub Pages.
 
 ## Pipeline
@@ -22,7 +21,7 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 ```text
 repository docs/
     -> MamboSite Rust compiler
-    -> generated TypeScript + copied assets
+    -> generated TypeScript + compiled theme assets
     -> versioned React runtime + selected theme
     -> static web build
     -> GitHub Pages
@@ -45,7 +44,9 @@ The compiler, React rendering engine, default components, theme contract, and st
 
 ## Status
 
-The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves references and embeds, and generates deterministic typed TypeScript page modules. The reusable React runtime, default theme, project scaffolding, and end-to-end build/deploy commands are under active development.
+The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
+
+`mambosite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio content patterns used during migration. Content-asset copying, fragment transclusion, tree/table collections, masonry/carousel galleries, search, and MamboWiki integration remain planned.
 
 ## Command line
 
@@ -57,6 +58,8 @@ mambosite deploy
 ```
 
 `check` validates without writing output. `build` performs content compilation and the configured static web build. `init` creates a safe default site scaffold in an empty repository. `deploy` builds, pushes committed work, and starts the configured GitHub Pages workflow; `workflow_dispatch` allows the same commit to be deployed again when there is nothing new to push.
+
+The React packages and generated schema are versioned separately. A site pins compatible `@mambosite/runtime`, `@mambosite/react`, `@mambosite/theme-default`, and `@mambosite/next` versions, then replaces only named registry entries when it needs custom presentation. The packages currently live in this workspace; publishing the first release remains deployment work.
 
 Install the development command wrapper from this checkout once:
 

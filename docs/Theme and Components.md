@@ -10,7 +10,7 @@ order: 55
 
 MamboFolio is the initial visual reference for MamboSite, but it is not the permanent design specification. MamboFolio itself may be redesigned. The compiler and Markdown language must therefore depend on semantic component names and design tokens, never on its current React structure or Tailwind class strings.
 
-The first runtime should reuse or reinterpret MamboFolio's strongest visual traits while cleaning up component boundaries.
+The current default runtime reinterprets MamboFolio's strongest visual traits while keeping component boundaries replaceable.
 
 ## Traits worth carrying forward
 
@@ -31,15 +31,17 @@ These are defaults, not parser rules. A future theme may change spacing, typogra
 
 ## Site settings
 
-Every site has a separate `mambo.theme.toml`. It contains presentation settings only and may inherit a named preset:
+Every site may provide `mambo.theme.toml`. It contains presentation settings only and overrides the built-in default recursively. Schema 1 accepts only `extends = "default"`; named third-party preset inheritance is not implemented.
 
 ```toml
 schema = 1
-preset = "default"
+id = "mambofolio"
+extends = "default"
+default_scheme = "dark"
 
 [colors.dark]
 background = "#181615"
-foreground = "#faf7f2"
+text = "#faf7f2"
 brand = "#d44b36"
 
 [fonts]
@@ -47,22 +49,32 @@ body = "MamboFont, ui-monospace, monospace"
 heading = "MamboFont, ui-monospace, monospace"
 
 [breakpoints]
-compact = "40rem"
-wide = "56.25rem"
+compact = 640
+content = 900
+wide = 1200
 
-[layout]
-page_width = "74rem"
-article_width = "48rem"
-sidebar_width = "15rem"
+[widths]
+reading = "48rem"
+normal = "74rem"
+sidebar = "15rem"
+
+[layout.page_with_sidebar_columns]
+base = "minmax(0, 1fr)"
+content = "minmax(0, 1fr) var(--mambo-width-sidebar)"
+
+[components.collection.max_columns]
+base = 1
+compact = 2
+content = 6
 ```
 
-MamboSite validates this file and generates resolved theme data plus CSS. Colours, fonts, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, and responsive choices are semantic tokens. Components consume tokens and do not contain site palette values.
+MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. The default component package requires that generated stylesheet and consumes only the `--mambo-*` contract for site-variable values.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
 
 ## Layered runtime structure
 
-The TypeScript runtime should have five presentation layers:
+The TypeScript runtime has five presentation layers:
 
 ```text
 design tokens
@@ -100,20 +112,7 @@ MamboColour maps onto these tokens. Directive properties such as `tone="warning"
 
 ### Primitives
 
-Initial primitives:
-
-- `Text`
-- `Link`
-- `ButtonLink`
-- `Divider`
-- `Surface`
-- `Stack`
-- `Grid`
-- `Media`
-- `Tag`
-- `Icon`
-
-Primitives should expose small typed variants. Authored content cannot pass raw classes into them.
+The current public primitive registry contains `Link` and `Image`, the two framework-sensitive elements. Other markup stays inside typed node and directive components until a second implementation proves that another primitive boundary is useful. Authored content cannot pass raw classes.
 
 ### Content renderers
 
@@ -122,14 +121,14 @@ Content renderers map normalized AST nodes to semantic HTML:
 - Paragraph and inline formatting.
 - Heading with compiler-generated ID.
 - Lists and task lists.
-- Code and syntax-highlighted code blocks.
+- Code blocks with language metadata for future highlighting.
 - Tables.
 - Block quotes and callouts.
-- Images, audio, video, PDFs, and downloads.
+- Images and note embeds.
 - Footnotes and math.
 - Links and embeds.
 
-These renderers should work across every site theme.
+Audio/video/PDF classification and content-asset publication are planned. Raw HTML is displayed as code text rather than injected.
 
 ### Directive components
 
@@ -154,29 +153,34 @@ column         -> Column
 
 `children view="grid"` may initially resemble MamboFolio's bordered square cards. It should still be implemented as a semantic collection component so a redesign can replace the entire card appearance.
 
+The default package currently renders direct child list/grid/card views and grid galleries. Tree/table child views, nested child depth, masonry/carousel galleries, and fragment includes show an explicit unsupported-mode message. A registry override may implement those contracts sooner.
+
 ### Site shell and layouts
 
-The site repository owns:
+MamboSite's default theme package owns:
 
 - Header and primary navigation.
 - Footer.
 - Theme selection and persistence.
-- Site metadata and icons.
+- Site metadata.
 - Page chrome.
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
-- Optional search UI.
+- Optional search UI when implemented.
 
-MamboSite provides the default shell and registry. MamboFolio and MamboWiki may override layout/component implementations through a typed registry, but initially use the defaults.
+A site repository supplies content data, theme settings, and an optional typed override registry. MamboFolio uses this default package during migration; MamboWiki is intended to start from it rather than copy component source.
 
 ## Component override contract
 
-The runtime should expose a registry rather than hardcoded imports:
+The runtime exposes a registry rather than hardcoded site imports:
 
 ```ts
 interface MamboComponentRegistry {
-  layouts: LayoutRegistry;
+  primitives: PrimitiveRegistry;
+  nodes: NodeRegistry;
   directives: DirectiveRegistry;
-  nodes: ContentNodeRegistry;
+  layouts: LayoutRegistry;
+  shell: ShellRegistry;
+  fallbacks: RegistryFallbacks;
 }
 ```
 
@@ -191,7 +195,9 @@ export const components = createRegistry(
 );
 ```
 
-Registry composition is immutable and verifies that every required node, directive, layout, and shell entry exists. A component can change its markup or styling without changing parsing. Changing public component props or generated data is a versioned API change and must not be presented as an isolated implementation detail.
+Registry maps are frozen and their TypeScript types require every node, directive, layout, shell, primitive, and fallback entry. `createRegistry` returns a new registry containing only the named replacements. A component can change markup or styling without changing parsing.
+
+The generated content schema and npm packages have explicit versions. Sites will pin compatible package releases in their lockfiles, so one website can remain on an older component version while another upgrades. The first packages are still workspace-local and unpublished.
 
 This permits:
 
@@ -203,31 +209,31 @@ This permits:
 
 ### `default`
 
-Centered article, standard metadata and footer, optional floating TOC.
+Centered page with generated title, body, parent link, and optional heading sidebar.
 
 ### `article`
 
-Narrower reading width, publication metadata, strong typography, footnotes, and related posts.
+The default page with a narrower reading width.
 
 ### `docs`
 
-Documentation navigation, breadcrumbs, content body, heading navigation, previous/next page controls, and backlinks when requested.
+The default page with its heading sidebar enabled. Breadcrumbs, backlinks, and collections remain explicit body directives; hierarchy navigation and previous/next controls are not automatic yet.
 
 ### `project`
 
-Project summary, status/period, external links, cover/canvas, body, and related documentation.
+The default page tagged with the `project` layout for theme-specific styling.
 
 ### `collection`
 
-Page introduction followed by one or more generated child/related collections.
+A wider default page; child and related collections remain explicit directives.
 
 ### `home`
 
-Wide composition with optional hero and multiple content sections. MamboFolio's current banner plus project/blog/gallery/contact progression is a reference, not a fixed sequence.
+A wider default page whose composition comes from hero, section, collection, and column directives.
 
 ### `gallery`
 
-Media-first layout with responsive grid or masonry presentation and accessible captions.
+A wider default page. The grid gallery directive works now; masonry and carousel behavior are planned.
 
 ## Responsive behaviour
 
@@ -238,7 +244,11 @@ Media-first layout with responsive grid or masonry presentation and accessible c
 - Navigation must remain keyboard accessible when wrapping or collapsing.
 - The floating TOC must not cover content and should fall back to an inline or drawer presentation on small screens.
 
+Viewport thresholds never live in component CSS. Rust writes the configured compact, content, and wide values into literal media queries and emits finite selector rules for authored collection and column choices.
+
 ## Accessibility baseline
+
+These are release requirements, not a claim that a complete automated accessibility audit has passed:
 
 - Semantic HTML is preferred over role-heavy generic containers.
 - Heading hierarchy comes from the compiler and must not be changed for visual size.
@@ -253,13 +263,7 @@ Media-first layout with responsive grid or masonry presentation and accessible c
 
 ## Client JavaScript policy
 
-The default page body should render on the server during the static build. Client components are limited to features that genuinely require browser state:
-
-- Theme switching and persistence.
-- Collapsible mobile navigation.
-- Optional floating TOC scroll tracking.
-- Optional client-side search.
-- Optional carousel/gallery interaction.
+The page body renders during the static build. Current client code is limited to theme switching/persistence, the header's hide-on-scroll behavior, and its clock. Collapsible navigation, TOC tracking, search, and carousel interaction are planned.
 
 Cards, Markdown, navigation links, callouts, embeds, and ordinary child collections must work without hydration.
 

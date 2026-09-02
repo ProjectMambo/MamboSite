@@ -34,10 +34,12 @@ repository docs/         Rust compiler                       MamboSite runtime
 Markdown          --->   discover and parse            --->  React renderer
 local assets             resolve links and mounts            component registry
 site entry               validate graph                      selected theme
-theme settings           emit TypeScript, assets, CSS         web adapter/export
+theme settings           emit TypeScript and theme CSS        web adapter/export
 ```
 
-Rust owns meaning: routes, metadata, Markdown semantics, directives, links, embeds, assets, navigation, theme validation, and diagnostics. TypeScript owns presentation: React elements, layouts, styling, client interactions, and static page rendering. MamboSite owns both sides of this boundary; consuming sites configure and override them through stable public APIs.
+Rust owns compiled meaning: routes, metadata, Markdown semantics, directives, note links, note embeds, child relationships, backlinks, theme validation, and diagnostics. TypeScript owns presentation: graph queries, React elements, layouts, styling, client interactions, and static page rendering. MamboSite owns both sides of this boundary; consuming sites configure them and may override typed registry entries.
+
+Content-asset resolution/publication, a separate navigation model, and search records are not implemented yet. They remain Rust responsibilities when added; the runtime must not guess missing compiler semantics.
 
 The boundary must remain data-oriented. Rust must not generate React page source for every document, and React must not reparse Markdown. Framework adapters must consume the same compiled data and component registry rather than inventing another content model.
 
@@ -52,7 +54,7 @@ The presentation implementation is split into independently versioned packages:
 @mambosite/next           static Next.js route and metadata adapter
 ```
 
-The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. Both MamboFolio and MamboWiki initially use the default theme.
+The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. MamboFolio uses the default theme during migration; MamboWiki integration remains planned.
 
 Compatibility has three explicit versions:
 
@@ -60,11 +62,11 @@ Compatibility has three explicit versions:
 - Runtime and adapter packages use semantic versions.
 - Theme packages use semantic versions independently of the compiler.
 
-Each site pins compatible package versions in its lockfile. MamboSite packages declare the schema versions they accept and fail clearly before rendering incompatible data.
+Each site pins compatible package versions in its lockfile. The current runtime accepts generated schema 1 and fails before rendering another schema. All four local packages currently use version `0.1.0`; publishing and release tagging are still pending.
 
 ## MamboSite repository structure
 
-The implementation should use a Cargo workspace with a small number of crates at first:
+The implementation uses one Cargo workspace and one npm workspace:
 
 ```text
 MamboSite/
@@ -75,56 +77,32 @@ MamboSite/
 ├── docs/                         # MamboSite documentation
 ├── crates/
 │   ├── mambosite-core/
-│   │   └── src/
-│   │       ├── config.rs
-│   │       ├── source.rs
-│   │       ├── frontmatter.rs
-│   │       ├── markdown.rs
-│   │       ├── directive.rs
-│   │       ├── route.rs
-│   │       ├── mount.rs
-│   │       ├── link.rs
-│   │       ├── embed.rs
-│   │       ├── asset.rs
-│   │       ├── graph.rs
-│   │       ├── compile.rs
-│   │       └── diagnostic.rs
+│   │   └── src/                 # parsing, resolution, IR, diagnostics
 │   ├── mambosite-codegen-ts/
-│   │   └── src/
-│   │       ├── lib.rs
-│   │       ├── serializer.rs
-│   │       └── writer.rs
+│   │   └── src/                 # TS serialization and managed writers
+│   ├── mambosite-theme/
+│   │   └── src/                 # typed settings, CSS and TS generation
 │   └── mambosite-cli/
-│       └── src/main.rs
+│       └── src/commands/        # check, build, init, deploy
 ├── packages/
-│   └── runtime/
-│       ├── package.json
-│       └── src/
-│           ├── types.ts
-│           ├── render.tsx
-│           ├── registry.ts
-│           └── components/
-├── schemas/
-│   ├── content.schema.json
-│   └── manifest.schema.json
-├── examples/
-│   ├── folio/
-│   └── wiki/
-├── tests/
-│   └── fixtures/
-│       ├── valid/
-│       └── invalid/
+│   ├── runtime/                 # generated contracts and content store
+│   ├── react/                   # renderer and typed registry
+│   ├── theme-default/           # default components and CSS
+│   └── next/                    # static Next.js adapter
+└── templates/default/           # scaffold embedded by `mambosite init`
 ```
 
 Responsibilities:
 
 - `mambosite-core` owns the compiler pipeline and all semantic models.
 - `mambosite-codegen-ts` converts the validated intermediate representation into deterministic TypeScript modules.
-- `mambosite-cli` handles commands, paths, terminal output, exit codes, and watch mode.
-- `packages/runtime` defines the TypeScript contract and renders compiler nodes into React components.
-- `schemas` records versioned language-independent contracts for tooling and fixtures.
-- `examples` demonstrates the two initial site shapes without becoming production source.
-- `tests/fixtures` stores complete small content roots and expected diagnostics/output.
+- `mambosite-theme` validates a complete settings model and deterministically compiles CSS and TypeScript metadata.
+- `mambosite-cli` handles lifecycle commands, safe paths, subprocess boundaries, terminal output, and exit codes.
+- `packages/runtime` defines the generated contract and immutable graph/query API.
+- `packages/react` renders normalized nodes through a complete typed registry.
+- `packages/theme-default` supplies the replaceable MamboFolio-inspired presentation.
+- `packages/next` contains only Next-specific navigation, base-path, route, and metadata behavior.
+- `templates/default` is the allowlisted scaffold embedded into the CLI.
 
 Do not split every core module into a crate initially. A new crate is justified only when it has a stable public boundary or independent consumers.
 
@@ -135,6 +113,7 @@ MamboFolio and MamboWiki should remain independent website repositories that con
 ```text
 MamboWiki/
 ├── mambo.toml
+├── mambo.theme.toml
 ├── README.md                     # the MamboWiki project's README
 ├── docs/
 │   ├── index.md                  # site entry
@@ -148,12 +127,12 @@ MamboWiki/
 │       ├── mambosite/
 │       └── mambowiki/
 ├── public/
-│   └── mambo/                    # generated/copied assets
+│   └── mambo/                    # generated theme.css; content assets later
 ├── src/
 │   ├── app/
-│   │   └── [[...slug]]/page.tsx
-│   ├── components/
-│   ├── theme/
+│   │   ├── page.tsx
+│   │   └── [...slug]/page.tsx
+│   ├── mambo/runtime.ts         # registry composition and runtime creation
 │   └── generated/mambo/          # generated TypeScript
 ├── next.config.ts
 └── package.json
@@ -163,24 +142,24 @@ MamboWiki/
 
 MamboSite starts at this repository boundary; it does not create `docs/` from an editor, vault, database, or remote service. Project Mambo's separate synchronization workflow is specified in [[Documentation Sync]]. Other users can edit `docs/` directly or prepare the same structure with any external process.
 
-Generated TypeScript and copied assets should not be considered authored files. Whether they are committed is a repository policy, but the preferred default is to rebuild them in CI and exclude them from version control.
+Generated TypeScript and theme CSS are not authored files. Whether they are committed is a repository policy, but the preferred default is to rebuild them in CI and exclude them from version control.
 
 ## Compiler stages
 
-The compiler runs ordered stages with an explicit intermediate representation between them:
+The current compiler runs these ordered stages:
 
 1. Load and validate `mambo.toml`.
-2. Discover the site entry and candidate files.
-3. Read UTF-8 source and split frontmatter from body.
-4. Parse frontmatter into typed core fields and custom data.
-5. Parse Markdown into an AST with source spans.
-6. Lower supported Obsidian-compatible syntax and MamboSite directives into compiler nodes.
-7. Construct the source-file, mount, route, link, embed, and asset graphs.
-8. Resolve routes, aliases, fragments, block identifiers, and assets.
-9. Expand or retain embed nodes according to their mode.
-10. Derive headings, descriptions, children, backlinks, navigation, and search text.
-11. Validate all invariants and stop on errors.
-12. Emit TypeScript and copy assets atomically.
+2. Read the configured entry frontmatter to obtain mounts.
+3. Discover ordinary and mounted Markdown sources.
+4. Read UTF-8 source and parse frontmatter into typed fields plus compatibility data.
+5. Parse Markdown with Comrak into an owned AST with source spans.
+6. Lower MamboSite directives, Obsidian comments, embeds, and block identifiers.
+7. Validate directives, headings, blocks, routes, and mount namespaces.
+8. Derive titles, descriptions, direct children, and stable page IDs.
+9. Resolve Markdown links, wikilinks, fragments, note embeds, backlinks, embed cycles, and depth limits.
+10. Stop on errors; otherwise emit managed TypeScript plus `theme.ts` and `theme.css`.
+
+Content-asset publication, navigation/search output, and structural fragment transclusion are later stages, not implicit parts of the current compiler.
 
 A later stage must never silently repair an ambiguous earlier stage. For example, an ambiguous wikilink is an error, not a request to choose the first matching file.
 
@@ -209,17 +188,19 @@ max_embed_depth = 16
 
 Paths in configuration are relative to the configuration file unless documented otherwise. Absolute paths must never be written into generated output.
 
+`site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of the repository's `public/` directory because its relative path becomes the public prefix for `theme.css`.
+
 ## Major decisions
 
 ### Comrak as the initial Markdown engine
 
-Comrak is the preferred first parser because it exposes an AST, supports CommonMark and GFM, carries source positions, and already offers extensions for frontmatter, wikilinks, alerts, and container block directives. MamboSite still owns its dialect: Obsidian embeds, aliases, block references, directive attributes, and semantic validation require a lowering layer around Comrak.
+Comrak is the current parser because it exposes an AST, supports CommonMark and GFM, carries source positions, and offers extensions for wikilinks, alerts, and block directives. MamboSite still owns its dialect: Obsidian embeds, comments, block references, directive attributes, and semantic validation use a lowering layer around Comrak.
 
-The parser adapter must be isolated behind MamboSite's own AST so switching parser libraries does not change the TypeScript contract.
+The parser adapter is isolated behind MamboSite's own AST so parser-library types do not become the TypeScript contract.
 
 ### One compiler-owned intermediate representation
 
-Neither Comrak nodes nor TypeScript rendering types should leak across the whole Rust codebase. The core must lower parsed input into owned MamboSite nodes with normalized paths and source spans. Resolution and code generation operate on these nodes.
+Neither Comrak nodes nor TypeScript rendering types leak across the Rust workspace. Core lowers parsed input into owned MamboSite nodes with normalized paths and source spans; resolution and code generation operate on those nodes.
 
 ### Static-only presentation
 
@@ -227,25 +208,26 @@ The first release targets static hosting. It must not depend on cookies, server 
 
 ### Deterministic full builds first
 
-The first implementation should perform a complete build on every invocation. Watch mode and incremental caching come only after deterministic full builds and dependency tracking are proven correct.
+The current implementation performs a complete build on every invocation. Watch mode and incremental caching come only after deterministic full builds and dependency tracking are proven correct.
 
 ### Safe defaults
 
-Raw HTML and arbitrary JavaScript expressions are disabled. Paths must remain inside configured roots. Symlinks are rejected by default during content-root and asset traversal. External links are not fetched during a normal build.
+Raw HTML is preserved as text nodes and the default renderer does not inject it. Arbitrary JavaScript expressions are not an authoring feature. Configured paths must remain inside the repository, content-tree symlinks are rejected, and external links are not fetched.
 
 ## Dependency direction
 
 ```text
 mambosite-cli
-    -> mambosite-core
-    -> mambosite-codegen-ts
+    +-> mambosite-core
+    +-> mambosite-codegen-ts
+    `-> mambosite-theme
 
 mambosite-codegen-ts
-    -> stable core output model
+    -> serializable validated site data (no core crate dependency)
 
-TypeScript runtime
-    -> generated schema contract
-    -> no Rust dependency
+@mambosite/react -> @mambosite/runtime
+@mambosite/theme-default -> @mambosite/react + @mambosite/runtime
+@mambosite/next -> @mambosite/react + @mambosite/runtime
 ```
 
 Core parsing and resolution must be usable as a library without invoking the CLI or writing files. This keeps unit tests fast and permits future editor tooling.

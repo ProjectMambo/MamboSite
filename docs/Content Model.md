@@ -78,7 +78,8 @@ The following are excluded by default:
 - Hidden filesystem entries beginning with `.`.
 - `archive/`, unless explicitly included later by configuration.
 - Obsidian configuration, templates, canvas files, bases, and plugin data.
-- Files with `status: draft` in production mode.
+
+Draft pages are still compiled into schema-1 output so links and graph data remain deterministic. The Next adapter omits them from `generateStaticParams()`, and the default runtime filters them from child, related, and backlink collections. A future compiler mode may omit drafts entirely.
 
 The configured entry is admitted explicitly even though ordinary discovery rules are evaluated separately. `_info.md` is always authoring-only and cannot be made routable by linking to it or placing it below a mount.
 
@@ -90,10 +91,10 @@ Route segments come from directory and file names unless `slug` overrides the fi
 
 Default segment normalization:
 
-1. Normalize Unicode consistently.
+1. Normalize Unicode to NFC.
 2. Trim surrounding whitespace.
 3. Convert ASCII letters to lowercase.
-4. Convert spaces and underscores to `-`.
+4. Treat punctuation, spaces, and underscores as separators.
 5. Collapse repeated `-` characters.
 6. Remove leading and trailing `-` characters.
 7. Preserve non-ASCII letters and encode them normally in URLs.
@@ -148,7 +149,6 @@ Mount rules:
 - `_mounts` and other storage segments before the source index never become URL segments.
 - A source may be mounted once per site in the first release.
 - Mount paths must not overlap physical routes or other mount paths ambiguously.
-- Mount graphs must be acyclic.
 - Only the configured site entry may declare mounts in the first release. A `mounts` field on any other page is an error.
 - A site's own project documentation may be mounted normally from a distinct repository-local subtree such as `_mounts/mambowiki/index.md`; this is not a self-reference to `docs/index.md`.
 - Mount declarations do not control visual ordering. Use `order`, `children`, or explicit navigation data for that.
@@ -166,18 +166,18 @@ Core fields:
 | `title` | string | first H1 or filename | Display and document title |
 | `description` | string | first suitable paragraph | Plain-text summary |
 | `slug` | string | derived segment | Final route segment override |
-| `status` | `published` or `draft` | `published` | Build inclusion |
-| `listed` | boolean | `true` | Inclusion in automatic collections/navigation |
-| `date` | ISO date/time | none | Original publication date |
-| `updated` | ISO date/time | none | Last meaningful content update |
-| `tags` | string array | empty | Taxonomy and related-content input |
-| `aliases` | string array | empty | Additional internal-link targets |
-| `order` | number | none | Explicit sibling ordering |
+| `status` | `published` or `draft` | `published` | Publication intent used by adapters and collections |
+| `listed` | boolean | `true` | Inclusion in automatic child/related collections |
+| `date` | string | none | Original publication date |
+| `updated` | string | none | Last meaningful content update |
+| `tags` | string or string array | empty | Related-content input |
+| `aliases` | string or string array | empty | Additional internal-link targets |
+| `order` | integer | none | Explicit sibling ordering |
 | `cover` | link/path | none | Default preview or hero asset |
 | `mounts` | mount array | empty | Site-entry source mappings |
 | `data` | mapping | empty | Project-specific metadata passed to TypeScript |
 
-Dates must use ISO 8601. Empty strings normalize to absent values. Tags preserve their display text but also receive normalized identifiers.
+Empty strings normalize to absent values. Authors should use ISO 8601 dates because the default runtime sorts and formats those strings, but schema 1 does not yet validate date syntax. Tags are retained as authored strings; normalized taxonomy IDs are planned rather than generated today.
 
 Unknown top-level keys should be errors in strict mode because they are commonly misspellings. Site-specific values such as `period`, `githubUrl`, or `wikiUrl` belong beneath `data`:
 
@@ -187,7 +187,7 @@ data:
   githubUrl: https://github.com/ProjectMambo/MamboSite
 ```
 
-Authoring-workflow fields such as `created`, `categories`, and `project` may be declared as ignored compatibility fields in configuration during migration. They must not silently acquire MamboSite semantics. Project Mambo's synchronization-time frontmatter handling is documented in [[Documentation Sync]] and is not part of the compiler language.
+Authoring-workflow fields may be declared as ignored compatibility fields in configuration during migration. The defaults ignore `created`, `categories`, and `project`; `legacy_data_fields` currently promotes `period`, `wikiUrl`, and `githubUrl` into `data`. These fields do not silently acquire other MamboSite semantics. Project Mambo's synchronization-time frontmatter handling is documented in [[Documentation Sync]] and is not part of the compiler language.
 
 ## Title and description derivation
 
@@ -215,21 +215,22 @@ Default ordering:
 2. Pages without `order`, sorted by locale-independent normalized title.
 3. Logical source path as a deterministic tie-breaker.
 
-Draft pages do not appear in production. Unlisted pages keep their route and can be linked directly but are excluded from automatic child lists, navigation, related content, and search unless a directive explicitly requests them.
+The compiler records all direct child IDs, including draft and unlisted pages. The current Next adapter excludes drafts from static parameters, while default child and related components filter draft pages and hide unlisted pages unless `include-unlisted` permits them. Header navigation is explicit `data.navigation`; generated navigation and search indexes do not exist yet.
 
 ## Content graph
 
-The compiler constructs a graph rather than treating each Markdown file independently. Nodes include pages, headings, blocks, assets, site entries, and mounts. Edges include parent-child routes, links, embeds, asset references, and mount membership.
+The compiler constructs a graph rather than treating each Markdown file independently. Current records cover pages, headings, blocks, routes, mounted sources, parent-child relationships, links, embeds, and backlinks.
 
 This graph supplies:
 
 - Route lookup.
-- Navigation and children.
+- Children and runtime collection queries.
 - Backlinks.
 - Related content.
-- Asset and embed dependency closure.
-- Cycle detection for embeds and mounts.
-- Incremental rebuild dependencies later.
+- Embed cycle and depth validation.
+- Related-content inputs.
+
+An asset graph, nested mount graph, generated navigation/search model, and incremental dependency graph are planned.
 
 ## Self-contained content root contract
 
@@ -239,9 +240,11 @@ MamboSite begins with an already populated content root and has no dependency on
 - Every ordinarily discovered site-owned page.
 - Every mounted source index and its descendant pages.
 - Every local note reached by a link or embed that must resolve in the site.
-- Every referenced local image, audio file, video, PDF, or download.
+- Every local file needed by the site's own renderer or public directory.
 
-All logical note, mount, and asset paths are interpreted within this root. A build must not search parent directories, a home directory, a known vault location, sibling repositories, or the network to repair missing content.
+All logical note and mount paths are interpreted within this root. A build does not search parent directories, a home directory, a known vault location, sibling repositories, or the network to repair missing content.
+
+Schema 1 does not resolve, validate, hash, or copy content assets. Image and non-Markdown destinations remain authored paths, so a site must already expose them from `public/` or use its own pre-build copy step. `assets_out` currently contains generated `theme.css`; compiler-managed content assets are planned.
 
 An example complete input is:
 

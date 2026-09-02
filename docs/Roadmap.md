@@ -6,6 +6,24 @@ order: 80
 
 # Roadmap
 
+## Current implementation status
+
+The repository has passed the compiler-skeleton milestone and now contains an initial end-to-end implementation:
+
+| Area | Status |
+|---|---|
+| Content discovery, core frontmatter types, routes, diagnostics | Implemented for schema 1; date/taxonomy validation remains planned |
+| CommonMark/GFM and supported Obsidian-compatible AST | Implemented with source spans and fixtures |
+| Directive parsing and registry validation | Implemented for the documented core registry |
+| Page, link, embed, backlink, mount, and route graph | Implemented for note references; directive target edges, fragment transclusion, and content assets remain incomplete |
+| TypeScript output | Manifest, page modules, index, and theme metadata are deterministic and atomically published; navigation, search, build-info, and copied content assets remain planned |
+| React runtime | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio content |
+| Theme settings | Rust-validated `mambo.theme.toml` compiles to generated CSS variables, responsive rules, and typed metadata |
+| Lifecycle commands | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented |
+| Site migrations | MamboFolio's thin integration builds and exports successfully; MamboWiki and clean-CI deployment remain acceptance work |
+
+The phases below describe the full 0.1 target. A phase is not considered complete merely because its first usable slice exists.
+
 ## Phase 0 — specification
 
 - Agree on repository content-root and site hierarchy.
@@ -103,7 +121,7 @@ Project Mambo maintains canonical documentation in an Obsidian vault and materia
 
 MamboSite only consumes the resulting repository tree. The compiler does not own vault discovery, cross-repository synchronization, destination cleanup, or mount-source rewriting from authoring paths.
 
-## Version 0.1 acceptance criteria
+## Version 0.1 target acceptance criteria
 
 - MamboWiki mounts all seven Mambo projects from its repository-local `docs/` tree without symlinks.
 - MamboFolio renders pages, blog entries, project summaries, and gallery content from Markdown.
@@ -137,6 +155,9 @@ MamboSite only consumes the resulting repository tree. The compiler does not own
 |---|---|
 | Parser language | Rust |
 | Markdown engine | Comrak behind a MamboSite adapter |
+| Frontmatter YAML | `serde-saphyr` with anchors, aliases, merges, and tags disabled |
+| Directive attributes | Small MamboSite-owned tokenizer and typed registry |
+| Slugs/headings | Unicode NFC, ASCII lowercase, punctuation runs become `-` |
 | Internal representation | Owned structured AST and content graph |
 | Generated format | Typed TypeScript data modules |
 | Generated React pages | No; use one generic optional catch-all route |
@@ -151,21 +172,9 @@ MamboSite only consumes the resulting repository tree. The compiler does not own
 | Generated output committed | Prefer no; rebuild in CI |
 | First compiler mode | Deterministic full build |
 
-## Open decisions before implementation
+## Remaining design decisions
 
 These should be answered with fixtures or small isolated prototypes rather than production code:
-
-### Directive attribute tokenizer
-
-Confirm whether to implement a small dedicated tokenizer or adopt an attribute parser whose grammar exactly matches this specification. Do not change author syntax to fit an implementation shortcut.
-
-### YAML backend
-
-Choose a maintained Rust YAML backend compatible with Serde and enforce the restricted value model described in [[Content Model]]. The backend is not part of the public content contract.
-
-### Unicode slug normalization
-
-Choose and fixture the exact Unicode normalization and case-folding behaviour. Once published routes depend on it, changes require migration tooling.
 
 ### Syntax highlighting
 
@@ -179,13 +188,13 @@ Decide whether Rust emits normalized records or a complete search index. Keep se
 
 Choose the initial image formats whose intrinsic dimensions Rust reads. Unsupported formats must still copy safely when their media type is allowed.
 
-### Default runtime styling technology
+### Additional styling adapters
 
-Tailwind and variant helpers are practical for adapting MamboFolio, but the public runtime contract must be semantic enough to permit later CSS or component-system changes.
+The initial runtime uses generated semantic CSS variables and a typed component registry. A future styling adapter may use another CSS or component system, but it must consume the same semantic models rather than exposing utility classes in authored Markdown.
 
 ## Compatibility policy
 
-`schema = 1` in configuration, frontmatter interpretation, directives, generated TypeScript, and runtime support form one versioned contract.
+`schema = 1` in configuration, frontmatter interpretation, directives, generated TypeScript, and runtime support form one versioned contract. The rules below are the target release policy; only schema-1 compatibility checking exists today.
 
 - Patch releases fix bugs without intended content changes.
 - Minor releases add backward-compatible optional capabilities.

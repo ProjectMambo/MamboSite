@@ -8,7 +8,7 @@ order: 40
 
 ## Input guarantees
 
-Every source file must be valid UTF-8. An optional UTF-8 byte-order mark is accepted and removed. CRLF and CR line endings normalize internally to LF while source diagnostics retain correct line and column positions.
+Every source file must be valid UTF-8. An optional UTF-8 byte-order mark is accepted before frontmatter. LF, CRLF, and CR line endings are accepted, and source diagnostics retain their line, column, and byte positions.
 
 The compiler reads source without modifying it. Parsing and build operations must never rewrite source Markdown or mutate the configured content root.
 
@@ -20,65 +20,47 @@ Every source receives a logical path relative to the content root, normalized to
 
 Ordinary discovery skips `_mounts/`, `_info.md`, `README.md`, and the other exclusions defined in [[Content Model]]. Each mount declared in the configured entry creates a second, explicit traversal beginning at a repository-local path such as `_mounts/mambodot/index.md`. This makes the selected subtree reachable without turning `_mounts` into a route segment or exposing unrelated stored projects.
 
-Every mount source must remain within the content root after lexical normalization and filesystem canonicalization. The same containment rule applies to local note links, embeds, and assets. The compiler must reject absolute paths, root-escaping traversal, special files, and symlinks that escape the content root.
+Every mount source must remain within the content root after lexical normalization and filesystem canonicalization. Local note links and embeds resolve only against discovered pages. The compiler rejects absolute or root-escaping source paths and rejects symlinks anywhere in the content tree.
+
+Content assets are not part of the current resolver. Their authored destinations remain in AST nodes for the site renderer; validation, hashing, and copying are planned.
 
 MamboSite does not discover an Obsidian vault or synchronize authoring files. Project Mambo's optional materialization workflow is described in [[Documentation Sync]].
 
 ## Parsing stages
 
-### 1. Source scan
+### 1. Entry and source discovery
 
-The scanner records the logical source path, byte length, content hash, and line-start offsets. It identifies regions that must be protected from custom syntax processing:
-
-- Frontmatter.
-- Fenced code blocks.
-- Indented code blocks.
-- Inline code spans.
-- Escaped directive markers.
-
-Custom syntax must not be implemented as global regular-expression replacement.
+The compiler loads `mambo.toml`, reads the entry frontmatter to obtain mounts, and performs deterministic ordinary and mount-specific directory walks. Logical paths are content-root relative and symlinks are rejected.
 
 ### 2. Frontmatter split
 
 Frontmatter is recognized only when the first non-BOM line is exactly `---`. The closing delimiter must also be exactly `---` on its own line. A missing closing delimiter is an error.
 
-YAML is deserialized into a generic value first and then validated into MamboSite fields. YAML aliases, tagged values, and executable/custom types should be rejected. Values passed into `data` must be representable as JSON.
+YAML is deserialized into a generic JSON-compatible value and then validated into MamboSite fields. YAML anchors, aliases, merge keys, and explicit tags are rejected.
 
-### 3. Directive tokenization
+### 3. Markdown AST
 
-Leaf directives are MamboSite-specific and must be tokenized with source spans before general Markdown lowering. Container directives may use Comrak's block-directive nodes, with MamboSite parsing the node's info string into a name and typed attributes.
+Comrak parses the body with selected CommonMark/GFM and extension options. The adapter immediately lowers Comrak's arena-backed nodes into MamboSite's owned AST; no Comrak lifetime escapes it.
 
-The scanner must recognize balanced quotes, arrays, and braces. A malformed directive is a syntax error even if CommonMark could otherwise treat it as text.
+The owned AST retains node kind, child order, source span, authored destinations, heading levels, code-block information, and parsed directive data.
 
-### 4. Markdown AST
+### 4. Directive and Obsidian lowering
 
-Comrak parses the Markdown body with explicitly selected extensions. The adapter then lowers Comrak's arena-backed nodes into MamboSite's owned AST. No Comrak node or lifetime may escape the adapter.
+Leaf directives are recognized only in eligible Markdown text nodes, so code blocks and inline code remain untouched. Container directives use Comrak block-directive nodes. MamboSite parses both forms with source spans and balanced strings/arrays.
 
-The owned AST retains:
+The directive parser recognizes balanced quotes, arrays, and braces. A malformed directive is a syntax error even if CommonMark could otherwise treat it as text.
 
-- Node kind.
-- Child order.
-- Source file and byte/line span.
-- Raw destination for unresolved links and embeds.
-- Authored heading level.
-- Code-block language and metadata.
-- Directive name and raw properties.
+The dialect pass recognizes `![[...]]`, `%%` comments, and block IDs left in text by the base parser. Comrak supplies wikilink and alert nodes. These features do not give the compiler knowledge of a vault, `.obsidian/`, or an Obsidian installation.
 
-### 5. Dialect lowering
-
-When Obsidian compatibility is enabled, the adapter recognizes syntax not fully represented by the base parser, including `![[...]]`, heading/block fragments, comments, aliases, and block IDs. It converts them into explicit unresolved nodes rather than rendered HTML. This is a Markdown dialect feature; it does not give the compiler knowledge of a vault, `.obsidian/`, or an Obsidian installation.
-
-### 6. Semantic resolution
+### 5. Validation and semantic resolution
 
 Resolution occurs only after every relevant file is indexed. This allows forward links, aliases, backlinks, route collision checks, and cycle detection to work across the entire site.
 
-### 7. Validation and derivation
-
-The compiler validates nodes and derives routes, headings, summaries, child relationships, link targets, embed dependency order, asset destinations, navigation, and search text.
+The compiler validates directives, headings, blocks, routes, and mount namespaces; derives titles, descriptions, page IDs, and direct children; then resolves links, fragments, note embeds, backlinks, cycles, and depth limits. Asset destinations, generated navigation, and search text are not derived yet.
 
 ## Internal node model
 
-The Rust intermediate representation should distinguish block, inline, and generated/component nodes. Representative nodes include:
+The current Rust intermediate representation is a renderer-neutral, serializable parser tree. Representative nodes include:
 
 ```text
 Document
@@ -87,7 +69,7 @@ Heading
 Text
 Emphasis
 Strong
-Delete
+Strikethrough
 Highlight
 InlineCode
 CodeBlock
@@ -96,18 +78,17 @@ Image
 List
 ListItem
 BlockQuote
-Callout
+Alert
 Table
 ThematicBreak
 FootnoteDefinition
 FootnoteReference
 Math
 Directive
-Embed
-Asset
+ObsidianEmbed
 ```
 
-Resolution transforms unresolved nodes rather than replacing them with strings. For example, `WikiLink { raw_target }` becomes `Link { page_id, route, fragment }`, and an asset embed becomes `Image { asset_id, public_url, dimensions }`.
+The parser AST remains authored syntax. Resolution stores normalized `outgoingLinks` and `embeds` beside that tree, keyed by destination and source span. The runtime uses those compiler-resolved graph edges instead of reparsing Markdown.
 
 ## Wikilinks
 
@@ -145,7 +126,7 @@ Standard links remain supported:
 [External site](https://example.com)
 ```
 
-Relative `.md` links resolve through the content graph and are rewritten to site routes. Root-relative links are interpreted relative to the site root. Absolute HTTP(S), `mailto`, and other allowed schemes remain external.
+Relative `.md` links resolve through the content graph and are rewritten to site routes. Root-relative links are interpreted relative to the site root. Absolute HTTP(S), `mailto`, and `tel` links remain external; protocol-relative URLs are also retained.
 
 Unsafe schemes such as `javascript:` and malformed control-character URLs are errors. External links are not fetched or validated during a normal build.
 
@@ -155,15 +136,14 @@ Heading IDs are generated in Rust so the table of contents, links, embeds, and r
 
 Rules:
 
-1. An explicit supported heading attribute wins when unique.
-2. Otherwise use normalized plain heading text.
-3. Remove formatting while retaining its visible text.
-4. Lowercase ASCII and normalize whitespace/punctuation to `-`.
-5. Preserve meaningful non-ASCII characters.
-6. If empty, use `section`.
-7. Add `-2`, `-3`, and so on for duplicates in document order.
+1. Use normalized visible heading text.
+2. Remove formatting while retaining its text.
+3. Normalize Unicode to NFC, lowercase ASCII, and convert punctuation/whitespace runs to `-`.
+4. Preserve non-ASCII letters and numbers.
+5. If empty, use `section`.
+6. Add `-2`, `-3`, and so on for duplicates in document order.
 
-The generated heading index contains the ID, plain text, authored depth, source span, and parent heading relationship. The runtime must use these IDs directly and must not generate random fallbacks.
+Explicit heading attributes and parent-heading records are not implemented. The generated heading index contains ID, text, level, and source span, and the runtime uses those IDs directly.
 
 ## Block identifiers
 
@@ -181,14 +161,13 @@ Supported note forms:
 ![[Page#^block-id]]
 ```
 
-An embed is never implemented by copying a Markdown string into another string or adding whitespace indentation. Both operations can change list, code-block, and heading semantics. Instead, the compiler creates an embed node referring to a resolved AST fragment.
+An embed is never implemented by copying or indenting Markdown text. The compiler retains an embed AST node and records its resolved page/fragment target as a graph edge.
 
 ### Default embed mode
 
-Plain `![[Page]]` uses `mode="embed"`:
+The default runtime handles a plain `![[Page]]` as follows:
 
 - Render as a visibly bounded embedded article/section determined by the theme.
-- Preserve a source-page reference.
 - Keep source provenance on all nested nodes.
 - Prefix generated DOM IDs with an embed-instance identifier to prevent collisions.
 - Do not merge the embedded headings into the host page's main table of contents by default.
@@ -197,20 +176,13 @@ This is a semantic component boundary. The current theme may indent or border it
 
 ### Inline mode
 
-The `include` directive can request `mode="inline"`:
+The default runtime supports whole-page `include` directives in `embed` or `inline` mode. `headings="shift"` adds one rendered heading level, `strip-title` omits top-level H1 nodes, and `keep` retains authored levels. Embedded IDs are prefixed and same-page fragment links are rewritten to that prefix.
 
-- Splice the resolved block nodes into the host flow.
-- Include them in the host table of contents.
-- Rewrite local fragment links to the embedded instance.
-- Shift heading levels relative to the surrounding heading when `headings="shift"`.
-
-Heading shifting is structural. If an include appears beneath a level-two heading and the embedded fragment begins at level one, its first heading becomes level three and descendants shift by the same amount, capped at level six. Overflow is an error rather than silently flattening hierarchy.
-
-`headings="strip-title"` removes only the embedded document's initial H1 when it represents the document title. `headings="keep"` preserves authored levels and may produce a warning when hierarchy is broken.
+Include sources are currently resolved by the runtime content store rather than stored as compiler-authoritative directive edges. Included headings are not added to the host page's generated heading index, and heading overflow is capped at H6 rather than diagnosed. Fragment includes are reported as unsupported.
 
 ### Cycles and limits
 
-The resolver builds a directed embed graph and checks it before expansion. `A -> B -> A` and longer cycles are errors showing the complete chain. A configurable maximum depth, default 16, protects against pathological acyclic expansion.
+The compiler builds a directed graph for Obsidian note embeds. `A -> B -> A` and longer cycles are errors showing the route chain; `markdown.max_embed_depth`, default 16, limits acyclic chains. Runtime `include` recursion has a separate render-time guard because include targets are not compiler graph edges yet.
 
 ## Images and local assets
 
@@ -223,27 +195,9 @@ Supported examples:
 ![[Attachments/mambo.png|640x360]]
 ```
 
-Asset lookup order mirrors note lookup but uses the exact filename including extension. When Obsidian compatibility is enabled, a unique-basename fallback may be used for attachment-style references; ambiguity is an error.
+Schema 1 preserves standard image sources/alt text and Obsidian embed destinations/options in the AST. The default renderer emits an ordinary image for both forms; it does not interpret width options, inspect intrinsic dimensions, or classify audio, video, PDF, and download targets.
 
-For images:
-
-- Standard Markdown alt text is preserved.
-- Obsidian embeds derive fallback alt text from the filename; authors should use standard Markdown where meaningful alternative text matters.
-- A numeric pipe option is requested display width.
-- `widthxheight` supplies requested display dimensions.
-- Intrinsic dimensions should be read during compilation for supported raster formats.
-- SVG is treated as an image but must be copied safely and not injected as raw markup by default.
-
-Other local assets map by media type:
-
-- Audio becomes an audio node.
-- Video becomes a video node.
-- PDF becomes a document/embed node according to runtime capability.
-- Unknown files become downloadable-file nodes.
-
-Only referenced assets are copied by default. Each copied file receives a content-hashed public name under `public/mambo/`, while original logical paths remain in source metadata for diagnostics. Identical content may be deduplicated.
-
-Paths must remain within the configured content root after canonicalization. `..` traversal that escapes the root, device files, and symlinks escaping the root are errors. The first release must not search an external attachment directory to satisfy a missing asset; any synchronization workflow must materialize required assets inside `docs/` before compilation.
+The compiler does not yet validate or copy these files. A website must expose authored paths from its own `public/` tree or add a pre-build copy step. The future asset pass will add containment checks, media classification, content-hashed names, and deduplication without changing Markdown syntax.
 
 ## Callouts
 
@@ -254,19 +208,17 @@ Obsidian callouts use blockquote syntax:
 > Callout content with **Markdown**.
 ```
 
-Supported initial kinds are `note`, `abstract`, `info`, `todo`, `tip`, `success`, `question`, `warning`, `failure`, `danger`, `bug`, `example`, and `quote`. Unknown kinds remain callouts with a neutral style and produce a warning, allowing Obsidian-authored content to remain readable.
-
-Fold markers may be parsed for compatibility, but static output should render content expanded unless a runtime disclosure component is explicitly enabled.
+The current Comrak-backed schema supports `note`, `tip`, `important`, `warning`, and `caution`. Broader Obsidian kinds and fold markers are planned.
 
 ## Comments and authoring-only constructs
 
-Obsidian comments delimited by `%%` are removed from visible output and search text. Unclosed comments are errors because they can hide the remainder of a page unexpectedly.
+Obsidian comments delimited by `%%` are removed from the AST, so they are absent from visible output. Unclosed comments are errors because they can hide the remainder of a page unexpectedly.
 
-Inline tags are preserved as text in the first release. Only frontmatter `tags` participate in taxonomy. Obsidian property widgets, Bases embeds, and plugin code blocks must not execute; an unsupported embed or executable block produces a clear diagnostic.
+Inline tags are preserved as text. Only frontmatter `tags` participate in current related-content queries. Obsidian property widgets, Bases embeds, and plugin code blocks are not executed; unsupported fenced blocks remain ordinary code.
 
 ## Raw HTML and sanitization
 
-Raw HTML is disabled by default. It should be escaped or rejected according to configuration, never passed through accidentally. Even in a future trusted mode, script, iframe, event-handler attributes, unsafe URLs, and style injection require explicit sanitization rules.
+Raw HTML is preserved in the AST. With `markdown.raw_html = false`, the compiler warns, and the default renderer displays the source as code text rather than injecting it. Setting the flag currently suppresses that warning; trusted HTML rendering and sanitization are not implemented.
 
 Generated TypeScript stores structured nodes rather than untrusted HTML. React rendering must avoid `dangerouslySetInnerHTML` for authored content.
 

@@ -60,7 +60,7 @@ This also resolves the MamboWiki self-documentation case. `Docs/Projects/_sites/
 - A repository destination at `~/ProjectMambo/<Project>/`.
 - Optionally, a site source at `Docs/Projects/_sites/<Site>/`.
 
-Current site profiles are MamboFolio and MamboWiki. MamboSite is currently an ordinary project profile: its documentation fills `MamboSite/docs/`, while its future Cargo workspace, TypeScript runtime, tests, and other source files remain untouched. If a repository later needs both site-owned pages and mounts, adding `siteSource` changes only how that repository's `docs/` is assembled.
+Current site profiles are MamboFolio and MamboWiki. MamboSite is an ordinary project profile: its documentation fills `MamboSite/docs/`, while its Cargo/npm workspaces, tests, templates, and other source files remain untouched. If a repository later needs both site-owned pages and mounts, adding `siteSource` changes only how that repository's `docs/` is assembled.
 
 The Obsidian command palette exposes both the full `Sync Docs` command and a targeted `Sync MamboFolio Docs` command. The same adapter may be run from a terminal for validation or automation:
 
@@ -151,7 +151,7 @@ mounts:
 ---
 ```
 
-The current adapter accepts the conventional YAML block-list form shown above. This is an implementation constraint of `sync_docs.js`, not a limitation on the complete YAML parser planned for MamboSite.
+The current adapter accepts the conventional YAML block-list form shown above. This is an implementation constraint of `sync_docs.js`, not a limitation on MamboSite's complete YAML frontmatter parser.
 
 Mount storage is derived from the route path. Nested paths remain readable—for example, `/projects/mambodot` materializes at `_mounts/projects/mambodot/`. Duplicate, case-colliding, root, or overlapping mount paths fail before any destination is cleaned.
 
@@ -198,9 +198,9 @@ The operation is deterministic for identical vault inputs. It is safe to run rep
 
 ## Assets and external dependencies
 
-The sync script copies non-Markdown assets located inside each selected project or site directory. It does not crawl the entire private vault to find arbitrary attachments. A document that references a local asset outside the copied directories will therefore fail MamboSite resolution after export.
+The sync script copies non-Markdown assets located inside each selected project or site directory. It does not crawl the entire private vault to find arbitrary attachments. A reference to an asset outside those copied directories therefore remains unresolved by the site; schema 1 does not diagnose the missing file.
 
-The initial convention is to colocate publishable assets with the owning project or site content. If shared attachment roots are needed later, they must be added as explicit configured sources with the same containment, collision, and cleanup rules; the synchronizer must never copy unrelated vault content implicitly.
+The initial convention is to colocate publishable assets with the owning project or site content. Schema 1 does not yet publish those copied files into the website's `public/` tree, so sites must provide public paths or a pre-build asset step. If shared attachment roots are needed later, they must be explicit configured sources; the synchronizer must never copy unrelated vault content implicitly.
 
 ## Separation of responsibilities
 
@@ -214,8 +214,9 @@ The boundary is deliberate:
 | Materialize external project folders | Yes | No |
 | Rewrite vault mount sources to repository-local paths | Yes | No |
 | Parse Markdown and directives | No | Yes |
-| Resolve repository-local mounts, links, embeds, and assets | No | Yes |
-| Derive routes and navigation | No | Yes |
+| Resolve repository-local mounts, note links, and note embeds | No | Yes |
+| Validate and publish content assets | No | Planned |
+| Derive routes and child relationships | No | Yes |
 | Generate TypeScript and static site data | No | Yes |
 
 This keeps MamboSite portable: its tests and CI operate only on repository fixtures, while Project Mambo retains one convenient source of truth in Obsidian.

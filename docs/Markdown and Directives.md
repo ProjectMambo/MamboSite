@@ -355,6 +355,19 @@ Right content.
 
 `columns` accepts `count` from 2 to 4, `gap` (`small`, `normal`, `large`), and `collapse-at` (`sm`, `md`, `lg`, `never`). Its direct directive children must be `column`, and their count must match `count`.
 
+## Current default-renderer coverage
+
+The schema-1 parser and validator recognize the contracts above, but the initial default React theme intentionally reports an unsupported-mode message instead of silently approximating semantics it does not yet implement.
+
+Current limitations are:
+
+- `children` renders direct children with `list`, `grid`, `cards`, or `hidden`; recursive depth and the `tree` and `table` views remain pending.
+- `gallery` renders the grid view; masonry and carousel behavior remain pending.
+- Whole-page note embeds render through compiler-resolved graph edges. Heading or block fragment transclusion and structurally spliced inline includes remain pending.
+- Buttons support safe web URLs and ordinary site routes. Compiler-authoritative resolution of note-style or source-relative directive targets is planned for a later generated-schema revision.
+
+These are renderer boundaries, not permission for themes to reinterpret the authored properties. A site override may implement a pending view through the typed component registry while keeping the same directive contract.
+
 ## Component registry
 
 The Rust compiler and TypeScript runtime share a versioned registry defining:
