@@ -1,0 +1,7 @@
+/node_modules/
+/.next/
+/out/
+/src/generated/mambo/
+/public/mambo/
+*.tsbuildinfo
+next-env.d.ts

@@ -2,7 +2,7 @@ schema = 1
 content_root = "docs"
 entry = "index.md"
 typescript_out = ".mambosite/generated"
-assets_out = ".mambosite/assets"
+assets_out = "public/mambo"
 
 [site]
 title = "MamboSite"

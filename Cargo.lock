@@ -291,7 +291,12 @@ dependencies = [
  "clap",
  "mambosite-codegen-ts",
  "mambosite-core",
+ "mambosite-theme",
+ "serde",
+ "serde-saphyr",
  "serde_json",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]
@@ -316,6 +321,17 @@ dependencies = [
  "thiserror",
  "toml",
  "unicode-normalization",
+]
+
+[[package]]
+name = "mambosite-theme"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "toml",
 ]
 
 [[package]]

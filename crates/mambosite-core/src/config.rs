@@ -17,6 +17,38 @@ pub struct Config {
     pub site: SiteConfig,
     pub markdown: MarkdownConfig,
     pub frontmatter: FrontmatterConfig,
+    pub renderer: Option<RendererConfig>,
+    pub deploy: DeployConfig,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum RendererKind {
+    Next,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum PackageManager {
+    Npm,
+    Pnpm,
+    Yarn,
+    Bun,
+}
+
+#[derive(Debug, Clone)]
+pub struct RendererConfig {
+    pub kind: RendererKind,
+    pub package_manager: PackageManager,
+    pub build_script: String,
+    pub output_dir: PathBuf,
+}
+
+#[derive(Debug, Clone)]
+pub struct DeployConfig {
+    pub remote: String,
+    pub branch: String,
+    pub workflow: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -100,6 +132,48 @@ struct RawConfig {
     site: SiteConfig,
     markdown: MarkdownConfig,
     frontmatter: FrontmatterConfig,
+    renderer: Option<RawRendererConfig>,
+    deploy: RawDeployConfig,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct RawRendererConfig {
+    enabled: bool,
+    kind: RendererKind,
+    package_manager: PackageManager,
+    build_script: String,
+    output_dir: String,
+}
+
+impl Default for RawRendererConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            kind: RendererKind::Next,
+            package_manager: PackageManager::Npm,
+            build_script: "mambosite:render".to_owned(),
+            output_dir: "out".to_owned(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct RawDeployConfig {
+    remote: String,
+    branch: String,
+    workflow: String,
+}
+
+impl Default for RawDeployConfig {
+    fn default() -> Self {
+        Self {
+            remote: "origin".to_owned(),
+            branch: "main".to_owned(),
+            workflow: ".github/workflows/pages.yml".to_owned(),
+        }
+    }
 }
 
 impl Default for RawConfig {
@@ -113,6 +187,8 @@ impl Default for RawConfig {
             site: SiteConfig::default(),
             markdown: MarkdownConfig::default(),
             frontmatter: FrontmatterConfig::default(),
+            renderer: None,
+            deploy: RawDeployConfig::default(),
         }
     }
 }
@@ -188,18 +264,55 @@ impl Config {
         );
         let normalized_assets_out =
             normalize_or_report(&raw.assets_out, "assets_out", &label, &mut diagnostics);
+        let normalized_renderer_out = raw
+            .renderer
+            .as_ref()
+            .filter(|renderer| renderer.enabled)
+            .map(|renderer| {
+                normalize_or_report(
+                    &renderer.output_dir,
+                    "renderer.output_dir",
+                    &label,
+                    &mut diagnostics,
+                )
+            });
+        let normalized_workflow = normalize_or_report(
+            &raw.deploy.workflow,
+            "deploy.workflow",
+            &label,
+            &mut diagnostics,
+        );
         let normalized_entry = normalize_or_report(&raw.entry, "entry", &label, &mut diagnostics);
         let content_root = resolve_relative_path(base, &normalized_content_root);
         let typescript_out = resolve_relative_path(base, &normalized_typescript_out);
         let assets_out = resolve_relative_path(base, &normalized_assets_out);
+        let renderer_output = normalized_renderer_out
+            .as_ref()
+            .map(|output| resolve_relative_path(base, output));
 
         if matches!(raw.typescript_out.as_str(), "." | "./")
             || matches!(raw.assets_out.as_str(), "." | "./")
+            || raw.renderer.as_ref().is_some_and(|renderer| {
+                renderer.enabled && matches!(renderer.output_dir.as_str(), "." | "./")
+            })
         {
             diagnostics.push(
                 Diagnostic::error(
                     "MS1008",
                     "generated output directories cannot be the repository/configuration root",
+                )
+                .at_path(label.clone()),
+            );
+        }
+        let assets_relative = Path::new(&normalized_assets_out);
+        if !assets_relative.starts_with("public")
+            || assets_relative == Path::new("public")
+            || !normalized_assets_out.split('/').all(valid_url_path_segment)
+        {
+            diagnostics.push(
+                Diagnostic::error(
+                    "MS1014",
+                    "`assets_out` must be a URL-safe managed subdirectory under `public/`",
                 )
                 .at_path(label.clone()),
             );
@@ -218,15 +331,25 @@ impl Config {
                 .at_path(label.clone()),
             );
         }
-        if !raw.site.base_path.is_empty()
-            && (!raw.site.base_path.starts_with('/')
-                || raw.site.base_path.ends_with('/')
-                || raw.site.base_path.contains(['?', '#']))
-        {
+        if !valid_base_path(&raw.site.base_path) {
             diagnostics.push(
                 Diagnostic::error(
                     "MS1005",
-                    "`site.base_path` must be empty or begin with one slash and have no trailing slash",
+                    "`site.base_path` must be empty or a canonical URL path with one leading slash",
+                )
+                .at_path(label.clone()),
+            );
+        }
+        if raw
+            .site
+            .url
+            .as_deref()
+            .is_some_and(|url| !valid_site_url(url))
+        {
+            diagnostics.push(
+                Diagnostic::error(
+                    "MS1013",
+                    "`site.url` must be an absolute `http://` or `https://` URL with a valid host",
                 )
                 .at_path(label.clone()),
             );
@@ -246,14 +369,57 @@ impl Config {
                 .at_path(label.clone()),
             );
         }
-        if typescript_out.starts_with(&content_root)
-            || assets_out.starts_with(&content_root)
-            || typescript_out == assets_out
+        if let Some(renderer) = raw.renderer.as_ref().filter(|renderer| renderer.enabled) {
+            if !valid_script_name(&renderer.build_script) {
+                diagnostics.push(
+                    Diagnostic::error(
+                        "MS1010",
+                        "`renderer.build_script` must be a non-lifecycle package script name containing only letters, numbers, `.`, `_`, `-`, or `:`",
+                    )
+                    .at_path(label.clone()),
+                );
+            }
+        }
+        if !valid_remote_name(&raw.deploy.remote) {
+            diagnostics.push(
+                Diagnostic::error("MS1011", "`deploy.remote` must be a simple Git remote name")
+                    .at_path(label.clone()),
+            );
+        }
+        if !valid_branch_name(&raw.deploy.branch) {
+            diagnostics.push(
+                Diagnostic::error("MS1011", "`deploy.branch` must be a simple Git branch name")
+                    .at_path(label.clone()),
+            );
+        }
+        let workflow_path = Path::new(&normalized_workflow);
+        let workflow_extension = workflow_path.extension().and_then(|value| value.to_str());
+        if workflow_path.parent() != Some(Path::new(".github/workflows"))
+            || !matches!(workflow_extension, Some("yml" | "yaml"))
         {
             diagnostics.push(
                 Diagnostic::error(
+                    "MS1012",
+                    "`deploy.workflow` must be a `.yml` or `.yaml` file under `.github/workflows/`",
+                )
+                .at_path(label.clone()),
+            );
+        }
+        let mut managed_directories = vec![
+            content_root.as_path(),
+            typescript_out.as_path(),
+            assets_out.as_path(),
+        ];
+        managed_directories.extend(renderer_output.as_deref());
+        if managed_directories.iter().enumerate().any(|(index, path)| {
+            managed_directories[index + 1..]
+                .iter()
+                .any(|other| path.starts_with(other) || other.starts_with(path))
+        }) {
+            diagnostics.push(
+                Diagnostic::error(
                     "MS1008",
-                    "generated output directories must not be inside the content root",
+                    "content and generated output directories must not overlap",
                 )
                 .at_path(label),
             );
@@ -262,6 +428,17 @@ impl Config {
         if diagnostics.iter().any(Diagnostic::is_error) {
             return Err(diagnostics);
         }
+
+        let renderer = raw
+            .renderer
+            .filter(|renderer| renderer.enabled)
+            .zip(renderer_output)
+            .map(|(renderer, output_dir)| RendererConfig {
+                kind: renderer.kind,
+                package_manager: renderer.package_manager,
+                build_script: renderer.build_script,
+                output_dir,
+            });
 
         Ok(Self {
             schema: raw.schema,
@@ -274,6 +451,12 @@ impl Config {
             site: raw.site,
             markdown: raw.markdown,
             frontmatter: raw.frontmatter,
+            renderer,
+            deploy: DeployConfig {
+                remote: raw.deploy.remote,
+                branch: raw.deploy.branch,
+                workflow: normalized_workflow,
+            },
         })
     }
 
@@ -286,15 +469,23 @@ impl Config {
             );
             return diagnostics;
         };
-        for (path, field) in [
-            (&self.content_root, "content_root"),
-            (&self.typescript_out, "typescript_out"),
-            (&self.assets_out, "assets_out"),
-            (&self.content_root.join(&self.entry), "entry"),
-        ] {
+        let mut checked_paths = vec![
+            (self.content_root.clone(), "content_root"),
+            (self.typescript_out.clone(), "typescript_out"),
+            (self.assets_out.clone(), "assets_out"),
+            (
+                self.project_root.join(&self.deploy.workflow),
+                "deploy.workflow",
+            ),
+            (self.content_root.join(&self.entry), "entry"),
+        ];
+        if let Some(renderer) = &self.renderer {
+            checked_paths.push((renderer.output_dir.clone(), "renderer.output_dir"));
+        }
+        for (path, field) in checked_paths {
             if !path.starts_with(&self.project_root)
-                || path_crosses_symlink(&self.project_root, path)
-                || existing_path_escapes(path, &canonical_root)
+                || path_crosses_symlink(&self.project_root, &path)
+                || existing_path_escapes(&path, &canonical_root)
             {
                 diagnostics.push(
                     Diagnostic::error(
@@ -340,6 +531,117 @@ fn normalize_or_report(
 
 fn resolve_relative_path(base: &Path, value: &str) -> PathBuf {
     base.join(value)
+}
+
+fn valid_script_name(value: &str) -> bool {
+    !value.is_empty()
+        && !value.starts_with('-')
+        && !matches!(
+            value.to_ascii_lowercase().as_str(),
+            "build" | "deploy" | "mambosite:build" | "mambosite:deploy"
+        )
+        && value
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || "._-:".contains(character))
+}
+
+fn valid_base_path(value: &str) -> bool {
+    value.is_empty()
+        || value.strip_prefix('/').is_some_and(|path| {
+            !path.is_empty() && !path.ends_with('/') && path.split('/').all(valid_url_path_segment)
+        })
+}
+
+fn valid_url_path_segment(segment: &str) -> bool {
+    !segment.is_empty()
+        && !matches!(segment, "." | "..")
+        && segment
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'.' | b'_' | b'~'))
+}
+
+fn valid_site_url(value: &str) -> bool {
+    if value.is_empty()
+        || value.trim() != value
+        || value.chars().any(|character| {
+            character.is_whitespace() || character.is_control() || character == '\\'
+        })
+    {
+        return false;
+    }
+    let Some((scheme, remainder)) = value.split_once("://") else {
+        return false;
+    };
+    if !scheme.eq_ignore_ascii_case("http") && !scheme.eq_ignore_ascii_case("https") {
+        return false;
+    }
+    let authority = remainder.split(['/', '?', '#']).next().unwrap_or_default();
+    let host_and_port = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, host_and_port)| host_and_port);
+    valid_host_and_port(host_and_port)
+}
+
+fn valid_host_and_port(value: &str) -> bool {
+    if let Some(bracketed) = value.strip_prefix('[') {
+        let Some((host, suffix)) = bracketed.split_once(']') else {
+            return false;
+        };
+        return host.parse::<std::net::Ipv6Addr>().is_ok() && valid_port_suffix(suffix);
+    }
+
+    let (host, port) = value
+        .rsplit_once(':')
+        .map_or((value, None), |(host, port)| (host, Some(port)));
+    if host.contains(':') || port.is_some_and(|port| port.parse::<u16>().is_err()) {
+        return false;
+    }
+    let host = host.strip_suffix('.').unwrap_or(host);
+    !host.is_empty()
+        && host.split('.').all(|label| {
+            !label.is_empty()
+                && !label.starts_with('-')
+                && !label.ends_with('-')
+                && label
+                    .chars()
+                    .all(|character| character.is_alphanumeric() || character == '-')
+        })
+}
+
+fn valid_port_suffix(value: &str) -> bool {
+    value.is_empty()
+        || value
+            .strip_prefix(':')
+            .is_some_and(|port| port.parse::<u16>().is_ok())
+}
+
+fn valid_remote_name(value: &str) -> bool {
+    !value.is_empty()
+        && !matches!(value.chars().next(), Some('-' | '.'))
+        && !value.ends_with('.')
+        && !value.contains("..")
+        && value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
+}
+
+fn valid_branch_name(value: &str) -> bool {
+    !value.is_empty()
+        && !matches!(value.chars().next(), Some('-' | '.' | '/'))
+        && !value.ends_with('.')
+        && !value.ends_with('/')
+        && !value.split('/').any(|segment| {
+            Path::new(segment)
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .is_some_and(|extension| extension.eq_ignore_ascii_case("lock"))
+        })
+        && !value.contains("..")
+        && !value.contains("//")
+        && !value.contains("@{")
+        && value.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.' | '/')
+        })
 }
 
 pub(crate) fn normalize_relative(value: &str) -> Option<String> {
@@ -395,7 +697,7 @@ fn existing_path_escapes(path: &Path, canonical_root: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::{Config, PackageManager, RendererKind};
 
     #[test]
     fn resolves_paths_relative_to_the_config() {
@@ -417,6 +719,70 @@ mod tests {
     }
 
     #[test]
+    fn requires_a_managed_asset_subdirectory_under_public() {
+        for assets in [
+            "assets",
+            ".mambosite/assets",
+            "public",
+            "public/site?draft",
+            "public/site#fragment",
+            "public/site%2Fescape",
+            "public/site\ncontrol",
+        ] {
+            let source = format!("schema=1\nassets_out={assets:?}\n");
+            let diagnostics =
+                Config::from_toml(&source, "/repo/mambo.toml").expect_err("invalid assets path");
+            assert!(diagnostics.iter().any(|item| item.code == "MS1014"));
+        }
+
+        let config = Config::from_toml(
+            "schema=1\nassets_out=\"public/site-assets\"\n",
+            "/repo/mambo.toml",
+        )
+        .expect("public asset subdirectory");
+        assert_eq!(
+            config.assets_out.to_string_lossy(),
+            "/repo/public/site-assets"
+        );
+    }
+
+    #[test]
+    fn requires_a_canonical_site_base_path() {
+        for base_path in ["", "/MamboFolio", "/docs/v1_0", "/a~b.c"] {
+            let source = format!("schema=1\n[site]\nbase_path={base_path:?}\n");
+            let config = Config::from_toml(&source, "/repo/mambo.toml")
+                .unwrap_or_else(|_| panic!("valid base path: {base_path:?}"));
+            assert_eq!(config.site.base_path, base_path);
+        }
+
+        for base_path in [
+            "/",
+            "repo",
+            "//repo",
+            "/repo/",
+            "/repo//docs",
+            "/./repo",
+            "/repo/../docs",
+            "/repo\\docs",
+            "/repo?draft",
+            "/repo#fragment",
+            "/%2e",
+            "/repo%2Fdocs",
+            "/repo%5Cdocs",
+            "/repo\ncontrol",
+            "/café",
+        ] {
+            let source = format!("schema=1\n[site]\nbase_path={base_path:?}\n");
+            let diagnostics = Config::from_toml(&source, "/repo/mambo.toml")
+                .expect_err("non-canonical base path");
+            assert!(
+                diagnostics.iter().any(|item| item.code == "MS1005"),
+                "expected MS1005 for {base_path:?}"
+            );
+        }
+    }
+
+    #[test]
     fn normalizes_entry_and_requires_exact_index_name() {
         let config = Config::from_toml("schema = 1\nentry = \"./index.md\"", "/repo/mambo.toml")
             .expect("normalized config");
@@ -426,6 +792,206 @@ mod tests {
             Config::from_toml("schema = 1\nentry = \"notindex.md\"", "/repo/mambo.toml")
                 .expect_err("invalid entry");
         assert!(diagnostics.iter().any(|item| item.code == "MS1004"));
+    }
+
+    #[test]
+    fn loads_typed_renderer_and_deploy_settings() {
+        let config = Config::from_toml(
+            concat!(
+                "schema = 1\n",
+                "[renderer]\n",
+                "kind = \"next\"\n",
+                "package_manager = \"pnpm\"\n",
+                "build_script = \"site:render\"\n",
+                "output_dir = \"dist/site\"\n",
+                "[deploy]\n",
+                "remote = \"upstream\"\n",
+                "branch = \"pages/main\"\n",
+                "workflow = \".github/workflows/deploy.yaml\"\n",
+            ),
+            "/repo/mambo.toml",
+        )
+        .expect("valid lifecycle configuration");
+
+        let renderer = config.renderer.expect("renderer is enabled");
+        assert_eq!(renderer.kind, RendererKind::Next);
+        assert_eq!(renderer.package_manager, PackageManager::Pnpm);
+        assert_eq!(renderer.build_script, "site:render");
+        assert_eq!(renderer.output_dir.to_string_lossy(), "/repo/dist/site");
+        assert_eq!(config.deploy.remote, "upstream");
+        assert_eq!(config.deploy.branch, "pages/main");
+        assert_eq!(config.deploy.workflow, ".github/workflows/deploy.yaml");
+    }
+
+    #[test]
+    fn rejects_unsafe_lifecycle_settings() {
+        for source in [
+            "schema=1\n[renderer]\nbuild_script=\"build && publish\"\n",
+            "schema=1\n[renderer]\nbuild_script=\"build\"\n",
+            "schema=1\n[renderer]\nbuild_script=\"mambosite:deploy\"\n",
+            "schema=1\n[renderer]\noutput_dir=\"../outside\"\n",
+            "schema=1\n[deploy]\nremote=\"--upload-pack\"\n",
+            "schema=1\n[deploy]\nbranch=\"main..backup\"\n",
+            "schema=1\n[deploy]\nworkflow=\"scripts/deploy.yml\"\n",
+        ] {
+            assert!(
+                Config::from_toml(source, "/repo/mambo.toml").is_err(),
+                "configuration should be rejected: {source}"
+            );
+        }
+    }
+
+    #[test]
+    fn renderer_is_optional_and_can_be_disabled() {
+        let omitted = Config::from_toml("schema=1\n", "/repo/mambo.toml").unwrap();
+        assert!(omitted.renderer.is_none());
+
+        let disabled =
+            Config::from_toml("schema=1\n[renderer]\nenabled=false\n", "/repo/mambo.toml").unwrap();
+        assert!(disabled.renderer.is_none());
+    }
+
+    #[test]
+    fn rejects_ancestor_and_descendant_overlaps_between_managed_directories() {
+        let cases = [
+            (
+                "content -> typescript",
+                "tree",
+                "tree/child",
+                "assets",
+                "render",
+            ),
+            (
+                "typescript -> content",
+                "tree/child",
+                "tree",
+                "assets",
+                "render",
+            ),
+            (
+                "content -> assets",
+                "tree",
+                "typescript",
+                "tree/child",
+                "render",
+            ),
+            (
+                "assets -> content",
+                "tree/child",
+                "typescript",
+                "tree",
+                "render",
+            ),
+            (
+                "content -> renderer",
+                "tree",
+                "typescript",
+                "assets",
+                "tree/child",
+            ),
+            (
+                "renderer -> content",
+                "tree/child",
+                "typescript",
+                "assets",
+                "tree",
+            ),
+            (
+                "typescript -> assets",
+                "content",
+                "tree",
+                "tree/child",
+                "render",
+            ),
+            (
+                "assets -> typescript",
+                "content",
+                "tree/child",
+                "tree",
+                "render",
+            ),
+            (
+                "typescript -> renderer",
+                "content",
+                "tree",
+                "assets",
+                "tree/child",
+            ),
+            (
+                "renderer -> typescript",
+                "content",
+                "tree/child",
+                "assets",
+                "tree",
+            ),
+            (
+                "assets -> renderer",
+                "content",
+                "typescript",
+                "tree",
+                "tree/child",
+            ),
+            (
+                "renderer -> assets",
+                "content",
+                "typescript",
+                "tree/child",
+                "tree",
+            ),
+        ];
+
+        for (case, content, typescript, assets, renderer) in cases {
+            let source = format!(
+                "schema=1\ncontent_root={content:?}\ntypescript_out={typescript:?}\nassets_out={assets:?}\n[renderer]\noutput_dir={renderer:?}\n"
+            );
+            let diagnostics = Config::from_toml(&source, "/repo/mambo.toml")
+                .expect_err("overlapping directories must be rejected");
+            assert!(
+                diagnostics.iter().any(|item| item.code == "MS1008"),
+                "expected MS1008 for {case}"
+            );
+        }
+    }
+
+    #[test]
+    fn ignores_disabled_renderer_output_when_checking_overlaps() {
+        let config = Config::from_toml(
+            "schema=1\n[renderer]\nenabled=false\noutput_dir=\"docs\"\n",
+            "/repo/mambo.toml",
+        )
+        .expect("a disabled renderer cannot overwrite anything");
+        assert!(config.renderer.is_none());
+    }
+
+    #[test]
+    fn validates_site_url_as_an_absolute_http_url() {
+        for url in [
+            "https://example.com",
+            "https://example.com/docs?language=en#start",
+            "http://localhost:3000",
+            "https://[2001:db8::1]:8443/docs",
+        ] {
+            let source = format!("schema=1\n[site]\nurl={url:?}\n");
+            let config = Config::from_toml(&source, "/repo/mambo.toml").expect("valid site URL");
+            assert_eq!(config.site.url.as_deref(), Some(url));
+        }
+
+        for url in [
+            "example.com",
+            "ftp://example.com",
+            "https:///docs",
+            "https://example.com:not-a-port",
+            "https://bad host.example",
+            "../site",
+        ] {
+            let source = format!("schema=1\n[site]\nurl={url:?}\n");
+            let diagnostics =
+                Config::from_toml(&source, "/repo/mambo.toml").expect_err("invalid site URL");
+            assert!(
+                diagnostics.iter().any(|item| item.code == "MS1013"),
+                "expected MS1013 for {url}"
+            );
+        }
     }
 
     #[cfg(unix)]
@@ -444,7 +1010,7 @@ mod tests {
         let config = Config::from_toml(
             concat!(
                 "schema=1\ncontent_root=\"linked/docs\"\n",
-                "typescript_out=\"linked/generated\"\nassets_out=\"assets\"\n",
+                "typescript_out=\"linked/generated\"\nassets_out=\"public/assets\"\n",
             ),
             project.join("mambo.toml"),
         )

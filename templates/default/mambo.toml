@@ -1,0 +1,23 @@
+schema = 1
+content_root = "docs"
+entry = "index.md"
+typescript_out = "src/generated/mambo"
+assets_out = "public/mambo"
+
+[site]
+title = "MamboSite"
+base_path = ""
+trailing_slash = true
+language = "en"
+
+[renderer]
+enabled = true
+kind = "next"
+package_manager = "npm"
+build_script = "mambosite:render"
+output_dir = "out"
+
+[deploy]
+remote = "origin"
+branch = "main"
+workflow = ".github/workflows/pages.yml"

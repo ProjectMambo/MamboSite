@@ -1,0 +1,28 @@
+{
+  "name": "mambosite-site",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "mambosite build --content-only",
+    "dev": "next dev",
+    "build": "mambosite build",
+    "mambosite:render": "next build",
+    "deploy": "mambosite deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mambosite/next": "0.1.0",
+    "@mambosite/react": "0.1.0",
+    "@mambosite/runtime": "0.1.0",
+    "@mambosite/theme-default": "0.1.0",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}

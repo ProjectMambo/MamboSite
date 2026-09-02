@@ -20,7 +20,10 @@ mod source;
 
 pub use ast::{AlertKind, ListDelimiter, ListKind, MarkdownNode, NodeKind, TableAlignment};
 pub use compiler::{CompileOutcome, Compiler};
-pub use config::{Config, FrontmatterConfig, MarkdownConfig, SiteConfig};
+pub use config::{
+    Config, DeployConfig, FrontmatterConfig, MarkdownConfig, PackageManager, RendererConfig,
+    RendererKind, SiteConfig,
+};
 pub use diagnostic::{Diagnostic, Severity, SourceLocation, SourcePosition, SourceSpan};
 pub use directive::{
     DirectiveDiagnostic, DirectiveForm, DirectiveParseOutcome, DirectiveProperty, DirectiveScalar,

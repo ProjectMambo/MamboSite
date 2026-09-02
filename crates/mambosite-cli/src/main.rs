@@ -1,94 +1,148 @@
-use std::path::PathBuf;
+mod cli;
+mod commands;
+mod process;
+
 use std::process::ExitCode;
 
-use clap::{Parser, Subcommand, ValueEnum};
-use mambosite_core::{CompileOutcome, Config, Diagnostic, Severity};
-
-#[derive(Debug, Parser)]
-#[command(
-    name = "mambosite",
-    version,
-    about = "Compile Markdown sites into typed TypeScript content"
-)]
-struct Cli {
-    /// Path to the site configuration.
-    #[arg(short, long, default_value = "mambo.toml", global = true)]
-    config: PathBuf,
-
-    /// Diagnostic output format.
-    #[arg(long, value_enum, default_value_t = DiagnosticFormat::Text, global = true)]
-    diagnostics: DiagnosticFormat,
-
-    #[command(subcommand)]
-    command: Command,
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
-enum DiagnosticFormat {
-    Text,
-    Json,
-}
-
-#[derive(Debug, Subcommand)]
-enum Command {
-    /// Parse and validate the complete site without writing generated files.
-    Check,
-    /// Parse, validate, and generate TypeScript content modules.
-    Build,
-}
+use clap::Parser;
+use cli::{Cli, Command, DiagnosticFormat};
+use commands::CommandError;
+use commands::build::{BuildMode, BuildReport};
+use commands::deploy::{DeployAction, DeployReport};
+use mambosite_core::{Config, Diagnostic, Severity};
+use process::ChildStdout;
 
 fn main() -> ExitCode {
     run(&Cli::parse())
 }
 
 fn run(cli: &Cli) -> ExitCode {
-    let config = match Config::load(&cli.config) {
-        Ok(config) => config,
-        Err(diagnostics) => {
+    match execute(cli) {
+        Ok(outcome) => {
+            if let Some(diagnostics) = outcome.diagnostics() {
+                if let Err(error) = print_diagnostics(diagnostics, cli.diagnostics) {
+                    eprintln!("error: could not print diagnostics: {error}");
+                    return ExitCode::from(2);
+                }
+            }
+            print_success(cli.diagnostics, &outcome.message());
+            ExitCode::SUCCESS
+        }
+        Err(CommandError::Diagnostics(diagnostics)) => {
             if let Err(error) = print_diagnostics(&diagnostics, cli.diagnostics) {
                 eprintln!("error: could not print diagnostics: {error}");
                 return ExitCode::from(2);
             }
-            return ExitCode::FAILURE;
+            ExitCode::FAILURE
         }
-    };
-    let output_dir = config.typescript_out.clone();
-    let CompileOutcome { site, diagnostics } = mambosite_core::Compiler::new(config).compile();
-
-    if let Err(error) = print_diagnostics(&diagnostics, cli.diagnostics) {
-        eprintln!("error: could not print diagnostics: {error}");
-        return ExitCode::from(2);
-    }
-    if diagnostics.iter().any(Diagnostic::is_error) {
-        return ExitCode::FAILURE;
-    }
-
-    let Some(site) = site else {
-        eprintln!("error: compilation produced neither a site nor an error diagnostic");
-        return ExitCode::from(2);
-    };
-    let page_count = site.pages.len();
-
-    match &cli.command {
-        Command::Check => {
-            print_success(
-                cli.diagnostics,
-                &format!("checked {page_count} page(s) successfully"),
-            );
+        Err(CommandError::Message(message)) => {
+            eprintln!("error: {message}");
+            ExitCode::FAILURE
         }
-        Command::Build => {
-            if let Err(error) = mambosite_codegen_ts::generate_to(&site, &output_dir) {
-                eprintln!("error: TypeScript generation failed: {error}");
-                return ExitCode::FAILURE;
+    }
+}
+
+enum Outcome {
+    Build(BuildMode, BuildReport),
+    Init(commands::init::InitReport),
+    Deploy(DeployReport),
+}
+
+impl Outcome {
+    fn diagnostics(&self) -> Option<&[Diagnostic]> {
+        match self {
+            Self::Build(_, report) => Some(&report.diagnostics),
+            Self::Deploy(report) => Some(&report.build.diagnostics),
+            Self::Init(_) => None,
+        }
+    }
+
+    fn message(&self) -> String {
+        match self {
+            Self::Build(BuildMode::Check, report) => {
+                format!("checked {} page(s) successfully", report.page_count)
             }
-            print_success(
-                cli.diagnostics,
-                &format!("generated {page_count} page(s) in {}", output_dir.display()),
-            );
+            Self::Build(BuildMode::ContentOnly, report) => {
+                let generated = report
+                    .generated_dir
+                    .as_deref()
+                    .expect("content build has generated output");
+                let assets = report
+                    .assets_dir
+                    .as_deref()
+                    .expect("content build has generated assets");
+                format!(
+                    "generated {} page(s) in {} and theme assets in {}",
+                    report.page_count,
+                    generated.display(),
+                    assets.display()
+                )
+            }
+            Self::Build(BuildMode::Full, report) => report.artifact_dir.as_ref().map_or_else(
+                || {
+                    format!(
+                        "generated {} page(s); renderer is disabled",
+                        report.page_count
+                    )
+                },
+                |artifact| {
+                    format!(
+                        "built {} page(s) and static output in {}",
+                        report.page_count,
+                        artifact.display()
+                    )
+                },
+            ),
+            Self::Init(report) => format!(
+                "initialized {} scaffold file(s) in {}",
+                report.file_count,
+                report.target.display()
+            ),
+            Self::Deploy(report) => {
+                let prefix = if report.dry_run {
+                    "dry run complete; would"
+                } else {
+                    "deployment started;"
+                };
+                match report.action {
+                    DeployAction::Push { commits } => {
+                        format!("{prefix} push {commits} committed change(s)")
+                    }
+                    DeployAction::Dispatch => {
+                        format!("{prefix} dispatch the Pages workflow for the current commit")
+                    }
+                }
+            }
         }
     }
+}
 
-    ExitCode::SUCCESS
+fn execute(cli: &Cli) -> Result<Outcome, CommandError> {
+    let child_stdout = match cli.diagnostics {
+        DiagnosticFormat::Text => ChildStdout::Stdout,
+        DiagnosticFormat::Json => ChildStdout::Stderr,
+    };
+    match &cli.command {
+        Command::Init { path, force } => commands::init::run(path, *force).map(Outcome::Init),
+        Command::Check => commands::build::run(load_config(cli)?, BuildMode::Check, child_stdout)
+            .map(|report| Outcome::Build(BuildMode::Check, report)),
+        Command::Build { content_only } => {
+            let mode = if *content_only {
+                BuildMode::ContentOnly
+            } else {
+                BuildMode::Full
+            };
+            commands::build::run(load_config(cli)?, mode, child_stdout)
+                .map(|report| Outcome::Build(mode, report))
+        }
+        Command::Deploy { dry_run } => {
+            commands::deploy::run(&load_config(cli)?, *dry_run, child_stdout).map(Outcome::Deploy)
+        }
+    }
+}
+
+fn load_config(cli: &Cli) -> Result<Config, CommandError> {
+    Config::load(&cli.config).map_err(CommandError::Diagnostics)
 }
 
 fn print_diagnostics(
@@ -147,34 +201,5 @@ fn print_success(format: DiagnosticFormat, message: &str) {
         DiagnosticFormat::Text => println!("{message}"),
         // Preserve stdout as a single machine-readable JSON value.
         DiagnosticFormat::Json => eprintln!("{message}"),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parses_check_with_default_config() {
-        let cli = Cli::try_parse_from(["mambosite", "check"]).unwrap();
-        assert_eq!(cli.config, PathBuf::from("mambo.toml"));
-        assert_eq!(cli.diagnostics, DiagnosticFormat::Text);
-        assert!(matches!(cli.command, Command::Check));
-    }
-
-    #[test]
-    fn accepts_global_options_after_subcommand() {
-        let cli = Cli::try_parse_from([
-            "mambosite",
-            "build",
-            "--config",
-            "sites/wiki.toml",
-            "--diagnostics",
-            "json",
-        ])
-        .unwrap();
-        assert_eq!(cli.config, PathBuf::from("sites/wiki.toml"));
-        assert_eq!(cli.diagnostics, DiagnosticFormat::Json);
-        assert!(matches!(cli.command, Command::Build));
     }
 }
