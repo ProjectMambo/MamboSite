@@ -320,6 +320,7 @@ fn responsive_declarations(theme: &Theme, point: Point) -> Vec<(String, String)>
     if let Some(mode) = at(&theme.components.sidebar.mode, point) {
         declarations.push(("sidebar-display".to_owned(), mode.display().to_owned()));
         declarations.push(("sidebar-position".to_owned(), mode.position().to_owned()));
+        declarations.push(("sidebar-order".to_owned(), mode.order().to_string()));
     }
     if let Some(mode) = at(&theme.components.header.mode, point) {
         declarations.push(("header-display".to_owned(), mode.display().to_owned()));
@@ -415,6 +416,7 @@ fn typography(theme: &Theme) -> [(&'static str, &TextStyle); 9] {
 fn write_sidebar(css: &mut String, mode: SidebarMode) {
     declaration(css, "sidebar-display", mode.display());
     declaration(css, "sidebar-position", mode.position());
+    declaration(css, "sidebar-order", mode.order());
 }
 
 fn write_header_mode(css: &mut String, mode: HeaderMode) {

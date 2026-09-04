@@ -174,6 +174,34 @@ test("a hero hides the generated title only when its validated show-title is tru
   assert.equal(html.match(/<h1>/g)?.length, 1);
 });
 
+test("layouts render useful TOCs and predictable back controls", () => {
+  for (const layout of ["article", "gallery"]) {
+    const withoutHeadings = pageWithLayout(layout);
+    const withoutToc = renderCompiledPage(withoutHeadings);
+    assert.doesNotMatch(withoutToc, /class="mambo-toc"/);
+    assert.doesNotMatch(withoutToc, /class="mambo-page-sidebar"/);
+
+    const withHeadings = pageWithLayout(layout, { heading: true });
+    const withToc = renderCompiledPage(withHeadings);
+    assert.match(withToc, /class="mambo-toc"/);
+    assert.match(withToc, /class="mambo-page-sidebar"/);
+    assert.match(
+      withToc,
+      new RegExp(`mambo-page-frame--${layout === "article" ? "normal" : "wide"}`),
+    );
+  }
+
+  const nested = pageWithLayout("project", { route: "/project/example/" });
+  const backLinks = renderCompiledPage(nested);
+  assert.equal(backLinks.match(/data-mambo-back=/g)?.length, 2);
+  assert.equal(backLinks.match(/href="\/project\/"/g)?.length, 2);
+
+  const authoredToc = pageWithLayout("article", { heading: true, authoredToc: true });
+  const singleToc = renderCompiledPage(authoredToc);
+  assert.equal(singleToc.match(/class="mambo-toc"/g)?.length, 1);
+  assert.doesNotMatch(singleToc, /class="mambo-page-sidebar"/);
+});
+
 test("two embeds namespace same-page fragment links with their generated DOM ids", () => {
   const firstEmbedSpan = sourceSpan(2, 10, 20);
   const secondEmbedSpan = sourceSpan(3, 21, 31);
@@ -287,6 +315,67 @@ function compiledPage(overrides = {}) {
     backlinks: [],
     ...overrides,
   };
+}
+
+function pageWithLayout(
+  layout,
+  { heading = false, authoredToc = false, route = `/${layout}/example/` } = {},
+) {
+  const pageSpan = sourceSpan(1, 0, 20);
+  const tocSpan = sourceSpan(2, 21, 29);
+  const headingSpan = sourceSpan(3, 30, 42);
+  const directives = [{
+    name: "page",
+    form: "leaf",
+    properties: { layout: { type: "string", value: layout } },
+    span: pageSpan,
+  }];
+  const children = [{
+    type: "directive",
+    invocation: {
+      name: "page",
+      form: "leaf",
+      properties: [],
+      span: { start: 0, end: 20 },
+      nameSpan: { start: 2, end: 6 },
+      raw: `::page{layout="${layout}"}`,
+    },
+    span: pageSpan,
+  }];
+  if (authoredToc) {
+    directives.push({ name: "toc", form: "leaf", properties: {}, span: tocSpan });
+    children.push({
+      type: "directive",
+      invocation: {
+        name: "toc",
+        form: "leaf",
+        properties: [],
+        span: { start: 21, end: 29 },
+        nameSpan: { start: 23, end: 26 },
+        raw: "::toc{}",
+      },
+      span: tocSpan,
+    });
+  }
+  if (heading) {
+    children.push({
+      type: "heading",
+      level: 2,
+      setext: false,
+      span: headingSpan,
+      children: [{ type: "text", value: "Details" }],
+    });
+  }
+  return compiledPage({
+    id: `p_${layout}_${heading ? "heading" : "plain"}_${authoredToc ? "authored" : "auto"}`,
+    route,
+    title: `${layout} fixture`,
+    directives,
+    headings: heading
+      ? [{ id: "details", level: 2, text: "Details", span: headingSpan }]
+      : [],
+    body: { type: "document", children },
+  });
 }
 
 function renderCompiledPage(page, pages = [page]) {

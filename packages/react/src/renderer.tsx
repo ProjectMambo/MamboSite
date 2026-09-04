@@ -108,7 +108,8 @@ export function MamboPage({ runtime, page }: MamboPageProps) {
   const visibleHeadings = page.headings.filter(
     (heading) => heading.level >= tocConfig.minDepth && heading.level <= tocConfig.maxDepth,
   );
-  const sidebar = config.sidebar && visibleHeadings.length > 0 ? (
+  const hasAuthoredToc = page.directives.some((directive) => directive.name === "toc");
+  const sidebar = config.sidebar && !hasAuthoredToc && visibleHeadings.length > 0 ? (
     <Toc
       config={tocConfig}
       model={{ headings: visibleHeadings }}

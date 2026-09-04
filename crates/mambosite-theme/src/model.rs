@@ -770,7 +770,7 @@ pub struct SidebarBehavior {
 impl Default for SidebarBehavior {
     fn default() -> Self {
         Self {
-            mode: responsive(SidebarMode::Hidden, None, Some(SidebarMode::Sticky), None),
+            mode: responsive(SidebarMode::Inline, None, Some(SidebarMode::Sticky), None),
         }
     }
 }
@@ -795,6 +795,13 @@ impl SidebarMode {
         match self {
             Self::Sticky => "sticky",
             Self::Hidden | Self::Inline => "static",
+        }
+    }
+
+    pub const fn order(self) -> i8 {
+        match self {
+            Self::Inline => -1,
+            Self::Hidden | Self::Sticky => 1,
         }
     }
 }

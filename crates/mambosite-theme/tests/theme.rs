@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use mambosite_theme::{Theme, ThemeError, compile_theme_file, default_theme_toml};
+use mambosite_theme::{SidebarMode, Theme, ThemeError, compile_theme_file, default_theme_toml};
 
 #[test]
 fn empty_file_resolves_to_the_generic_default() {
@@ -14,6 +14,10 @@ fn empty_file_resolves_to_the_generic_default() {
     assert_eq!(theme.components.collection.max_columns.compact(), Some(&2));
     assert_eq!(theme.components.collection.max_columns.content(), Some(&2));
     assert_eq!(theme.components.collection.max_columns.wide(), Some(&6));
+    assert_eq!(theme.components.sidebar.mode.base(), &SidebarMode::Inline);
+    let css = theme.compile().unwrap().css;
+    assert!(css.contains("--mambo-sidebar-order: -1;"));
+    assert!(media_section(&css, 900, Some(1200)).contains("--mambo-sidebar-order: 1;"));
 }
 
 #[test]

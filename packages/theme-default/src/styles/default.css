@@ -553,6 +553,7 @@ a:hover {
 .mambo-page-sidebar {
   display: var(--mambo-sidebar-display);
   min-width: 0;
+  order: var(--mambo-sidebar-order);
 }
 
 .mambo-toc {
@@ -585,7 +586,14 @@ a:hover {
   text-decoration: none;
 }
 
-.mambo-back-link {
+.mambo-back-link--top {
+  border-block-end: var(--mambo-border-thin) var(--mambo-border-style)
+    var(--mambo-color-border);
+  margin-block: 0 var(--mambo-space-lg);
+  padding-block-end: var(--mambo-space-md);
+}
+
+.mambo-back-link--bottom {
   border-block-start: var(--mambo-border-thin) var(--mambo-border-style)
     var(--mambo-color-border);
   margin-block-start: var(--mambo-space-section);
