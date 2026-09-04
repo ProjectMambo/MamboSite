@@ -22,7 +22,7 @@ Ordinary discovery skips `_mounts/`, `_info.md`, `README.md`, and the other excl
 
 Every mount source must remain within the content root after lexical normalization and filesystem canonicalization. Local note links and embeds resolve only against discovered pages. The compiler rejects absolute or root-escaping source paths and rejects symlinks anywhere in the content tree.
 
-Content assets are not part of the current resolver. Their authored destinations remain in AST nodes for the site renderer; validation, hashing, and copying are planned.
+The reserved `_assets/` directory is not page content. A separate asset pass admits only regular contained files and resolves explicit `assets/<path>` references against that root.
 
 MamboSite does not discover an Obsidian vault or synchronize authoring files. Project Mambo's optional materialization workflow is described in [[Documentation Sync]].
 
@@ -42,7 +42,7 @@ YAML is deserialized into a generic JSON-compatible value and then validated int
 
 Comrak parses the body with selected CommonMark/GFM and extension options. The adapter immediately lowers Comrak's arena-backed nodes into MamboSite's owned AST; no Comrak lifetime escapes it.
 
-The owned AST retains node kind, child order, source span, authored destinations, heading levels, code-block information, and parsed directive data.
+The owned AST retains node kind, child order, source span, heading levels, code-block information, and parsed directive data. Note destinations remain authored; explicit `assets/...` destinations are rewritten to validated public URLs during semantic resolution.
 
 ### 4. Directive and Obsidian lowering
 
@@ -56,7 +56,7 @@ The dialect pass recognizes `![[...]]`, `%%` comments, and block IDs left in tex
 
 Resolution occurs only after every relevant file is indexed. This allows forward links, aliases, backlinks, route collision checks, and cycle detection to work across the entire site.
 
-The compiler validates directives, headings, blocks, routes, and mount namespaces; derives titles, descriptions, page IDs, and direct children; then resolves links, fragments, note embeds, backlinks, cycles, and depth limits. Asset destinations, generated navigation, and search text are not derived yet.
+The compiler validates directives, headings, blocks, routes, and mount namespaces; derives titles, descriptions, page IDs, and direct children; resolves links, fragments, note embeds, backlinks, cycles, and depth limits; then validates and rewrites content-asset destinations. Generated navigation and search text are not derived yet.
 
 ## Internal node model
 
@@ -88,7 +88,7 @@ Directive
 ObsidianEmbed
 ```
 
-The parser AST remains authored syntax. Resolution stores normalized `outgoingLinks` and `embeds` beside that tree, keyed by destination and source span. The runtime uses those compiler-resolved graph edges instead of reparsing Markdown.
+For note references, the parser AST remains authored syntax. Resolution stores normalized `outgoingLinks` and `embeds` beside that tree, keyed by destination and source span. Explicit `assets/...` references are the exception: they are rewritten in the AST, frontmatter, and validated directives to their compiled public URL and do not create note-graph edges. The runtime uses these compiler-resolved values instead of reparsing Markdown.
 
 ## Wikilinks
 
@@ -186,18 +186,20 @@ The compiler builds a directed graph for Obsidian note embeds. `A -> B -> A` and
 
 ## Images and local assets
 
-Supported examples:
+Supported examples from any page directory:
 
 ```md
-![Alternative text](../Attachments/mambo.png)
-![[Attachments/mambo.png]]
-![[Attachments/mambo.png|640]]
-![[Attachments/mambo.png|640x360]]
+![Alternative text](assets/mambo.png)
+![[assets/mambo.png]]
+![[assets/mambo.png|640]]
+![[assets/mambo.png|640x360]]
 ```
 
-Schema 1 preserves standard image sources/alt text and Obsidian embed destinations/options in the AST. The default renderer emits an ordinary image for both forms; it does not interpret width options, inspect intrinsic dimensions, or classify audio, video, PDF, and download targets.
+The matching repository file is `_assets/mambo.png`. The fixed author namespace avoids page-relative guessing: `assets/mambo.png` always means that same file, including from nested articles. Standard Markdown images and links, wikilinks and Obsidian embeds, frontmatter `cover`, and `hero.image` or `button.href` values use this mapping when their destination starts with `assets/`.
 
-The compiler does not yet validate or copy these files. A website must expose authored paths from its own `public/` tree or add a pre-build copy step. The future asset pass will add containment checks, media classification, content-hashed names, and deduplication without changing Markdown syntax.
+For `assets_out = "public/mambo"`, compilation rewrites the example to `/mambo/assets/mambo.png`; the Next adapter adds `site.base_path` once when rendering. Missing files, escaping paths, symlinks, unsupported filesystem entries, and normalized path collisions are errors. A successful build copies the complete `_assets/` tree into the managed public output, so removed inputs do not survive the next build.
+
+Schema 1 preserves alt text and Obsidian size options but does not yet interpret those size options, inspect media, hash filenames, transform files, or deduplicate identical bytes. Destinations outside the explicit `assets/` namespace remain ordinary links or site-owned public paths.
 
 ## Callouts
 

@@ -21,7 +21,7 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 ```text
 repository docs/
     -> MamboSite Rust compiler
-    -> generated TypeScript + compiled theme assets
+    -> generated TypeScript + compiled theme/content assets
     -> versioned React runtime + selected theme
     -> static web build
     -> GitHub Pages
@@ -46,7 +46,7 @@ The compiler, React rendering engine, default components, theme contract, and st
 
 The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
 
-`mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio content patterns used during migration. Content-asset copying, fragment transclusion, tree/table collections, masonry/carousel galleries, search, and MamboWiki integration remain planned.
+`mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio content patterns used during migration, including validated content-asset publication. Fragment transclusion, tree/table collections, masonry/carousel galleries, search, and MamboWiki integration remain planned.
 
 ## Command line
 

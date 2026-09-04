@@ -26,7 +26,7 @@ MamboWiki/
 └── docs/                     # content_root
     ├── index.md              # configured site entry
     ├── about.md              # site-owned page
-    ├── assets/
+    ├── _assets/             # non-routable content assets
     │   └── logo.png
     └── _mounts/              # source storage, not an automatic route segment
         ├── mambodot/
@@ -55,7 +55,7 @@ blog/index.md                -> /blog/
 Rules:
 
 - Use `name.md` for a leaf page.
-- Use `name/index.md` when the page has child pages or colocated assets.
+- Use `name/index.md` when the page has child pages or related authoring material.
 - An `index.md` represents its containing directory.
 - `name.md` and `name/index.md` may not coexist because they produce the same route.
 - A directory without `index.md` is organisational only. Its descendants still receive routes, but the directory itself has no page.
@@ -72,7 +72,7 @@ The second pass is an explicit reachability rule, not a general exception that m
 
 The following are excluded by default:
 
-- Any path segment beginning with `_` during ordinary discovery. An explicit mount may enter `_mounts/`, but not an unrelated reserved directory.
+- Any path segment beginning with `_` during ordinary page discovery. An explicit mount may enter `_mounts/`; the asset pass reads only the reserved `_assets/` root.
 - `_info.md` anywhere, including inside a mounted subtree.
 - `README.md` anywhere. A repository or project README may coexist with documentation but is not a web page unless a future configuration explicitly opts it in.
 - Hidden filesystem entries beginning with `.`.
@@ -230,7 +230,7 @@ This graph supplies:
 - Embed cycle and depth validation.
 - Related-content inputs.
 
-An asset graph, nested mount graph, generated navigation/search model, and incremental dependency graph are planned.
+Richer asset metadata, a nested mount graph, generated navigation/search model, and an incremental dependency graph are planned.
 
 ## Self-contained content root contract
 
@@ -240,11 +240,13 @@ MamboSite begins with an already populated content root and has no dependency on
 - Every ordinarily discovered site-owned page.
 - Every mounted source index and its descendant pages.
 - Every local note reached by a link or embed that must resolve in the site.
-- Every local file needed by the site's own renderer or public directory.
+- Every published content asset under `_assets/`; site icons and fonts may remain site-owned files outside the managed `assets_out` subtree of `public/`.
 
 All logical note and mount paths are interpreted within this root. A build does not search parent directories, a home directory, a known vault location, sibling repositories, or the network to repair missing content.
 
-Schema 1 does not resolve, validate, hash, or copy content assets. Image and non-Markdown destinations remain authored paths, so a site must already expose them from `public/` or use its own pre-build copy step. `assets_out` currently contains generated `theme.css`; compiler-managed content assets are planned.
+Schema 1 gives content assets one explicit namespace. Authors reference `assets/<path>` from any page, while the repository stores the matching file at `_assets/<path>`. The compiler validates containment and existence, rewrites the reference to the public URL below `assets_out/assets/`, and publishes every regular file in `_assets/` with the generated theme. Asset paths are independent of the page's directory.
+
+Other local or absolute paths are not claimed by this namespace. This lets a site keep icons and fonts elsewhere in its own `public/` tree; files inside `assets_out` are managed and replaced on build. Content assets are copied without hashing, transformation, media inspection, or deduplication in schema 1.
 
 An example complete input is:
 
@@ -252,7 +254,7 @@ An example complete input is:
 docs/
 ├── index.md
 ├── about.md
-├── assets/
+├── _assets/
 │   └── logo.png
 └── _mounts/
     ├── mambodot/

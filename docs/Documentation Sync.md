@@ -17,6 +17,7 @@ Obsidian vault                         Repository                         MamboS
 ------------------------------         -----------------------------      -----------------
 Docs/Projects/<Project>/        ---->  README.md + docs/           ---->  compile docs/
 Docs/Projects/_sites/<Site>/    ---->  site docs + local mounts           ignore vault layout
+Docs/assets/<Site>/             ---->  docs/_assets/                       publish content assets
 ```
 
 Other users may edit `docs/` directly, generate it from another system, or implement a different synchronizer. The only compiler requirement is the final repository-local content contract described in [[Content Model]].
@@ -26,26 +27,29 @@ Other users may edit `docs/` directly, generate it from another system, or imple
 The vault separates project ownership from site composition:
 
 ```text
-Docs/Projects/
-├── MamboColour/                 # canonical documentation for one project
-│   ├── index.md                 # project landing page when mounted
-│   ├── README.md                # repository README source
-│   └── Commands.md
-├── MamboDot/
-├── MamboFinance/
-├── MamboFolio/
-├── MamboFont/
-├── MamboSite/                   # MamboSite's own documentation
-├── MamboWiki/
-└── _sites/
-    ├── MamboFolio/              # portfolio-owned pages and route hierarchy
-    │   ├── index.md
-    │   ├── About.md
-    │   ├── blog/
-    │   ├── gallery/
-    │   └── projects/
-    └── MamboWiki/               # wiki root and mount declarations
-        └── index.md
+Docs/
+├── assets/
+│   └── MamboFolio/              # publishable portfolio media
+└── Projects/
+    ├── MamboColour/             # canonical documentation for one project
+    │   ├── index.md             # project landing page when mounted
+    │   ├── README.md            # repository README source
+    │   └── Commands.md
+    ├── MamboDot/
+    ├── MamboFinance/
+    ├── MamboFolio/
+    ├── MamboFont/
+    ├── MamboSite/               # MamboSite's own documentation
+    ├── MamboWiki/
+    └── _sites/
+        ├── MamboFolio/          # portfolio-owned pages and route hierarchy
+        │   ├── index.md
+        │   ├── About.md
+        │   ├── blog/
+        │   ├── gallery/
+        │   └── project/
+        └── MamboWiki/           # wiki root and mount declarations
+            └── index.md
 ```
 
 Each `Docs/Projects/MamboXXX/` directory is the single authored copy of that project's documentation. A `_sites/<Site>/` directory contains only pages owned by the site itself. It may publish canonical project documentation through mounts without nesting the authored project directories or creating symlinks.
@@ -59,6 +63,7 @@ This also resolves the MamboWiki self-documentation case. `Docs/Projects/_sites/
 - A canonical project source at `Docs/Projects/<Project>/`.
 - A repository destination at `~/ProjectMambo/<Project>/`.
 - Optionally, a site source at `Docs/Projects/_sites/<Site>/`.
+- Optionally, an explicit asset source below `Docs/assets/`.
 
 Current site profiles are MamboFolio and MamboWiki. MamboSite is an ordinary project profile: its documentation fills `MamboSite/docs/`, while its Cargo/npm workspaces, tests, templates, and other source files remain untouched. If a repository later needs both site-owned pages and mounts, adding `siteSource` changes only how that repository's `docs/` is assembled.
 
@@ -87,7 +92,7 @@ Docs/Projects/MamboSite/        ---->  docs/
 Docs/Projects/MamboSite/README.md ---> README.md
 ```
 
-The root `README.md` is a second transformed copy of the canonical project README. The repository root itself is never cleaned; source code and configuration outside `docs/` are not touched.
+The root `README.md` is a second transformed copy of the canonical project README. Canonical inline links use root-relative `docs/...` destinations; the copy inside `docs/` removes that prefix so both copies resolve locally. The repository root itself is never cleaned; source code and configuration outside `docs/` are not touched.
 
 Within a MamboSite content root, `README.md` is repository documentation and is non-routable by default. `index.md` remains the publishable landing page.
 
@@ -176,7 +181,7 @@ The ordinary-page transformation is intentionally narrow:
 - When removing the complete block, leading blank separator lines are removed with it; authored Markdown is not globally trimmed by MamboSite.
 - Markdown bodies and non-Markdown files are otherwise copied as authored.
 
-`README.md` is the exception. Every file whose exact basename is `README.md` has its complete leading YAML frontmatter block removed, whether it is copied into `docs/`, to a repository root, or through a standalone file export. A byte-order mark is also removed. If a README begins a frontmatter block without closing it, the sync fails before replacing any destination.
+`README.md` is the exception. Every file whose exact basename is `README.md` has its complete leading YAML frontmatter block removed, whether it is copied into `docs/`, to a repository root, or through a standalone file export. Inline `docs/...` links are localized only in the `docs/README.md` copy. A byte-order mark is also removed. If a README begins a frontmatter block without closing it, the sync fails before replacing any destination.
 
 Any file whose exact basename is `_info.md` is excluded at every depth. It is vault organisation metadata, not repository documentation or site content.
 
@@ -198,9 +203,16 @@ The operation is deterministic for identical vault inputs. It is safe to run rep
 
 ## Assets and external dependencies
 
-The sync script copies non-Markdown assets located inside each selected project or site directory. It does not crawl the entire private vault to find arbitrary attachments. A reference to an asset outside those copied directories therefore remains unresolved by the site; schema 1 does not diagnose the missing file.
+A site profile may name one explicit source below `Docs/assets/`. MamboFolio currently maps the contents of `Docs/assets/MamboFolio/` byte-for-byte to the reserved repository directory `docs/_assets/`. The staged site source may not also contain `_assets/`, so two inputs can never silently overwrite each other.
 
-The initial convention is to colocate publishable assets with the owning project or site content. Schema 1 does not yet publish those copied files into the website's `public/` tree, so sites must provide public paths or a pre-build asset step. If shared attachment roots are needed later, they must be explicit configured sources; the synchronizer must never copy unrelated vault content implicitly.
+```text
+Vault                                  Repository             Published by mbsite build
+Docs/assets/MamboFolio/profile/a.jpg   docs/_assets/profile/a.jpg   public/mambo/assets/profile/a.jpg
+```
+
+Markdown and directives refer to that file as `assets/profile/a.jpg`. This is a MamboSite root-relative content namespace, not a path relative to the current note directory. The compiler validates and rewrites it after sync. Site icons and fonts remain site-owned files outside the managed `assets_out` subtree of `public/` and are not part of this asset source.
+
+The synchronizer never crawls the private vault for attachments. A profile without `assetSource` exports no external asset tree, and a configured source must remain below `Docs/assets/` and contain no symlinks. The complete `docs/` replacement removes stale synchronized assets.
 
 ## Separation of responsibilities
 
@@ -215,7 +227,8 @@ The boundary is deliberate:
 | Rewrite vault mount sources to repository-local paths | Yes | No |
 | Parse Markdown and directives | No | Yes |
 | Resolve repository-local mounts, note links, and note embeds | No | Yes |
-| Validate and publish content assets | No | Planned |
+| Select and materialize an explicit Vault asset source | Yes | No |
+| Validate asset references and publish content assets | No | Yes |
 | Derive routes and child relationships | No | Yes |
 | Generate TypeScript and static site data | No | Yes |
 

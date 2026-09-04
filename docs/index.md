@@ -23,4 +23,4 @@ The initial compiler, React runtime, default theme, Next.js adapter, and `check`
 - [[Diagnostics and Testing]] — validation, error reporting, fixtures, and quality gates.
 - [[Roadmap]] — current status, remaining phases, non-goals, and unresolved decisions.
 
-The current milestone covers the content patterns used by MamboFolio. Content-asset publication, fragment transclusion, advanced collection/gallery views, search, package publication, and MamboWiki integration remain planned.
+The current milestone covers the content patterns used by MamboFolio, including validated content-asset publication. Fragment transclusion, advanced collection/gallery views, search, package publication, and MamboWiki integration remain planned.

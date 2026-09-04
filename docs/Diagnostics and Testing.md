@@ -30,7 +30,7 @@ Current diagnostic families are:
 | `MS2xxx` | Source discovery, UTF-8, and frontmatter |
 | `MS3xxx` | Markdown, Obsidian syntax, and directives |
 | `MS4xxx` | Routes and mounts |
-| `MS5xxx` | Note links, fragments, and note embeds |
+| `MS5xxx` | Note links, fragments, note embeds, and content assets |
 | `MST1xxx` | Theme schema and token validation |
 
 Code-generation and lifecycle errors do not yet have `MS6xxx`/`MS7xxx` structured codes.
@@ -45,6 +45,7 @@ MamboSite currently rejects:
 - Unclosed code fences or Obsidian comments/embeds, invalid or duplicate block IDs, and malformed/unknown/misnested directives.
 - Empty or duplicate routes, invalid mount sources/routes, overlapping mount paths, and physical pages inside mounted namespaces.
 - Missing or ambiguous note targets/fragments, unsafe URL schemes, and note-embed cycles or excessive depth.
+- Missing, escaping, symlinked, unsupported, or normalized-colliding content assets.
 - Invalid theme schemas/tokens and unsafe or unowned generated-output directories.
 
 Current warnings are multiple H1 headings, heading-level jumps, raw HTML when disabled, and unresolved/ambiguous note references when `markdown.strict_links = false`. There is no `--deny-warnings` option yet.
@@ -52,18 +53,18 @@ Current warnings are multiple H1 headings, heading-level jumps, raw HTML when di
 Not yet validated:
 
 - Date syntax or normalized taxonomy identifiers.
-- Content-asset existence, media type, dimensions, containment, or public output.
+- Content-asset media type, intrinsic dimensions, content hashing, or transformation.
 - Draft-to-published reference policy.
-- Compiler-authoritative targets for directive properties such as `include.source` and `button.href`.
+- Compiler-authoritative targets for directive properties such as `include.source` and non-asset `button.href` values.
 - Accessibility, external links, or generated search/navigation records.
 
 ## Output safety
 
-Compilation or theme-validation errors leave existing generated trees untouched. Each generated tree carries `.mambosite-generated`; replacement refuses unmarked non-empty directories, writes a temporary sibling, and restores the previous tree when publication fails. TypeScript and theme assets are published as two separately managed trees, not one cross-directory transaction.
+Compilation or theme-validation errors leave existing generated trees untouched. Each generated tree carries `.mambosite-generated`; replacement refuses unmarked non-empty directories, writes a temporary sibling, and restores the previous tree when publication fails. TypeScript and the combined theme/content-asset tree are published as two separately managed trees, not one cross-directory transaction.
 
 ## Current tests
 
-Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, reference graphs, deterministic TypeScript generation, managed writers, theme compilation, CLI parsing, init safety, build orchestration, and deploy decisions.
+Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, theme compilation, CLI parsing, init safety, build orchestration, and deploy decisions.
 
 The npm workspace has focused Node tests for:
 

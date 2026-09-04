@@ -308,7 +308,7 @@ Renders a themed link while retaining link semantics.
 ::button{label="Source code" href="https://github.com/ProjectMambo/MamboSite" variant="primary" external=true}
 ```
 
-Properties: `label`, `href`, `variant` (`primary`, `secondary`, `quiet`), `external`, and optional `icon`. An internal `href` is resolved with the same rules as Markdown links.
+Properties: `label`, `href`, `variant` (`primary`, `secondary`, `quiet`, `card`), `external`, and optional `icon`. `card` is intended for action/contact grids while retaining link semantics. An `assets/...` href uses the compiled content-asset namespace; other internal targets follow the current runtime resolution boundary described below.
 
 ### `section`
 
@@ -353,7 +353,7 @@ Right content.
 ::::
 ```
 
-`columns` accepts `count` from 2 to 4, `gap` (`small`, `normal`, `large`), and `collapse-at` (`sm`, `md`, `lg`, `never`). Its direct directive children must be `column`, and their count must match `count`.
+`columns` accepts `count` from 2 to 4, `gap` (`small`, `normal`, `large`), and `collapse-at` (`sm`, `md`, `lg`, `never`). `count` is the number of grid tracks, not a limit on items: the container may have more direct `column` children and wraps them into later rows, but it must have at least `count`. All direct directive children must be `column`.
 
 ## Current default-renderer coverage
 

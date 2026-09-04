@@ -39,7 +39,7 @@ theme settings           emit TypeScript and theme CSS        web adapter/export
 
 Rust owns compiled meaning: routes, metadata, Markdown semantics, directives, note links, note embeds, child relationships, backlinks, theme validation, and diagnostics. TypeScript owns presentation: graph queries, React elements, layouts, styling, client interactions, and static page rendering. MamboSite owns both sides of this boundary; consuming sites configure them and may override typed registry entries.
 
-Content-asset resolution/publication, a separate navigation model, and search records are not implemented yet. They remain Rust responsibilities when added; the runtime must not guess missing compiler semantics.
+Content-asset resolution and publication are Rust responsibilities. A separate navigation model and search records are not implemented yet; the runtime must not guess those missing compiler semantics.
 
 The boundary must remain data-oriented. Rust must not generate React page source for every document, and React must not reparse Markdown. Framework adapters must consume the same compiled data and component registry rather than inventing another content model.
 
@@ -118,6 +118,7 @@ MamboWiki/
 ├── docs/
 │   ├── index.md                  # site entry
 │   ├── about.md                  # optional site-owned pages
+│   ├── _assets/                  # non-routable content assets
 │   └── _mounts/                  # materialized mounted sources
 │       ├── mambocolour/
 │       ├── mambodot/
@@ -127,7 +128,7 @@ MamboWiki/
 │       ├── mambosite/
 │       └── mambowiki/
 ├── public/
-│   └── mambo/                    # generated theme.css; content assets later
+│   └── mambo/                    # generated theme.css + content assets
 ├── src/
 │   ├── app/
 │   │   ├── page.tsx
@@ -157,9 +158,10 @@ The current compiler runs these ordered stages:
 7. Validate directives, headings, blocks, routes, and mount namespaces.
 8. Derive titles, descriptions, direct children, and stable page IDs.
 9. Resolve Markdown links, wikilinks, fragments, note embeds, backlinks, embed cycles, and depth limits.
-10. Stop on errors; otherwise emit managed TypeScript plus `theme.ts` and `theme.css`.
+10. Validate `_assets/`, rewrite explicit `assets/...` references, and collect files for publication.
+11. Stop on errors; otherwise emit managed TypeScript plus the managed theme/content-asset tree.
 
-Content-asset publication, navigation/search output, and structural fragment transclusion are later stages, not implicit parts of the current compiler.
+Navigation/search output and structural fragment transclusion remain later stages.
 
 A later stage must never silently repair an ambiguous earlier stage. For example, an ambiguous wikilink is an error, not a request to choose the first matching file.
 
@@ -188,7 +190,7 @@ max_embed_depth = 16
 
 Paths in configuration are relative to the configuration file unless documented otherwise. Absolute paths must never be written into generated output.
 
-`site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of the repository's `public/` directory because its relative path becomes the public prefix for `theme.css`.
+`site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of the repository's `public/` directory because its relative path becomes the public prefix for `theme.css` and compiled content assets.
 
 ## Major decisions
 

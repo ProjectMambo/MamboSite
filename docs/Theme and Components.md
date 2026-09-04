@@ -158,7 +158,7 @@ Content renderers map normalized AST nodes to semantic HTML:
 - Footnotes and math.
 - Links and embeds.
 
-Audio/video/PDF classification and content-asset publication are planned. Raw HTML is displayed as code text rather than injected.
+The compiler publishes content assets, while specialized audio/video/PDF classification and renderers remain planned. Raw HTML is displayed as code text rather than injected.
 
 ### Directive components
 
@@ -181,7 +181,7 @@ columns        -> Columns
 column         -> Column
 ```
 
-`children view="grid"` renders ordinary page-preview cards. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. This remains a semantic page collection, so it cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button` directives instead; the default theme makes those buttons fill their columns.
+`children view="grid"` renders ordinary page-preview cards. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. This remains a semantic page collection, so it cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button variant="card"` directives instead. The buttons remain links, fill their cells, and cycle through the same positional accent borders as content cards.
 
 The default package currently renders direct child list/grid/card views and grid galleries. Tree/table child views, nested child depth, masonry/carousel galleries, and fragment includes show an explicit unsupported-mode message. A registry override may implement those contracts sooner.
 
@@ -191,8 +191,10 @@ MamboSite's default theme package owns:
 
 - Header and primary navigation.
 - A vertically centered rectangular brand link with configured brand, hover, and active colours.
+- A compact stacked navigation menu below the configured breakpoint and inline navigation above it.
 - Footer.
 - Theme selection and persistence.
+- A reusable CSS tooltip, used by the theme control instead of a browser `title` popup.
 - Site metadata.
 - Page chrome.
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
@@ -278,7 +280,7 @@ Below the configured `content` breakpoint, the automatic TOC is an inline block 
 - `columns` collapse at their declared breakpoint.
 - Card grids choose safe responsive minimum widths; `columns=6` is a maximum intent, not a command to squeeze six unreadable cards onto mobile.
 - Tables and code blocks scroll horizontally without widening the page; page copy, cards, controls, and long destinations wrap instead of forcing overflow.
-- Navigation remains keyboard accessible and horizontally scrollable when the available width is smaller than its links.
+- Compact navigation opens from a labelled button into a stacked menu; it closes after link activation or Escape and does not consume persistent page height while closed.
 - The automatic TOC is inline below the content breakpoint and a sticky side rail at and above it, so it never overlays the article.
 - Images remain constrained to their container, collection columns are capped at each configured breakpoint, and layout children use shrink-safe grid and flex sizing.
 
@@ -301,7 +303,7 @@ These are release requirements, not a claim that a complete automated accessibil
 
 ## Client JavaScript policy
 
-The page body renders during the static build. Current client code is limited to theme switching/persistence, the header's hide-on-scroll behavior and clock, and history-aware Back clicks. Collapsible navigation, TOC tracking, search, and carousel interaction are planned.
+The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, and history-aware Back clicks. TOC tracking, search, and carousel interaction are planned.
 
 Cards, Markdown, navigation links, callouts, embeds, ordinary child collections, and the route-parent Back fallback work without hydration. Hydrated same-page fragment links replace their current hash entry, so several TOC jumps still need only one Back activation to leave the page. Link, navigation, brand, theme, card, and button feedback uses native CSS transitions. The reduced-motion media query disables smooth scrolling and reduces transition durations, so this feedback does not require another client animation system.
 

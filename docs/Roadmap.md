@@ -15,8 +15,8 @@ The repository has passed the compiler-skeleton milestone and now contains an in
 | Content discovery, core frontmatter types, routes, diagnostics | Implemented for schema 1; date/taxonomy validation remains planned |
 | CommonMark/GFM and supported Obsidian-compatible AST | Implemented with source spans and fixtures |
 | Directive parsing and registry validation | Implemented for the documented core registry |
-| Page, link, embed, backlink, mount, and route graph | Implemented for note references; directive target edges, fragment transclusion, and content assets remain incomplete |
-| TypeScript output | Manifest, page modules, index, and theme metadata are deterministic and atomically published; navigation, search, build-info, and copied content assets remain planned |
+| Page, link, embed, backlink, mount, route, and asset resolution | Implemented for note references and explicit `assets/...` paths; directive target edges and fragment transclusion remain incomplete |
+| Generated output | TypeScript, theme CSS, and binary content assets are deterministic and atomically published per managed tree; navigation, search, and build-info remain planned |
 | React runtime | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio content |
 | Theme settings | Rust-validated `mambo.theme.toml` compiles to generated CSS variables, responsive rules, and typed metadata |
 | Lifecycle commands | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented |

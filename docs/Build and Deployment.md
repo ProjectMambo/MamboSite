@@ -13,7 +13,7 @@ MamboSite starts from a self-contained content tree inside the website repositor
 ```text
 1. Prepare the repository-local docs/ tree
 2. Parse and validate docs/ with Rust
-3. Generate TypeScript and theme CSS
+3. Generate TypeScript, theme CSS, and content assets
 4. Render through the versioned MamboSite React runtime and build a static export
 5. Upload the static artifact to GitHub Pages
 ```
@@ -30,6 +30,7 @@ MamboWiki/
 ├── docs/
 │   ├── index.md
 │   ├── about.md
+│   ├── _assets/
 │   └── _mounts/
 │       ├── mambodot/
 │       └── mambosite/
@@ -43,8 +44,9 @@ Before `mbsite check` or `mbsite build` runs, `docs/` must contain:
 - Every physical site page.
 - Every mounted documentation tree.
 - Every local link or embed target required by the site.
+- Every `assets/...` target under the matching `_assets/` path.
 
-Schema 1 does not validate or publish content assets. Authored image paths must already resolve through the website's `public/` tree or another site-owned copy step.
+Content assets use a fixed mapping: authored `assets/<path>` resolves to repository `_assets/<path>` and is published under the managed `assets_out/assets/` directory. Site-owned icons and fonts can remain ordinary files elsewhere in `public/`; manual files must stay outside `assets_out`, which MamboSite replaces as a managed tree.
 
 All compiler paths are interpreted relative to this content root. Mounted copies may live under an excluded implementation directory such as `_mounts/`; an explicit mount makes their pages public at the mount's configured route. The compiler must not depend on where these files lived before they entered the repository.
 
@@ -85,7 +87,7 @@ workflow = ".github/workflows/pages.yml"
 
 `--config` chooses the TOML file; omitted fields use schema defaults. A full build passes the configured `site.base_path` and `site.url` to the renderer as `MAMBOSITE_BASE_PATH` and `MAMBOSITE_SITE_URL`. There are no environment overrides for content semantics.
 
-`site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of `public/`; its relative path becomes the browser-facing prefix for generated `theme.css`.
+`site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of `public/`; its relative path becomes the browser-facing prefix for generated `theme.css` and the `assets/` content subtree.
 
 ## Commands
 
@@ -99,7 +101,7 @@ Runs the complete repository-local build:
 
 1. Load and validate content and theme configuration.
 2. Parse, resolve, and validate the complete content graph.
-3. Generate TypeScript and theme CSS into separate managed output trees.
+3. Generate TypeScript and the theme/content-asset tree into separate managed outputs.
 4. Invoke the configured framework adapter build without a shell.
 5. Verify that the configured static output directory exists.
 
@@ -187,7 +189,7 @@ The current Next adapter prepends the configured base path to internal links and
 - A custom domain such as `https://projectmambo.org` normally uses an empty base path.
 - A project Pages URL such as `https://projectmambo.github.io/MamboWiki` uses `/MamboWiki`.
 - Internal route identity remains `/mambodot/commands/`; the runtime prepends the deployment base path when creating browser URLs.
-- Canonical URL declarations, sitemap output, RSS, richer Open Graph data, and compiler-copied asset URLs are planned.
+- Canonical URL declarations, sitemap output, RSS, and richer Open Graph data are planned. Content-asset URLs are compiled now; hashing and media transformation remain future work.
 - Content authors should not manually include the deployment base path in internal links.
 
 `trailing_slash = true` is the preferred initial policy because directory-style routes map naturally to `route/index.html` on static hosts.
@@ -225,7 +227,7 @@ The scaffold currently names the intended `v0.1.0` compiler tag and `0.1.0` npm 
 Preferred policy:
 
 - Commit the repository-local `docs/` tree because it is the public website content snapshot.
-- Do not commit `src/generated/mambo/` or generated `public/mambo/theme.css`.
+- Do not commit `src/generated/mambo/` or the generated `public/mambo/` tree.
 - Rebuild generated data and theme CSS in local development and CI.
 - Commit lockfiles for Rust and the website package manager.
 - Pin the MamboSite compiler version used by a website.
