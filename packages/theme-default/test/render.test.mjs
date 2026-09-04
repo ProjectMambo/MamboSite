@@ -26,16 +26,66 @@ test("default styles do not duplicate generated theme values as literal fallback
     /\.mambo-site-header__inner\s*\{[^}]*display: var\(--mambo-header-display\)/s,
   );
   assert.doesNotMatch(css, /\.mambo-site-header\s*\{[^}]*display:/s);
+  assert.doesNotMatch(css, /\.mambo-site-navigation\s*\{[^}]*overflow-x: auto/s);
   assert.match(
     css,
-    /\.mambo-site-navigation\s*\{[^}]*overflow-x: auto/s,
+    /\.mambo-site-navigation\s*\{[^}]*display: var\(--mambo-header-navigation-display\)[^}]*flex-direction: var\(--mambo-header-navigation-direction\)[^}]*position: var\(--mambo-header-navigation-position\)/s,
   );
+  assert.match(
+    css,
+    /\.mambo-site-navigation\[data-open="true"\]\s*\{[^}]*max-block-size: calc\(100dvh - var\(--mambo-dimension-header-height\)\)[^}]*overflow-y: auto/s,
+  );
+  assert.match(
+    css,
+    /\.mambo-navigation-toggle\s*\{[^}]*display: var\(--mambo-header-toggle-display\)/s,
+  );
+  assert.match(css, /\.mambo-theme-toggle > span\s*\{[^}]*font-size: 1\.5em/s);
+  assert.match(css, /\.mambo-tooltip:focus-within \.mambo-tooltip__content/);
   assert.match(css, /a:active\s*\{[^}]*--mambo-color-brand-active/s);
-  assert.match(css, /\.mambo-site-header:focus-within\s*\{[^}]*translateY\(0\)/s);
+  assert.match(css, /\.mambo-site-header:has\([^}]*\{[^}]*translateY\(0\)/s);
   assert.match(css, /\.mambo-back-link--top\s*\{[^}]*grid-column: 1 \/ -1/s);
   assert.match(css, /\.mambo-collection\[data-view="cards"\]/);
   assert.match(css, /\[data-layout="gallery"\][^{]*\{[^}]*--mambo-width-gallery-image-max/s);
   assert.doesNotMatch(css, /minmax\(min\(100%, var\(--mambo-width-card-min\)/);
+});
+
+test("header renders an accessible compact menu and custom theme tooltip", () => {
+  const page = compiledPage({
+    id: "p_header",
+    route: "/",
+    data: {
+      navigation: [
+        { label: "Brand", href: "/" },
+        { label: "Docs", href: "/docs/" },
+      ],
+    },
+  });
+  const manifest = {
+    schemaVersion: 1,
+    site: {
+      title: "Fixture",
+      basePath: "",
+      language: "en-SG",
+      trailingSlash: true,
+    },
+    entryPage: page.id,
+    routes: { "/": page.id },
+    pages: [page],
+  };
+  const runtime = createMamboRuntime({ manifest, pages: [page], registry: defaultRegistry });
+  const Header = defaultRegistry.shell.Header;
+  const html = renderToStaticMarkup(createElement(Header, { runtime }));
+  const navigationId = html.match(/aria-controls="([^"]+)"/)?.[1];
+  const tooltipId = html.match(/aria-describedby="([^"]+)"/)?.[1];
+
+  assert.ok(navigationId);
+  assert.ok(tooltipId);
+  assert.match(html, /aria-expanded="false"/);
+  assert.match(html, new RegExp(`id="${navigationId}"`));
+  assert.match(html, /data-open="false"/);
+  assert.match(html, new RegExp(`id="${tooltipId}" role="tooltip"`));
+  assert.match(html, />Change colour theme<\/span>/);
+  assert.doesNotMatch(html, /title="Change colour theme"/);
 });
 
 test("default theme renders compiled Markdown and resolved directives", () => {

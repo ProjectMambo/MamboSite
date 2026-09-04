@@ -21,3 +21,4 @@ export {
 export { NotFound } from "./shell/NotFound.js";
 export { SiteFooter } from "./shell/SiteFooter.js";
 export { SiteHeader } from "./shell/SiteHeader.js";
+export { Tooltip, type TooltipProps } from "./shell/HeaderClient.js";

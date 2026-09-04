@@ -1,6 +1,11 @@
 import { type JsonObject, type JsonValue } from "@mambosite/runtime";
 import type { SiteHeaderProps } from "@mambosite/react";
-import { HeaderBehavior, SiteClock, ThemeButton } from "./HeaderClient.js";
+import {
+  HeaderBehavior,
+  NavigationMenu,
+  SiteClock,
+  ThemeButton,
+} from "./HeaderClient.js";
 
 interface NavigationItem {
   readonly label: string;
@@ -23,11 +28,11 @@ export function SiteHeader({ runtime }: SiteHeaderProps) {
         <Link className="mambo-site-brand" href="/">
           {brand?.label ?? runtime.store.manifest.site.title}
         </Link>
-        <nav className="mambo-site-navigation" aria-label="Primary navigation">
+        <NavigationMenu>
           {navigation.map((item) => (
             <Link href={item.href} key={`${item.href}-${item.label}`}>{item.label}</Link>
           ))}
-        </nav>
+        </NavigationMenu>
         <div className="mambo-site-tools">
           <ThemeButton defaultScheme={theme.defaultScheme} schemes={theme.schemes} />
           <SiteClock locale={runtime.options.locale ?? runtime.store.manifest.site.language} />

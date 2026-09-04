@@ -115,7 +115,7 @@ export interface IncludeDirectiveConfig {
 export interface ButtonDirectiveConfig {
   readonly label: string;
   readonly href: string;
-  readonly variant: "primary" | "secondary" | "quiet";
+  readonly variant: "primary" | "secondary" | "quiet" | "card";
   readonly external: boolean;
   readonly icon?: string;
 }

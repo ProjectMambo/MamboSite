@@ -334,6 +334,22 @@ fn responsive_declarations(theme: &Theme, point: Point) -> Vec<(String, String)>
     if let Some(mode) = at(&theme.components.header.mode, point) {
         declarations.push(("header-display".to_owned(), mode.display().to_owned()));
         declarations.push(("header-grid-template".to_owned(), mode.columns().to_owned()));
+        declarations.push((
+            "header-navigation-display".to_owned(),
+            mode.navigation_display().to_owned(),
+        ));
+        declarations.push((
+            "header-navigation-direction".to_owned(),
+            mode.navigation_direction().to_owned(),
+        ));
+        declarations.push((
+            "header-navigation-position".to_owned(),
+            mode.navigation_position().to_owned(),
+        ));
+        declarations.push((
+            "header-toggle-display".to_owned(),
+            mode.toggle_display().to_owned(),
+        ));
     }
     if let Some(visibility) = at(&theme.components.header.clock, point) {
         declarations.push((
@@ -432,6 +448,18 @@ fn write_sidebar(css: &mut String, mode: SidebarMode) {
 fn write_header_mode(css: &mut String, mode: HeaderMode) {
     declaration(css, "header-display", mode.display());
     declaration(css, "header-grid-template", mode.columns());
+    declaration(css, "header-navigation-display", mode.navigation_display());
+    declaration(
+        css,
+        "header-navigation-direction",
+        mode.navigation_direction(),
+    );
+    declaration(
+        css,
+        "header-navigation-position",
+        mode.navigation_position(),
+    );
+    declaration(css, "header-toggle-display", mode.toggle_display());
 }
 
 fn declaration(css: &mut String, name: &str, value: impl std::fmt::Display) {

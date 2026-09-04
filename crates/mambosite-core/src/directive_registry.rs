@@ -330,13 +330,13 @@ impl Validator<'_> {
         }
 
         if let Some(expected) = integer_property(normalized, "count")
-            && expected != column_count
+            && column_count < expected
         {
             self.push_invocation_diagnostic(
                 Diagnostic::error(
                     "MS3510",
                     format!(
-                        "`columns.count` is {expected}, but the container has {column_count} direct `column` children"
+                        "`columns.count` is {expected}, but the container has only {column_count} direct `column` children"
                     ),
                 ),
                 invocation,
@@ -591,7 +591,7 @@ const BUTTON: &[PropertyRule] = &[
     required("href", STRING),
     property(
         "variant",
-        ValueRule::Enumeration(&["primary", "secondary", "quiet"]),
+        ValueRule::Enumeration(&["primary", "secondary", "quiet", "card"]),
     ),
     property("external", BOOLEAN),
     property("icon", STRING),
@@ -967,6 +967,19 @@ mod tests {
     }
 
     #[test]
+    fn accepts_a_card_button_variant() {
+        let source = "::button{label=\"Contact\" href=\"/contact/\" variant=\"card\"}";
+        let root = document(vec![leaf(source)]);
+        let outcome = validate(&root, source, true);
+
+        assert!(outcome.diagnostics.is_empty());
+        assert_eq!(
+            outcome.directives[0].properties["variant"],
+            DirectiveValue::String("card".into())
+        );
+    }
+
+    #[test]
     fn diagnoses_unknown_names_properties_and_form() {
         let root = document(vec![
             leaf("::unknown{}"),
@@ -1025,12 +1038,23 @@ mod tests {
     }
 
     #[test]
-    fn validates_columns_direct_children_and_count() {
+    fn validates_columns_direct_children_and_track_count() {
         let good = container(
             "columns{count=2}",
             vec![container("column", vec![]), container("column", vec![])],
         );
         assert_eq!(validate(&document(vec![good]), "", true).diagnostics, []);
+
+        let wrapped = container(
+            "columns{count=2}",
+            vec![
+                container("column", vec![]),
+                container("column", vec![]),
+                container("column", vec![]),
+                container("column", vec![]),
+            ],
+        );
+        assert_eq!(validate(&document(vec![wrapped]), "", true).diagnostics, []);
 
         let bad = container(
             "columns{count=2}",

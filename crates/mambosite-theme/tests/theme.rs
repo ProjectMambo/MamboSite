@@ -108,6 +108,18 @@ fn nested_settings_override_without_erasing_default_siblings() {
             .css
             .contains("--mambo-header-grid-template: auto 1fr auto;")
     );
+    for declaration in [
+        "--mambo-header-navigation-display: none;",
+        "--mambo-header-navigation-display: flex;",
+        "--mambo-header-navigation-direction: column;",
+        "--mambo-header-navigation-direction: row;",
+        "--mambo-header-navigation-position: absolute;",
+        "--mambo-header-navigation-position: static;",
+        "--mambo-header-toggle-display: inline-flex;",
+        "--mambo-header-toggle-display: none;",
+    ] {
+        assert!(output.css.contains(declaration));
+    }
     assert!(!output.css.contains("min-width: var("));
     assert!(output.typescript.contains("\"headerHideAfter\": 96"));
 }

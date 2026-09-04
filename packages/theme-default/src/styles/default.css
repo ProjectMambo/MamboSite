@@ -74,7 +74,8 @@ a:active {
   transform: translateY(-110%);
 }
 
-.mambo-site-header:focus-within {
+.mambo-site-header:focus-within,
+.mambo-site-header:has(.mambo-site-navigation[data-open="true"]) {
   transform: translateY(0);
 }
 
@@ -87,6 +88,7 @@ a:active {
   max-width: var(--mambo-width-shell);
   min-height: var(--mambo-dimension-header-height);
   padding-inline: var(--mambo-layout-header-inline-padding);
+  position: relative;
 }
 
 .mambo-site-brand {
@@ -133,6 +135,7 @@ a:active {
   gap: var(--mambo-space-sm);
 }
 
+.mambo-navigation-toggle,
 .mambo-theme-toggle {
   align-items: center;
   background: transparent;
@@ -153,6 +156,24 @@ a:active {
     transform var(--mambo-motion-fast) var(--mambo-motion-easing);
 }
 
+.mambo-navigation-toggle {
+  display: var(--mambo-header-toggle-display);
+}
+
+.mambo-navigation-toggle > span,
+.mambo-theme-toggle > span {
+  line-height: 1;
+}
+
+.mambo-navigation-toggle > span {
+  font-size: 1.35em;
+}
+
+.mambo-theme-toggle > span {
+  font-size: 1.5em;
+}
+
+.mambo-navigation-toggle:hover,
 .mambo-theme-toggle:hover {
   background: var(--mambo-color-brand-hover);
   border-color: var(--mambo-color-brand-hover);
@@ -160,6 +181,7 @@ a:active {
   transform: translateY(-0.1rem);
 }
 
+.mambo-navigation-toggle:active,
 .mambo-theme-toggle:active {
   background: var(--mambo-color-brand-active);
   border-color: var(--mambo-color-brand-active);
@@ -167,22 +189,78 @@ a:active {
   transform: translateY(0);
 }
 
-.mambo-site-navigation {
+.mambo-tooltip {
+  display: inline-flex;
+  position: relative;
+}
+
+.mambo-tooltip__content {
+  background: var(--mambo-color-surface-strong);
+  border: var(--mambo-border-thin) var(--mambo-border-style)
+    var(--mambo-color-border);
+  box-shadow: var(--mambo-shadow-small);
+  color: var(--mambo-color-text);
+  font-size: var(--mambo-type-small-size);
+  inset-block-start: calc(100% + var(--mambo-space-xs));
+  inset-inline-end: 0;
+  opacity: 0;
+  padding: var(--mambo-space-xxs) var(--mambo-space-sm);
+  pointer-events: none;
+  position: absolute;
+  transform: translateY(-0.25rem);
+  transition:
+    opacity var(--mambo-motion-fast) var(--mambo-motion-easing),
+    transform var(--mambo-motion-fast) var(--mambo-motion-easing);
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.mambo-tooltip:hover .mambo-tooltip__content,
+.mambo-tooltip:focus-within .mambo-tooltip__content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mambo-site-navigation-menu {
+  align-items: center;
   display: flex;
   flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.mambo-site-navigation {
+  align-items: stretch;
+  background: var(--mambo-color-header-background);
+  display: var(--mambo-header-navigation-display);
+  flex: 1;
+  flex-direction: var(--mambo-header-navigation-direction);
   flex-wrap: nowrap;
   gap: var(--mambo-space-md);
+  inset-block-start: 100%;
+  inset-inline: 0;
   justify-content: safe center;
   min-width: 0;
-  overflow-x: auto;
   padding: var(--mambo-space-xxs);
+  position: var(--mambo-header-navigation-position);
+}
+
+.mambo-site-navigation[data-open="true"] {
+  display: flex;
+  max-block-size: calc(100dvh - var(--mambo-dimension-header-height));
+  overflow-y: auto;
 }
 
 .mambo-site-navigation a {
+  align-items: center;
   color: var(--mambo-color-text-muted);
+  display: flex;
   font-size: var(--mambo-type-navigation-size);
   font-weight: var(--mambo-type-navigation-weight);
+  justify-content: center;
   letter-spacing: var(--mambo-type-navigation-letter-spacing);
+  min-height: var(--mambo-dimension-control-min-height);
+  padding-inline: var(--mambo-space-xs);
   text-decoration: none;
 }
 
@@ -393,8 +471,12 @@ a:active {
   gap: var(--mambo-space-sm);
 }
 
-.mambo-content-card {
+.mambo-content-card,
+.mambo-button--card {
   --mambo-card-accent: var(--mambo-color-accent-1);
+}
+
+.mambo-content-card {
   background: var(--mambo-color-surface);
   border: var(--mambo-border-strong) var(--mambo-border-style)
     var(--mambo-color-border);
@@ -409,23 +491,28 @@ a:active {
     transform var(--mambo-motion-fast) var(--mambo-motion-easing);
 }
 
-.mambo-content-card:nth-child(6n + 2) {
+.mambo-content-card:nth-child(6n + 2),
+.mambo-columns > .mambo-column:nth-child(6n + 2) > .mambo-button-row > .mambo-button--card {
   --mambo-card-accent: var(--mambo-color-accent-2, var(--mambo-color-accent-1));
 }
 
-.mambo-content-card:nth-child(6n + 3) {
+.mambo-content-card:nth-child(6n + 3),
+.mambo-columns > .mambo-column:nth-child(6n + 3) > .mambo-button-row > .mambo-button--card {
   --mambo-card-accent: var(--mambo-color-accent-3, var(--mambo-color-accent-1));
 }
 
-.mambo-content-card:nth-child(6n + 4) {
+.mambo-content-card:nth-child(6n + 4),
+.mambo-columns > .mambo-column:nth-child(6n + 4) > .mambo-button-row > .mambo-button--card {
   --mambo-card-accent: var(--mambo-color-accent-4, var(--mambo-color-accent-1));
 }
 
-.mambo-content-card:nth-child(6n + 5) {
+.mambo-content-card:nth-child(6n + 5),
+.mambo-columns > .mambo-column:nth-child(6n + 5) > .mambo-button-row > .mambo-button--card {
   --mambo-card-accent: var(--mambo-color-accent-5, var(--mambo-color-accent-1));
 }
 
-.mambo-content-card:nth-child(6n) {
+.mambo-content-card:nth-child(6n),
+.mambo-columns > .mambo-column:nth-child(6n) > .mambo-button-row > .mambo-button--card {
   --mambo-card-accent: var(--mambo-color-accent-6, var(--mambo-color-accent-1));
 }
 
@@ -622,6 +709,34 @@ a:active {
   background: transparent;
   border-color: transparent;
   color: var(--mambo-color-brand);
+}
+
+.mambo-button--card {
+  background: var(--mambo-color-surface);
+  border-color: var(--mambo-color-border);
+  border-block-start-color: var(--mambo-card-accent);
+  color: var(--mambo-color-text);
+  font-size: var(--mambo-type-card-title-size);
+  font-weight: var(--mambo-type-card-title-weight);
+  justify-content: center;
+  line-height: var(--mambo-type-card-title-line-height);
+  padding: var(--mambo-space-md);
+  text-align: center;
+  width: 100%;
+}
+
+.mambo-button--card:hover {
+  background: var(--mambo-color-surface-strong);
+  border-color: var(--mambo-card-accent);
+  color: var(--mambo-color-text);
+  transform: translateY(-0.15rem);
+}
+
+.mambo-button--card:active {
+  background: var(--mambo-color-surface-strong);
+  border-color: var(--mambo-color-brand-active);
+  color: var(--mambo-color-text);
+  transform: translateY(0);
 }
 
 .mambo-column > .mambo-button-row {

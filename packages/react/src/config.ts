@@ -115,7 +115,7 @@ function configByName(
       return {
         label: stringProperty(properties, "label", "Open"),
         href: stringProperty(properties, "href", "#"),
-        variant: stringProperty(properties, "variant", "primary") as "primary" | "secondary" | "quiet",
+        variant: stringProperty(properties, "variant", "primary") as "primary" | "secondary" | "quiet" | "card",
         external: booleanProperty(properties, "external", false),
         ...(icon ? { icon } : {}),
       };

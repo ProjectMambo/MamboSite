@@ -869,6 +869,34 @@ impl HeaderMode {
             Self::Full => "auto 1fr auto",
         }
     }
+
+    pub const fn navigation_display(self) -> &'static str {
+        match self {
+            Self::Compact => "none",
+            Self::Full => "flex",
+        }
+    }
+
+    pub const fn navigation_direction(self) -> &'static str {
+        match self {
+            Self::Compact => "column",
+            Self::Full => "row",
+        }
+    }
+
+    pub const fn navigation_position(self) -> &'static str {
+        match self {
+            Self::Compact => "absolute",
+            Self::Full => "static",
+        }
+    }
+
+    pub const fn toggle_display(self) -> &'static str {
+        match self {
+            Self::Compact => "inline-flex",
+            Self::Full => "none",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
