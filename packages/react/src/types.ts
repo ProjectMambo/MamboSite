@@ -293,6 +293,7 @@ export interface DirectiveComponentProps<K extends DirectiveName = DirectiveName
 export interface LinkPrimitiveProps {
   readonly href: string;
   readonly children: ReactNode;
+  readonly accentItem?: boolean;
   readonly className?: string;
   readonly title?: string;
   readonly newTab?: boolean;

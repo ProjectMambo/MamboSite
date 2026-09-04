@@ -7,6 +7,7 @@ import type {
 export function Link({
   href,
   children,
+  accentItem = false,
   className,
   title,
   newTab = false,
@@ -16,6 +17,7 @@ export function Link({
     <a
       aria-current={current ? "page" : undefined}
       className={className}
+      data-mambo-accent-item={accentItem || undefined}
       href={href}
       rel={newTab ? "noreferrer" : undefined}
       target={newTab ? "_blank" : undefined}

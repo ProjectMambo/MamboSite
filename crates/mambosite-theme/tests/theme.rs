@@ -228,11 +228,17 @@ fn configured_breakpoints_drive_layout_and_finite_column_rules() {
         "[data-mambo-collection][data-columns=\"6\"] { --mambo-collection-columns: 5; }"
     ));
     assert_eq!(
-        css.matches("[data-mambo-collection][data-columns=").count(),
+        css.lines()
+            .filter(|line| line.contains("--mambo-collection-columns:"))
+            .count(),
         24
     );
+    assert!(css.contains("> [data-mambo-accent-item]:nth-child("));
 
     assert!(css.contains("[data-mambo-columns][data-collapse=\"never\"]"));
+    assert!(css.contains(
+        "[data-mambo-columns][data-collapse=\"never\"][data-columns=\"1\"] > [data-mambo-accent-item]"
+    ));
     assert!(compact.contains("[data-mambo-columns][data-collapse=\"compact\"]"));
     assert!(content.contains("[data-mambo-columns][data-collapse=\"content\"]"));
     assert!(wide.contains("[data-mambo-columns][data-collapse=\"wide\"]"));
@@ -326,6 +332,36 @@ fn compilation_is_byte_for_byte_deterministic() {
     let theme = Theme::from_toml("id = \"deterministic\"", "mambo.theme.toml").unwrap();
 
     assert_eq!(theme.compile().unwrap(), theme.compile().unwrap());
+}
+
+#[test]
+fn explicit_accent_seeds_change_only_the_css_assignment() {
+    let theme = Theme::default();
+    let first = theme.compile_with_accent_seed(1).unwrap();
+    let repeated = theme.compile_with_accent_seed(1).unwrap();
+    let second = theme.compile_with_accent_seed(2).unwrap();
+
+    assert_eq!(first, repeated);
+    assert_ne!(first.css, second.css);
+    assert_eq!(first.typescript, second.typescript);
+    assert_eq!(first.theme, second.theme);
+}
+
+#[test]
+fn preserves_single_and_non_hex_css_accents() {
+    let theme = Theme::from_toml(
+        "[colors.dark]\naccents=[\"red\"]\n[colors.light]\naccents=[\"oklch(50% 0.1 30)\"]\n",
+        "accent.theme.toml",
+    )
+    .unwrap();
+    let compiled = theme.compile_with_accent_seed(42).unwrap();
+
+    assert!(compiled.css.contains("--mambo-color-accent-1: red"));
+    assert!(
+        compiled
+            .css
+            .contains("--mambo-color-accent-1: oklch(50% 0.1 30)")
+    );
 }
 
 #[test]

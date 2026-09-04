@@ -1,3 +1,4 @@
+mod accent;
 mod css;
 mod error;
 mod model;
@@ -86,13 +87,28 @@ impl Theme {
     /// Returns all validation diagnostics if the public theme value was changed
     /// after parsing.
     pub fn compile(&self) -> Result<CompiledTheme, Vec<ThemeDiagnostic>> {
+        self.compile_with_accent_seed(0)
+    }
+
+    /// Generates theme output with a caller-provided presentation seed.
+    ///
+    /// The CLI uses this to vary collection accents between builds while the
+    /// ordinary library API remains deterministic.
+    ///
+    /// # Errors
+    ///
+    /// Returns all validation diagnostics if the theme is invalid.
+    pub fn compile_with_accent_seed(
+        &self,
+        accent_seed: u64,
+    ) -> Result<CompiledTheme, Vec<ThemeDiagnostic>> {
         let diagnostics = self.validate();
         if !diagnostics.is_empty() {
             return Err(diagnostics);
         }
         Ok(CompiledTheme {
             theme: self.clone(),
-            css: css::render(self),
+            css: css::render(self, accent_seed),
             typescript: typescript::render(self),
         })
     }
@@ -107,9 +123,21 @@ impl Theme {
 ///
 /// Returns a read, TOML parse, or structured validation error.
 pub fn compile_theme_file(path: impl AsRef<Path>) -> Result<CompiledTheme, ThemeError> {
+    compile_theme_file_with_accent_seed(path, 0)
+}
+
+/// Loads and compiles a theme with a caller-provided presentation seed.
+///
+/// # Errors
+///
+/// Returns a read, TOML parse, or structured validation error.
+pub fn compile_theme_file_with_accent_seed(
+    path: impl AsRef<Path>,
+    accent_seed: u64,
+) -> Result<CompiledTheme, ThemeError> {
     let path: PathBuf = path.as_ref().to_path_buf();
     let theme = Theme::load(&path)?;
     theme
-        .compile()
+        .compile_with_accent_seed(accent_seed)
         .map_err(|diagnostics| ThemeError::Validation { path, diagnostics })
 }

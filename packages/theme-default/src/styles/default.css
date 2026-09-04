@@ -471,11 +471,6 @@ a:active {
   gap: var(--mambo-space-sm);
 }
 
-.mambo-content-card,
-.mambo-button--card {
-  --mambo-card-accent: var(--mambo-color-accent-1);
-}
-
 .mambo-content-card {
   background: var(--mambo-color-surface);
   border: var(--mambo-border-strong) var(--mambo-border-style)
@@ -489,31 +484,6 @@ a:active {
     border-color var(--mambo-motion-fast) var(--mambo-motion-easing),
     box-shadow var(--mambo-motion-fast) var(--mambo-motion-easing),
     transform var(--mambo-motion-fast) var(--mambo-motion-easing);
-}
-
-.mambo-content-card:nth-child(6n + 2),
-.mambo-columns > .mambo-column:nth-child(6n + 2) > .mambo-button-row > .mambo-button--card {
-  --mambo-card-accent: var(--mambo-color-accent-2, var(--mambo-color-accent-1));
-}
-
-.mambo-content-card:nth-child(6n + 3),
-.mambo-columns > .mambo-column:nth-child(6n + 3) > .mambo-button-row > .mambo-button--card {
-  --mambo-card-accent: var(--mambo-color-accent-3, var(--mambo-color-accent-1));
-}
-
-.mambo-content-card:nth-child(6n + 4),
-.mambo-columns > .mambo-column:nth-child(6n + 4) > .mambo-button-row > .mambo-button--card {
-  --mambo-card-accent: var(--mambo-color-accent-4, var(--mambo-color-accent-1));
-}
-
-.mambo-content-card:nth-child(6n + 5),
-.mambo-columns > .mambo-column:nth-child(6n + 5) > .mambo-button-row > .mambo-button--card {
-  --mambo-card-accent: var(--mambo-color-accent-5, var(--mambo-color-accent-1));
-}
-
-.mambo-content-card:nth-child(6n),
-.mambo-columns > .mambo-column:nth-child(6n) > .mambo-button-row > .mambo-button--card {
-  --mambo-card-accent: var(--mambo-color-accent-6, var(--mambo-color-accent-1));
 }
 
 .mambo-collection--grid .mambo-content-card {

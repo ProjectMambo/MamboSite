@@ -191,6 +191,7 @@ export function Columns({
     <div
       className="mambo-columns"
       data-collapse={collapse}
+      data-columns={config.count}
       data-gap={config.gap}
       data-mambo-columns
       style={style}
@@ -201,5 +202,5 @@ export function Columns({
 }
 
 export function Column({ children }: DirectiveComponentProps<"column">) {
-  return <div className="mambo-column">{children}</div>;
+  return <div className="mambo-column" data-mambo-accent-item>{children}</div>;
 }

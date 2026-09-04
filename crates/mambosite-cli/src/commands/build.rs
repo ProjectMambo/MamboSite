@@ -1,10 +1,13 @@
 use std::fmt::Write as _;
 use std::fs;
+use std::hash::{BuildHasher, Hasher};
 use std::path::{Path, PathBuf};
 
 use mambosite_codegen_ts::{GeneratedFile, GeneratedTree};
 use mambosite_core::{CompileOutcome, Config, Diagnostic, PackageManager, RendererKind};
-use mambosite_theme::{CompiledTheme, Theme, ThemeDiagnostic, ThemeError};
+use mambosite_theme::{
+    CompiledTheme, Theme, ThemeDiagnostic, ThemeError, compile_theme_file_with_accent_seed,
+};
 
 use crate::commands::CommandError;
 use crate::process::{ChildStdout, ProcessSpec, run_inherited};
@@ -57,7 +60,12 @@ pub fn run(
         ));
     };
     let page_count = site.pages.len();
-    let mut theme = compile_project_theme(&project_root)?;
+    let accent_seed = if mode == BuildMode::Check {
+        0
+    } else {
+        build_accent_seed(std::env::var_os("SOURCE_DATE_EPOCH").as_deref())?
+    };
+    let mut theme = compile_project_theme(&project_root, accent_seed)?;
 
     if mode == BuildMode::Check {
         return Ok(BuildReport {
@@ -146,7 +154,10 @@ fn theme_stylesheet_href(project_root: &Path, assets_dir: &Path) -> Result<Strin
     Ok(format!("/{relative}/theme.css"))
 }
 
-fn compile_project_theme(project_root: &Path) -> Result<CompiledTheme, CommandError> {
+fn compile_project_theme(
+    project_root: &Path,
+    accent_seed: u64,
+) -> Result<CompiledTheme, CommandError> {
     let path = project_root.join("mambo.theme.toml");
     match fs::symlink_metadata(&path) {
         Ok(metadata) => {
@@ -156,16 +167,32 @@ fn compile_project_theme(project_root: &Path) -> Result<CompiledTheme, CommandEr
                     path.display()
                 )));
             }
-            mambosite_theme::compile_theme_file(&path).map_err(theme_error)
+            compile_theme_file_with_accent_seed(&path, accent_seed).map_err(theme_error)
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Theme::default()
-            .compile()
+            .compile_with_accent_seed(accent_seed)
             .map_err(|diagnostics| theme_diagnostics("default theme", &diagnostics)),
         Err(error) => Err(CommandError::Message(format!(
             "could not inspect theme configuration `{}`: {error}",
             path.display()
         ))),
     }
+}
+
+fn build_accent_seed(source_date_epoch: Option<&std::ffi::OsStr>) -> Result<u64, CommandError> {
+    if let Some(value) = source_date_epoch {
+        return value
+            .to_str()
+            .and_then(|value| value.parse().ok())
+            .ok_or_else(|| {
+                CommandError::Message(
+                    "`SOURCE_DATE_EPOCH` must be an unsigned 64-bit integer".to_owned(),
+                )
+            });
+    }
+    Ok(std::collections::hash_map::RandomState::new()
+        .build_hasher()
+        .finish())
 }
 
 fn theme_error(error: ThemeError) -> CommandError {
@@ -264,6 +291,15 @@ mod tests {
         }])
         .unwrap();
         mambosite_codegen_ts::write(&tree, path).unwrap();
+    }
+
+    #[test]
+    fn source_date_epoch_fixes_the_accent_seed() {
+        assert_eq!(
+            build_accent_seed(Some(std::ffi::OsStr::new("1234"))).unwrap(),
+            1234
+        );
+        assert!(build_accent_seed(Some(std::ffi::OsStr::new("tomorrow"))).is_err());
     }
 
     #[test]
@@ -432,7 +468,7 @@ mod tests {
     fn check_validates_the_default_and_project_themes_without_writes() {
         let temporary = tempfile::tempdir().unwrap();
         let config = site_config(temporary.path());
-        let default_theme = compile_project_theme(temporary.path()).unwrap();
+        let default_theme = compile_project_theme(temporary.path(), 0).unwrap();
         assert_eq!(default_theme.theme, Theme::default());
         assert_eq!(
             run(config.clone(), BuildMode::Check, ChildStdout::Stdout)
@@ -492,6 +528,6 @@ mod tests {
         fs::create_dir(&project).unwrap();
         symlink(external, project.join("mambo.theme.toml")).unwrap();
 
-        assert!(compile_project_theme(&project).is_err());
+        assert!(compile_project_theme(&project, 0).is_err());
     }
 }

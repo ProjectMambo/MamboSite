@@ -25,18 +25,10 @@ test("card buttons remain links", () => {
   assert.match(html, /target="_blank"/);
 });
 
-test("card buttons reuse the collection accent cycle", async () => {
+test("card buttons inherit the generated collection accent", async () => {
   const css = await readFile(new URL("../src/styles/default.css", import.meta.url), "utf8");
 
-  assert.match(
-    css,
-    /\.mambo-content-card,\s*\.mambo-button--card\s*\{[^}]*--mambo-card-accent/s,
-  );
-  for (const position of ["6n + 2", "6n + 3", "6n + 4", "6n + 5", "6n"]) {
-    assert.ok(css.includes(
-      `.mambo-columns > .mambo-column:nth-child(${position}) > .mambo-button-row > .mambo-button--card`,
-    ));
-  }
+  assert.doesNotMatch(css, /nth-child\([^)]*\)[^{]*--mambo-card-accent/s);
   assert.match(
     css,
     /\.mambo-button--card\s*\{[^}]*border-block-start-color: var\(--mambo-card-accent\)/s,
@@ -45,4 +37,14 @@ test("card buttons reuse the collection accent cycle", async () => {
     css,
     /\.mambo-button--card:hover\s*\{[^}]*border-color: var\(--mambo-card-accent\)/s,
   );
+
+  const Columns = defaultRegistry.directives.columns;
+  const Column = defaultRegistry.directives.column;
+  const column = createElement(Column, { children: "Contact" });
+  const html = renderToStaticMarkup(createElement(Columns, {
+    children: column,
+    config: { collapseAt: "md", count: 3, gap: "normal" },
+  }));
+  assert.match(html, /data-columns="3"/);
+  assert.match(html, /data-mambo-accent-item="true"/);
 });

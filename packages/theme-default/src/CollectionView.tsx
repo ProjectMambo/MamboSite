@@ -30,7 +30,7 @@ export function CollectionView({
   const grid = gallery || view === "grid" || view === "cards";
   const Link = runtime.registry.primitives.Link;
   const Image = runtime.registry.primitives.Image;
-  const requestedColumns = Math.min(6, Math.max(1, Math.trunc(columns)));
+  const requestedColumns = grid ? Math.min(6, Math.max(1, Math.trunc(columns))) : 1;
 
   return (
     <div
@@ -41,7 +41,12 @@ export function CollectionView({
       data-view={view}
     >
       {items.map((item) => (
-        <Link className="mambo-content-card" href={item.route} key={item.id}>
+        <Link
+          accentItem
+          className="mambo-content-card"
+          href={item.route}
+          key={item.id}
+        >
           {(gallery || visible.has("cover")) && item.cover ? (
             <Image
               alt=""

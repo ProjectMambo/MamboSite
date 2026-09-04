@@ -4,6 +4,7 @@ import type { LinkPrimitiveProps } from "@mambosite/react";
 export function NextLink({
   href,
   children,
+  accentItem = false,
   className,
   title,
   newTab = false,
@@ -13,6 +14,7 @@ export function NextLink({
     <Link
       aria-current={current ? "page" : undefined}
       className={className}
+      data-mambo-accent-item={accentItem || undefined}
       href={href}
       rel={newTab ? "noreferrer" : undefined}
       target={newTab ? "_blank" : undefined}

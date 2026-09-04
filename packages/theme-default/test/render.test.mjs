@@ -13,14 +13,7 @@ test("default styles do not duplicate generated theme values as literal fallback
     .filter(({ fallback }) => fallback !== null)
     .map(({ name, fallback }) => [name, fallback]);
 
-  assert.deepEqual(callsWithFallbacks, [
-    ["--mambo-color-accent-2", "var(--mambo-color-accent-1)"],
-    ["--mambo-color-accent-3", "var(--mambo-color-accent-1)"],
-    ["--mambo-color-accent-4", "var(--mambo-color-accent-1)"],
-    ["--mambo-color-accent-5", "var(--mambo-color-accent-1)"],
-    ["--mambo-color-accent-6", "var(--mambo-color-accent-1)"],
-    ["--mambo-card-fit", "cover"],
-  ]);
+  assert.deepEqual(callsWithFallbacks, [["--mambo-card-fit", "cover"]]);
   assert.match(
     css,
     /\.mambo-site-header__inner\s*\{[^}]*display: var\(--mambo-header-display\)/s,
@@ -189,7 +182,16 @@ test("collection markup exposes requested columns without overriding responsive 
     columns: 9,
   }));
   assert.match(html, /data-columns="6"/);
+  assert.match(html, /data-mambo-accent-item="true"/);
   assert.doesNotMatch(html, /--mambo-collection-columns/);
+
+  const list = renderToStaticMarkup(createElement(CollectionView, {
+    items: [page],
+    runtime,
+    view: "list",
+    columns: 6,
+  }));
+  assert.match(list, /data-columns="1"/);
 
   const cards = renderToStaticMarkup(createElement(CollectionView, {
     items: [page],
