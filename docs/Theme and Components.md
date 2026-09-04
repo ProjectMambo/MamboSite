@@ -20,12 +20,13 @@ The current MamboFolio establishes a recognizable Project Mambo style:
 - MamboFont or a monospace fallback for a technical editorial character.
 - A bounded, centered article column with generous responsive padding.
 - Strong two-pixel borders and restrained surface layers.
+- Square controls, cards, tags, code blocks, and panels; every default radius token is zero.
 - Square colour canvases or images as card headers.
 - Responsive grid and list presentations for projects, posts, and galleries.
 - Clear metadata chips, descriptions, dates, and external links.
-- A sticky navigation bar with an accessible theme switch.
-- A floating table-of-contents navigator for long documents.
-- Small, consistent transitions rather than heavy animation.
+- A sticky navigation bar with a vertically centered rectangular brand control and accessible theme switch.
+- A conditional table-of-contents navigator for long documents.
+- Small hover, active, and movement transitions rather than heavy animation.
 
 These are defaults, not parser rules. A future theme may change spacing, typography, shape, navigation, cards, or motion without recompiling Markdown under a new language.
 
@@ -42,7 +43,10 @@ default_scheme = "dark"
 [colors.dark]
 background = "#181615"
 text = "#faf7f2"
-brand = "#d44b36"
+brand = "#e05a45"
+brand_hover = "#f08068"
+brand_active = "#d96752"
+on_brand = "#181615"
 
 [fonts]
 body = "MamboFont, ui-monospace, monospace"
@@ -57,6 +61,26 @@ wide = 1200
 reading = "48rem"
 normal = "74rem"
 sidebar = "15rem"
+gallery_image_max = "24rem"
+
+[typography.body]
+size = "1.125rem"
+line_height = "1.72"
+weight = 400
+letter_spacing = "normal"
+
+[typography.navigation.size]
+base = "1.2rem"
+compact = "1.25rem"
+
+[dimensions]
+control_min_height = "2.75rem"
+
+[radii]
+small = "0"
+medium = "0"
+large = "0"
+pill = "0"
 
 [layout.page_with_sidebar_columns]
 base = "minmax(0, 1fr)"
@@ -65,10 +89,15 @@ content = "minmax(0, 1fr) var(--mambo-width-sidebar)"
 [components.collection.max_columns]
 base = 1
 compact = 2
-content = 6
+content = 2
+wide = 6
+
+[components.sidebar.mode]
+base = "inline"
+content = "sticky"
 ```
 
-MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. The default component package requires that generated stylesheet and consumes only the `--mambo-*` contract for site-variable values.
+MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. `brand`, `brand_hover`, and `brand_active` provide distinct resting, hover, and pressed states. The larger body and navigation styles, compact control height, square radii, and gallery media cap are defaults that a site may replace in the same settings file. The default component package requires the generated stylesheet and consumes only the `--mambo-*` contract for site-variable values.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
 
@@ -95,7 +124,8 @@ color.border
 color.foreground
 color.foregroundMuted
 color.brand
-color.interactive
+color.brandHover
+color.brandActive
 color.success
 color.warning
 color.danger
@@ -151,7 +181,7 @@ columns        -> Columns
 column         -> Column
 ```
 
-`children view="grid"` may initially resemble MamboFolio's bordered square cards. It should still be implemented as a semantic collection component so a redesign can replace the entire card appearance.
+`children view="grid"` renders ordinary page-preview cards. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. This remains a semantic page collection, so it cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button` directives instead; the default theme makes those buttons fill their columns.
 
 The default package currently renders direct child list/grid/card views and grid galleries. Tree/table child views, nested child depth, masonry/carousel galleries, and fragment includes show an explicit unsupported-mode message. A registry override may implement those contracts sooner.
 
@@ -160,6 +190,7 @@ The default package currently renders direct child list/grid/card views and grid
 MamboSite's default theme package owns:
 
 - Header and primary navigation.
+- A vertically centered rectangular brand link with configured brand, hover, and active colours.
 - Footer.
 - Theme selection and persistence.
 - Site metadata.
@@ -209,11 +240,11 @@ This permits:
 
 ### `default`
 
-Centered page with generated title, body, parent link, and optional heading sidebar.
+Centered page with generated title, body, optional heading sidebar, and Back links at both the start and end of every non-root page. An ordinary primary click uses browser history when a history entry exists, preserving the page the visitor actually came from. The link still targets the route parent as the no-JavaScript, direct-entry, and modified-click fallback.
 
 ### `article`
 
-The default page with a narrower reading width.
+The default page uses the configured reading width when it has no automatic TOC. When a TOC is present, the outer frame uses the normal width so the article retains a useful reading measure beside the TOC rail.
 
 ### `docs`
 
@@ -233,16 +264,23 @@ A wider default page whose composition comes from hero, section, collection, and
 
 ### `gallery`
 
-A wider default page. The grid gallery directive works now; masonry and carousel behavior are planned.
+A wider default page. Center-aligned gallery hero media is capped by `widths.gallery_image_max` instead of expanding across the full page. The grid gallery directive works now; masonry and carousel behavior are planned.
+
+## Table of contents behavior
+
+The default runtime derives an automatic TOC from level-two through level-four headings when `page.sidebar` is enabled. Pages without matching headings render neither an empty TOC nor an empty sidebar, so both headerless articles and future structured articles use the same layout safely. A valid authored `::toc` renders at its Markdown position and suppresses the automatic copy.
+
+Below the configured `content` breakpoint, the automatic TOC is an inline block before the article. At and above that breakpoint, it becomes a sticky rail beside the article. Article pages expand their outer frame only when that rail exists; gallery pages retain their wide frame. Both forms use the same compiler heading IDs and remain ordinary anchor navigation.
 
 ## Responsive behaviour
 
 - Content must remain usable from narrow mobile screens through wide desktop screens.
 - `columns` collapse at their declared breakpoint.
 - Card grids choose safe responsive minimum widths; `columns=6` is a maximum intent, not a command to squeeze six unreadable cards onto mobile.
-- Tables may scroll horizontally without widening the page.
-- Navigation must remain keyboard accessible when wrapping or collapsing.
-- The floating TOC must not cover content and should fall back to an inline or drawer presentation on small screens.
+- Tables and code blocks scroll horizontally without widening the page; page copy, cards, controls, and long destinations wrap instead of forcing overflow.
+- Navigation remains keyboard accessible and horizontally scrollable when the available width is smaller than its links.
+- The automatic TOC is inline below the content breakpoint and a sticky side rail at and above it, so it never overlays the article.
+- Images remain constrained to their container, collection columns are capped at each configured breakpoint, and layout children use shrink-safe grid and flex sizing.
 
 Viewport thresholds never live in component CSS. Rust writes the configured compact, content, and wide values into literal media queries and emits finite selector rules for authored collection and column choices.
 
@@ -263,9 +301,9 @@ These are release requirements, not a claim that a complete automated accessibil
 
 ## Client JavaScript policy
 
-The page body renders during the static build. Current client code is limited to theme switching/persistence, the header's hide-on-scroll behavior, and its clock. Collapsible navigation, TOC tracking, search, and carousel interaction are planned.
+The page body renders during the static build. Current client code is limited to theme switching/persistence, the header's hide-on-scroll behavior and clock, and history-aware Back clicks. Collapsible navigation, TOC tracking, search, and carousel interaction are planned.
 
-Cards, Markdown, navigation links, callouts, embeds, and ordinary child collections must work without hydration.
+Cards, Markdown, navigation links, callouts, embeds, ordinary child collections, and the route-parent Back fallback work without hydration. Hydrated same-page fragment links replace their current hash entry, so several TOC jumps still need only one Back activation to leave the page. Link, navigation, brand, theme, card, and button feedback uses native CSS transitions. The reduced-motion media query disables smooth scrolling and reduces transition durations, so this feedback does not require another client animation system.
 
 ## Redesign rules
 
