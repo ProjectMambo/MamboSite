@@ -72,7 +72,7 @@ impl Outcome {
                     .as_deref()
                     .expect("content build has generated assets");
                 format!(
-                    "generated {} page(s) in {} and theme assets in {}",
+                    "generated {} page(s) in {} and assets in {}",
                     report.page_count,
                     generated.display(),
                     assets.display()

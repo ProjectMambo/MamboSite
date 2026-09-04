@@ -42,7 +42,11 @@ pub fn run(
         .map(|renderer| renderer.output_dir.clone());
     let renderer = renderer_spec(&config);
     let project_root = config.project_root.clone();
-    let CompileOutcome { site, diagnostics } = mambosite_core::Compiler::new(config).compile();
+    let CompileOutcome {
+        site,
+        assets: compiled_assets,
+        diagnostics,
+    } = mambosite_core::Compiler::new(config).compile();
 
     if diagnostics.iter().any(Diagnostic::is_error) {
         return Err(CommandError::Diagnostics(diagnostics));
@@ -77,14 +81,22 @@ pub fn run(
     typescript
         .insert(GeneratedFile {
             path: "theme.ts".to_owned(),
-            contents: theme.typescript,
+            contents: theme.typescript.into_bytes(),
         })
         .map_err(|error| CommandError::Message(format!("theme generation failed: {error}")))?;
-    let assets = GeneratedTree::new([GeneratedFile {
+    let mut assets = GeneratedTree::new([GeneratedFile {
         path: "theme.css".to_owned(),
-        contents: theme.css,
+        contents: theme.css.into_bytes(),
     }])
     .map_err(|error| CommandError::Message(format!("theme generation failed: {error}")))?;
+    for asset in compiled_assets {
+        assets
+            .insert(GeneratedFile {
+                path: format!("assets/{}", asset.output_path),
+                contents: asset.contents,
+            })
+            .map_err(|error| CommandError::Message(format!("asset generation failed: {error}")))?;
+    }
 
     // Validate every destination before either managed tree is mutated.
     mambosite_codegen_ts::validate_output(&generated_dir)
@@ -248,7 +260,7 @@ mod tests {
     fn managed_tree(path: &Path, file: &str) {
         let tree = GeneratedTree::new([GeneratedFile {
             path: file.to_owned(),
-            contents: "previous\n".to_owned(),
+            contents: b"previous\n".to_vec(),
         }])
         .unwrap();
         mambosite_codegen_ts::write(&tree, path).unwrap();
@@ -361,6 +373,57 @@ mod tests {
             temporary
                 .path()
                 .join("public/site-assets/.mambosite-generated")
+                .is_file()
+        );
+    }
+
+    #[test]
+    fn content_build_publishes_binary_assets_and_removes_stale_ones() {
+        let temporary = tempfile::tempdir().unwrap();
+        let config = site_config(temporary.path());
+        fs::create_dir_all(temporary.path().join("docs/_assets/media")).unwrap();
+        fs::write(
+            temporary.path().join("docs/_assets/media/sample.bin"),
+            [0, 255, 128, 1],
+        )
+        .unwrap();
+        fs::write(
+            temporary.path().join("docs/index.md"),
+            "---\ncover: assets/media/sample.bin\n---\n# Test site\n",
+        )
+        .unwrap();
+
+        run(config.clone(), BuildMode::ContentOnly, ChildStdout::Stdout).unwrap();
+
+        assert_eq!(
+            fs::read(
+                temporary
+                    .path()
+                    .join("public/site-assets/assets/media/sample.bin")
+            )
+            .unwrap(),
+            [0, 255, 128, 1]
+        );
+        assert!(
+            fs::read_to_string(temporary.path().join("generated/manifest.ts"))
+                .unwrap()
+                .contains("/site-assets/assets/media/sample.bin")
+        );
+
+        fs::remove_file(temporary.path().join("docs/_assets/media/sample.bin")).unwrap();
+        fs::write(temporary.path().join("docs/index.md"), "# Test site\n").unwrap();
+        run(config, BuildMode::ContentOnly, ChildStdout::Stdout).unwrap();
+
+        assert!(
+            !temporary
+                .path()
+                .join("public/site-assets/assets/media/sample.bin")
+                .exists()
+        );
+        assert!(
+            temporary
+                .path()
+                .join("public/site-assets/theme.css")
                 .is_file()
         );
     }

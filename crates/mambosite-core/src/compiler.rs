@@ -19,6 +19,7 @@ pub struct Compiler {
 #[derive(Debug)]
 pub struct CompileOutcome {
     pub site: Option<Site>,
+    pub assets: Vec<crate::CompiledAsset>,
     pub diagnostics: Vec<Diagnostic>,
 }
 
@@ -40,6 +41,7 @@ impl Compiler {
         if diagnostics.iter().any(Diagnostic::is_error) {
             return CompileOutcome {
                 site: None,
+                assets: Vec::new(),
                 diagnostics,
             };
         }
@@ -230,6 +232,9 @@ impl Compiler {
             self.config.markdown.max_embed_depth,
             &mut diagnostics,
         );
+        let asset_outcome = crate::asset::compile(&self.config, &mut pages);
+        diagnostics.extend(asset_outcome.diagnostics);
+        let assets = asset_outcome.assets;
 
         let routes: BTreeMap<_, _> = pages
             .iter()
@@ -250,6 +255,7 @@ impl Compiler {
         if diagnostics.iter().any(Diagnostic::is_error) {
             return CompileOutcome {
                 site: None,
+                assets,
                 diagnostics,
             };
         }
@@ -257,6 +263,7 @@ impl Compiler {
         let Some(entry_page) = entry_page else {
             return CompileOutcome {
                 site: None,
+                assets,
                 diagnostics,
             };
         };
@@ -290,6 +297,7 @@ impl Compiler {
         };
         CompileOutcome {
             site: Some(site),
+            assets,
             diagnostics,
         }
     }

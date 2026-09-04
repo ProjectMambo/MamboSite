@@ -313,8 +313,8 @@ mod tests {
         let temporary = tempfile::tempdir().unwrap();
         let output = temporary.path().join("assets");
         let generated = GeneratedTree::new([crate::GeneratedFile {
-            path: "theme.css".to_owned(),
-            contents: ":root { --mambo-test: 1; }\n".to_owned(),
+            path: "image.bin".to_owned(),
+            contents: vec![0, 159, 146, 150],
         }])
         .unwrap();
 
@@ -322,8 +322,8 @@ mod tests {
         write(&generated, &output).unwrap();
 
         assert_eq!(
-            fs::read_to_string(output.join("theme.css")).unwrap(),
-            ":root { --mambo-test: 1; }\n"
+            fs::read(output.join("image.bin")).unwrap(),
+            [0, 159, 146, 150]
         );
         assert_eq!(
             fs::read_to_string(output.join(OUTPUT_MARKER)).unwrap(),

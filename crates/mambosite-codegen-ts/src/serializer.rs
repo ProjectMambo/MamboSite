@@ -29,11 +29,11 @@ const SUMMARY_FIELDS: &[&str] = &[
     "children",
 ];
 
-/// One path and its complete generated source.
+/// One path and its complete generated contents.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GeneratedFile {
     pub path: String,
-    pub contents: String,
+    pub contents: Vec<u8>,
 }
 
 /// A complete managed output tree, sorted by normalized relative path.
@@ -54,7 +54,7 @@ impl GeneratedTree {
     pub fn new(files: impl IntoIterator<Item = GeneratedFile>) -> Result<Self, Error> {
         let mut output = vec![GeneratedFile {
             path: OUTPUT_MARKER.into(),
-            contents: OUTPUT_MARKER_CONTENT.into(),
+            contents: OUTPUT_MARKER_CONTENT.as_bytes().to_vec(),
         }];
         for file in files {
             validate_generated_path(&file.path)?;
@@ -159,7 +159,8 @@ where
             "manifest",
             &root,
             "export { manifest as default };\n",
-        )?,
+        )?
+        .into_bytes(),
     });
 
     for module in &modules {
@@ -170,12 +171,13 @@ where
                 "page",
                 &module.value,
                 "export default page;\n",
-            )?,
+            )?
+            .into_bytes(),
         });
     }
     files.push(GeneratedFile {
         path: "pages/index.ts".into(),
-        contents: page_index_source(&modules),
+        contents: page_index_source(&modules).into_bytes(),
     });
     GeneratedTree::new(files)
 }
@@ -330,6 +332,10 @@ mod tests {
         }
     }
 
+    fn text(file: &GeneratedFile) -> &str {
+        std::str::from_utf8(&file.contents).unwrap()
+    }
+
     #[test]
     fn output_is_sorted_and_json_escaped() {
         let generated = generate(&site(&["p_b", "p_a"])).unwrap();
@@ -353,13 +359,13 @@ mod tests {
             .iter()
             .find(|file| file.path == "pages/p_a.ts")
             .unwrap();
-        assert!(page.contents.contains("\\\"title\\\"\\n</script>\\u2028"));
+        assert!(text(page).contains("\\\"title\\\"\\n</script>\\u2028"));
         let index = generated
             .files()
             .iter()
             .find(|file| file.path == "pages/index.ts")
             .unwrap();
-        assert!(index.contents.find("./p_a").unwrap() < index.contents.find("./p_b").unwrap());
+        assert!(text(index).find("./p_a").unwrap() < text(index).find("./p_b").unwrap());
     }
 
     #[test]
@@ -377,8 +383,8 @@ mod tests {
             .iter()
             .find(|file| file.path == "manifest.ts")
             .unwrap();
-        assert!(!manifest.contents.contains("\"body\""));
-        assert!(manifest.contents.contains("\"route\": \"/p_a/\""));
+        assert!(!text(manifest).contains("\"body\""));
+        assert!(text(manifest).contains("\"route\": \"/p_a/\""));
     }
 
     #[test]
@@ -408,12 +414,12 @@ mod tests {
     fn generated_trees_add_a_marker_and_accept_extra_files() {
         let mut tree = GeneratedTree::new([GeneratedFile {
             path: "theme.css".to_owned(),
-            contents: ":root {}\n".to_owned(),
+            contents: b":root {}\n".to_vec(),
         }])
         .unwrap();
         tree.insert(GeneratedFile {
             path: "metadata/theme.ts".to_owned(),
-            contents: "export {};\n".to_owned(),
+            contents: b"export {};\n".to_vec(),
         })
         .unwrap();
 
@@ -439,7 +445,7 @@ mod tests {
             assert!(
                 GeneratedTree::new([GeneratedFile {
                     path: path.to_owned(),
-                    contents: String::new(),
+                    contents: Vec::new(),
                 }])
                 .is_err()
             );
@@ -447,20 +453,20 @@ mod tests {
 
         let mut tree = GeneratedTree::new([GeneratedFile {
             path: "Theme.ts".to_owned(),
-            contents: String::new(),
+            contents: Vec::new(),
         }])
         .unwrap();
         assert!(
             tree.insert(GeneratedFile {
                 path: "theme.ts".to_owned(),
-                contents: String::new(),
+                contents: Vec::new(),
             })
             .is_err()
         );
         assert!(
             tree.insert(GeneratedFile {
                 path: "Theme.ts/child".to_owned(),
-                contents: String::new(),
+                contents: Vec::new(),
             })
             .is_err()
         );
@@ -469,15 +475,15 @@ mod tests {
             GeneratedTree::new([
                 GeneratedFile {
                     path: "a".to_owned(),
-                    contents: String::new(),
+                    contents: Vec::new(),
                 },
                 GeneratedFile {
                     path: "a-b".to_owned(),
-                    contents: String::new(),
+                    contents: Vec::new(),
                 },
                 GeneratedFile {
                     path: "a/child.ts".to_owned(),
-                    contents: String::new(),
+                    contents: Vec::new(),
                 },
             ])
             .is_err()

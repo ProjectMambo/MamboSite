@@ -542,7 +542,7 @@ fn resolve_one(
     } else if path.is_empty() {
         source_index
     } else {
-        if is_non_markdown_file(&path) {
+        if is_asset_reference(&path) || is_non_markdown_file(&path) {
             return Ok(Resolution::DeferredAsset);
         }
         resolve_note(index, source_index, &path)?
@@ -773,6 +773,10 @@ fn is_non_markdown_file(path: &str) -> bool {
         .is_some_and(|extension| extension != "md")
 }
 
+fn is_asset_reference(path: &str) -> bool {
+    path == "assets" || path.starts_with("assets/")
+}
+
 fn split_fragment(destination: &str) -> (&str, Option<&str>) {
     destination
         .split_once('#')
@@ -809,7 +813,7 @@ fn reject_control_characters(value: &str) -> Result<(), ResolutionFailure> {
     }
 }
 
-fn percent_decode(value: &str) -> Result<String, String> {
+pub(crate) fn percent_decode(value: &str) -> Result<String, String> {
     let bytes = value.as_bytes();
     let mut decoded = Vec::with_capacity(bytes.len());
     let mut index = 0;

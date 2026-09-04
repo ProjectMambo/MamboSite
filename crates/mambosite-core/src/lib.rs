@@ -4,6 +4,7 @@
 //! filesystem paths, and renderer-specific values stop at their adapter
 //! boundaries.
 
+mod asset;
 mod ast;
 mod compiler;
 mod config;
@@ -18,6 +19,7 @@ mod reference;
 mod route;
 mod source;
 
+pub use asset::CompiledAsset;
 pub use ast::{AlertKind, ListDelimiter, ListKind, MarkdownNode, NodeKind, TableAlignment};
 pub use compiler::{CompileOutcome, Compiler};
 pub use config::{
