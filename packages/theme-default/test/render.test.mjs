@@ -37,6 +37,9 @@ test("default styles do not duplicate generated theme values as literal fallback
   assert.match(css, /a:active\s*\{[^}]*--mambo-color-brand-active/s);
   assert.match(css, /\.mambo-site-header:has\([^}]*\{[^}]*translateY\(0\)/s);
   assert.match(css, /\.mambo-back-link--top\s*\{[^}]*grid-column: 1 \/ -1/s);
+  assert.match(css, /\.mambo-page-sidebar--inline \.mambo-toc__disclosure\s*\{[^}]*display: block/s);
+  assert.match(css, /\.mambo-page-sidebar--rail \.mambo-toc__expanded\s*\{[^}]*display: block/s);
+  assert.match(css, /\.mambo-toc a\[aria-current="location"\]/);
   assert.match(css, /\.mambo-collection\[data-view="cards"\]/);
   assert.match(css, /\[data-layout="gallery"\][^{]*\{[^}]*--mambo-width-gallery-image-max/s);
   assert.doesNotMatch(css, /minmax\(min\(100%, var\(--mambo-width-card-min\)/);
@@ -260,6 +263,8 @@ test("layouts render useful TOCs and predictable back controls", () => {
     assert.ok(withToc.indexOf('data-mambo-back="top"') < withToc.indexOf("mambo-page-sidebar"));
     assert.ok(withToc.indexOf("mambo-page-sidebar") < withToc.indexOf("mambo-page-article"));
     assert.ok(withToc.indexOf("mambo-page-article") < withToc.lastIndexOf("mambo-page-sidebar"));
+    assert.equal(withToc.match(/class="mambo-toc__expanded"/g)?.length, 2);
+    assert.equal(withToc.match(/class="mambo-toc__disclosure"/g)?.length, 2);
   }
 
   const nested = pageWithLayout("project", { route: "/project/example/" });
@@ -271,6 +276,19 @@ test("layouts render useful TOCs and predictable back controls", () => {
   const singleToc = renderCompiledPage(authoredToc);
   assert.equal(singleToc.match(/class="mambo-toc"/g)?.length, 1);
   assert.doesNotMatch(singleToc, /class="mambo-page-sidebar"/);
+  assert.match(singleToc, /data-collapse="false"/);
+
+  const docsToc = renderCompiledPage(pageWithLayout("docs", { heading: true, sidebar: false }));
+  assert.match(docsToc, /class="mambo-toc"/);
+});
+
+test("Back delegates to native history so the browser owns scroll restoration", async () => {
+  const source = await readFile(
+    new URL("../src/layouts/PageBackBehavior.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /window\.history\.back\(\)/);
+  assert.doesNotMatch(source, /sessionStorage|scrollTo\(/);
 });
 
 test("two embeds namespace same-page fragment links with their generated DOM ids", () => {
@@ -390,7 +408,7 @@ function compiledPage(overrides = {}) {
 
 function pageWithLayout(
   layout,
-  { heading = false, authoredToc = false, route = `/${layout}/example/` } = {},
+  { heading = false, authoredToc = false, route = `/${layout}/example/`, sidebar } = {},
 ) {
   const pageSpan = sourceSpan(1, 0, 20);
   const tocSpan = sourceSpan(2, 21, 29);
@@ -398,7 +416,10 @@ function pageWithLayout(
   const directives = [{
     name: "page",
     form: "leaf",
-    properties: { layout: { type: "string", value: layout } },
+    properties: {
+      layout: { type: "string", value: layout },
+      ...(sidebar === undefined ? {} : { sidebar: { type: "boolean", value: sidebar } }),
+    },
     span: pageSpan,
   }];
   const children = [{

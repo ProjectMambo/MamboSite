@@ -788,7 +788,32 @@ a:active {
 
 .mambo-toc {
   inset-block-start: var(--mambo-dimension-toc-offset);
+  max-block-size: calc(100dvh - var(--mambo-dimension-toc-offset) - var(--mambo-space-lg));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   position: var(--mambo-sidebar-position);
+}
+
+.mambo-toc__disclosure {
+  display: none;
+}
+
+.mambo-toc[data-collapse="true"] > .mambo-toc__expanded,
+.mambo-page-sidebar--inline .mambo-toc__expanded {
+  display: none;
+}
+
+.mambo-toc[data-collapse="true"] > .mambo-toc__disclosure,
+.mambo-page-sidebar--inline .mambo-toc__disclosure {
+  display: block;
+}
+
+.mambo-page-sidebar--rail .mambo-toc__expanded {
+  display: block;
+}
+
+.mambo-page-sidebar--rail .mambo-toc__disclosure {
+  display: none;
 }
 
 .mambo-toc__title,
@@ -796,6 +821,15 @@ a:active {
   font-size: var(--mambo-type-label-size);
   font-weight: var(--mambo-type-label-weight);
   text-transform: uppercase;
+}
+
+.mambo-toc summary {
+  cursor: pointer;
+  min-height: var(--mambo-dimension-control-min-height);
+}
+
+.mambo-toc__disclosure[open] summary {
+  margin-block-end: var(--mambo-space-xs);
 }
 
 .mambo-toc ol,
@@ -814,6 +848,12 @@ a:active {
   font-size: var(--mambo-type-small-size);
   padding-block: var(--mambo-space-xxs);
   text-decoration: none;
+}
+
+.mambo-toc a[aria-current="location"] {
+  color: var(--mambo-color-brand);
+  font-weight: var(--mambo-type-label-weight);
+  text-decoration: underline;
 }
 
 .mambo-toc a:hover {
