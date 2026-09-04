@@ -33,7 +33,7 @@ fn renderer_stdout_does_not_corrupt_json_diagnostics() {
     let mut paths = vec![commands];
     paths.extend(std::env::split_paths(&std::env::var_os("PATH").unwrap()));
     let path = std::env::join_paths(paths).unwrap();
-    let output = Command::new(env!("CARGO_BIN_EXE_mambosite"))
+    let output = Command::new(env!("CARGO_BIN_EXE_mbsite"))
         .args(["--diagnostics", "json", "build"])
         .current_dir(&project)
         .env("PATH", path)

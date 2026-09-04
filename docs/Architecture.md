@@ -89,7 +89,7 @@ MamboSite/
 │   ├── react/                   # renderer and typed registry
 │   ├── theme-default/           # default components and CSS
 │   └── next/                    # static Next.js adapter
-└── templates/default/           # scaffold embedded by `mambosite init`
+└── templates/default/           # scaffold embedded by `mbsite init`
 ```
 
 Responsibilities:

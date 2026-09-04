@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "mambosite build --content-only",
+    "predev": "mbsite build --content-only",
     "dev": "next dev",
-    "build": "mambosite build",
+    "build": "mbsite build",
     "mambosite:render": "next build",
-    "deploy": "mambosite deploy",
+    "deploy": "mbsite deploy",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

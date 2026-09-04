@@ -201,7 +201,7 @@ fn reject_renderer_recursion(
 ) -> Result<(), CommandError> {
     if mode == BuildMode::Full && renderer_active.is_some() {
         Err(CommandError::Message(
-            "refusing to start a nested full MamboSite build while the renderer is active; `renderer.build_script` must run the renderer directly, not `mambosite build` or `mambosite deploy`"
+            "refusing to start a nested full MamboSite build while the renderer is active; `renderer.build_script` must run the renderer directly, not `mbsite build` or `mbsite deploy`"
                 .to_owned(),
         ))
     } else {

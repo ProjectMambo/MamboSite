@@ -45,7 +45,7 @@ Deliverable: these design documents reviewed against repository-local MamboFolio
 - Implement logical paths, route derivation, exclusions, and source spans.
 - Emit human and JSON diagnostics.
 
-Deliverable: `mambosite check` understands files, metadata, and route conflicts without rendering Markdown.
+Deliverable: `mbsite check` understands files, metadata, and route conflicts without rendering Markdown.
 
 ## Phase 2 — Markdown and directives
 
@@ -66,7 +66,7 @@ Deliverable: golden AST fixtures for every supported syntax feature.
 - Resolve and hash local assets.
 - Derive children, navigation, backlinks, and related-content inputs.
 
-Deliverable: `mambosite inspect` explains complete resolution for repository-local Wiki-shaped fixtures.
+Deliverable: `mbsite inspect` explains complete resolution for repository-local Wiki-shaped fixtures.
 
 ## Phase 4 — TypeScript generation
 
@@ -101,7 +101,7 @@ Runtime distribution uses separately versioned `@mambosite/runtime`, `@mambosite
 - Configure static export, base paths, canonical URLs, sitemap, RSS where desired, and 404 handling.
 - Add GitHub Pages build/deploy workflows.
 - Verify custom-domain and repository-subpath deployments.
-- Provide safe `mambosite init`, complete `mambosite build`, and GitHub Pages `mambosite deploy` commands.
+- Provide safe `mbsite init`, complete `mbsite build`, and GitHub Pages `mbsite deploy` commands.
 
 Deliverable: both sites deploy from clean CI using static artifacts.
 

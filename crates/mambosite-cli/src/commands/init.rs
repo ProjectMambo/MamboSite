@@ -646,11 +646,11 @@ mod tests {
         let package: serde_json::Value =
             serde_json::from_slice(&fs::read(target.join("package.json")).unwrap()).unwrap();
         let scripts = package["scripts"].as_object().unwrap();
-        assert_eq!(scripts["predev"], "mambosite build --content-only");
+        assert_eq!(scripts["predev"], "mbsite build --content-only");
         assert_eq!(scripts["dev"], "next dev");
-        assert_eq!(scripts["build"], "mambosite build");
+        assert_eq!(scripts["build"], "mbsite build");
         assert_eq!(scripts["mambosite:render"], "next build");
-        assert_eq!(scripts["deploy"], "mambosite deploy");
+        assert_eq!(scripts["deploy"], "mbsite deploy");
         assert!(!scripts.contains_key("prebuild"));
 
         let workflow = fs::read_to_string(target.join(".github/workflows/pages.yml")).unwrap();

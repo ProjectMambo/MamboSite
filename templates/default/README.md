@@ -4,7 +4,7 @@ This website is built from Markdown in `docs/` with MamboSite.
 
 ## Setup
 
-`mambosite init` creates this scaffold without accessing the network. Install
+`mbsite init` creates this scaffold without accessing the network. Install
 the released MamboSite packages, then commit the generated `package-lock.json`
 so GitHub Pages can reproduce the build:
 

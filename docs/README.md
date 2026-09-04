@@ -46,15 +46,15 @@ The compiler, React rendering engine, default components, theme contract, and st
 
 The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
 
-`mambosite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio content patterns used during migration. Content-asset copying, fragment transclusion, tree/table collections, masonry/carousel galleries, search, and MamboWiki integration remain planned.
+`mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio content patterns used during migration. Content-asset copying, fragment transclusion, tree/table collections, masonry/carousel galleries, search, and MamboWiki integration remain planned.
 
 ## Command line
 
 ```bash
-mambosite check
-mambosite build
-mambosite init my-site
-mambosite deploy
+mbsite check
+mbsite build
+mbsite init my-site
+mbsite deploy
 ```
 
 `check` validates without writing output. `build` performs content compilation and the configured static web build. `init` creates a safe default site scaffold in an empty repository. `deploy` builds, pushes committed work, and starts the configured GitHub Pages workflow; `workflow_dispatch` allows the same commit to be deployed again when there is nothing new to push.
@@ -67,7 +67,7 @@ Install the development command wrapper from this checkout once:
 ./script/install.sh
 ```
 
-It links `mambosite` into `/usr/local/bin` and runs the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different command directory is preferred; the installer uses `sudo` only when the selected directory is not writable.
+It links `mbsite` into `/usr/local/bin` and runs the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different command directory is preferred; the installer uses `sudo` only when the selected directory is not writable.
 
 ## Technology direction
 

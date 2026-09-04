@@ -27,7 +27,7 @@ pub struct CompiledTheme {
 
 /// Returns the complete, human-editable default `mambo.theme.toml`.
 ///
-/// `mambosite init` can write this value directly, keeping the scaffold in
+/// `mbsite init` can write this value directly, keeping the scaffold in
 /// lockstep with the schema and Rust defaults.
 ///
 /// # Errors

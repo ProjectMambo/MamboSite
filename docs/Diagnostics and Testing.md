@@ -20,7 +20,7 @@ help: optional correction
 notes: optional resolution context
 ```
 
-Source spans contain one-based line/column positions and optional zero-based UTF-8 byte offsets. `mambosite --diagnostics json check` serializes compiler diagnostics as JSON; text is the default. Lifecycle, theme, subprocess, and output-publication failures currently use plain error messages rather than this structured schema.
+Source spans contain one-based line/column positions and optional zero-based UTF-8 byte offsets. `mbsite --diagnostics json check` serializes compiler diagnostics as JSON; text is the default. Lifecycle, theme, subprocess, and output-publication failures currently use plain error messages rather than this structured schema.
 
 Current diagnostic families are:
 
@@ -93,4 +93,4 @@ Before version 0.1 is complete, add only the fixtures needed to cover behavior t
 - Property/fuzz coverage for parser inputs and path/output containment.
 - A byte-for-byte repeated-build check.
 
-`mambosite inspect` and CI warning escalation remain planned. Every parser, resolver, route, embed, or writer regression should receive the smallest test that reproduces it.
+`mbsite inspect` and CI warning escalation remain planned. Every parser, resolver, route, embed, or writer regression should receive the smallest test that reproduces it.

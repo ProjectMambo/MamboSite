@@ -37,7 +37,7 @@ MamboWiki/
 └── src/
 ```
 
-Before `mambosite check` or `mambosite build` runs, `docs/` must contain:
+Before `mbsite check` or `mbsite build` runs, `docs/` must contain:
 
 - The configured entry page.
 - Every physical site page.
@@ -89,11 +89,11 @@ workflow = ".github/workflows/pages.yml"
 
 ## Commands
 
-### `mambosite check`
+### `mbsite check`
 
 Runs discovery, parsing, resolution, and validation without modifying generated output. It exits nonzero when any error exists.
 
-### `mambosite build`
+### `mbsite build`
 
 Runs the complete repository-local build:
 
@@ -103,25 +103,25 @@ Runs the complete repository-local build:
 4. Invoke the configured framework adapter build without a shell.
 5. Verify that the configured static output directory exists.
 
-`mambosite build --content-only` stops after generated content and theme output. It exists for local development integration; production builds use the complete command.
+`mbsite build --content-only` stops after generated content and theme output. It exists for local development integration; production builds use the complete command.
 
-### `mambosite init [path]`
+### `mbsite init [path]`
 
 Creates the default site in an empty or Git-only directory. The scaffold includes content, configuration, a complete `mambo.theme.toml`, the framework adapter, package scripts, and a GitHub Pages workflow.
 
 Initialization never recursively cleans an unknown directory. `--force` refreshes only paths recorded as scaffold-owned and preserves unknown files; it still refuses an arbitrary non-scaffold directory. Initialization does not access the network or install dependencies. Run the chosen package manager explicitly and commit its lockfile before using the generated deployment workflow.
 
-### `mambosite deploy`
+### `mbsite deploy`
 
 Runs a complete local build, verifies repository and GitHub configuration, pushes committed work, and starts the configured GitHub Pages workflow. It does not synchronize an external vault and does not silently commit uncommitted work.
 
 When the current commit is already on the remote, deployment uses GitHub Actions `workflow_dispatch`. GitHub Pages can therefore rebuild and deploy the same commit; an empty commit is unnecessary. `--dry-run` performs the local build and reports the resolved push or workflow action without fetching, pushing, or dispatching external state. It requires an existing local remote-tracking branch; fetch once before a dry run.
 
-### Planned: `mambosite inspect <target>`
+### Planned: `mbsite inspect <target>`
 
 This future command will explain a page or reference: source path, route, mount, metadata derivation, children, links, embeds, assets, and diagnostics. Targets may be source paths, routes, or wikilinks. It is not part of the current CLI.
 
-### Planned: `mambosite watch`
+### Planned: `mbsite watch`
 
 Later command for local development. It watches the content root and configuration, rebuilds affected output, and reports diagnostics. The first release does not depend on it.
 
@@ -132,11 +132,11 @@ The site shell should provide predictable wrappers:
 ```json
 {
   "scripts": {
-    "content:check": "mambosite check",
-    "content:build": "mambosite build --content-only",
-    "predev": "mambosite build --content-only",
+    "content:check": "mbsite check",
+    "content:build": "mbsite build --content-only",
+    "predev": "mbsite build --content-only",
     "dev": "next dev",
-    "build": "mambosite build",
+    "build": "mbsite build",
     "mambosite:render": "next build"
   }
 }
@@ -203,7 +203,7 @@ Build job:
 3. Restore Cargo caches safely.
 4. Install or build the pinned MamboSite compiler.
 5. Install the pinned Node.js and package-manager versions.
-6. Run one full `mambosite build`, which validates content, regenerates managed output, and invokes the configured static renderer.
+6. Run one full `mbsite build`, which validates content, regenerates managed output, and invokes the configured static renderer.
 7. Verify that `out/` exists.
 8. Upload `out/` with the GitHub Pages artifact action, whose artifact contract rejects symbolic and hard links.
 
@@ -248,14 +248,14 @@ Build information may record compiler and schema versions in `build-info.ts`, bu
 
 ## Local preview
 
-After installing dependencies and the `mambosite` command, the supported workflows are:
+After installing dependencies and the `mbsite` command, the supported workflows are:
 
 ```bash
 npm run dev
-mambosite build
+mbsite build
 ```
 
-`npm run dev` uses `predev` to refresh generated content and theme output before starting Next.js. `mambosite build` performs the complete production pipeline and verifies `out/`. Later, `mambosite watch` may rebuild incrementally, but direct browser-side Markdown parsing should not be introduced for convenience.
+`npm run dev` uses `predev` to refresh generated content and theme output before starting Next.js. `mbsite build` performs the complete production pipeline and verifies `out/`. Later, `mbsite watch` may rebuild incrementally, but direct browser-side Markdown parsing should not be introduced for convenience.
 
 ## Package and schema versions
 

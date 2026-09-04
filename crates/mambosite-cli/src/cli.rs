@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(
-    name = "mambosite",
+    name = "mbsite",
     version,
     about = "Build and deploy Markdown-first static sites"
 )]
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn parses_check_with_default_config() {
-        let cli = Cli::try_parse_from(["mambosite", "check"]).unwrap();
+        let cli = Cli::try_parse_from(["mbsite", "check"]).unwrap();
         assert_eq!(cli.config, PathBuf::from("mambo.toml"));
         assert_eq!(cli.diagnostics, DiagnosticFormat::Text);
         assert!(matches!(cli.command, Command::Check));
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn parses_lifecycle_flags() {
         let cli = Cli::try_parse_from([
-            "mambosite",
+            "mbsite",
             "build",
             "--content-only",
             "--config",
@@ -82,13 +82,13 @@ mod tests {
         assert_eq!(cli.diagnostics, DiagnosticFormat::Json);
         assert!(matches!(cli.command, Command::Build { content_only: true }));
 
-        let cli = Cli::try_parse_from(["mambosite", "init", "new-site", "--force"]).unwrap();
+        let cli = Cli::try_parse_from(["mbsite", "init", "new-site", "--force"]).unwrap();
         assert!(matches!(
             cli.command,
             Command::Init { path, force: true } if path == std::path::Path::new("new-site")
         ));
 
-        let cli = Cli::try_parse_from(["mambosite", "deploy", "--dry-run"]).unwrap();
+        let cli = Cli::try_parse_from(["mbsite", "deploy", "--dry-run"]).unwrap();
         assert!(matches!(cli.command, Command::Deploy { dry_run: true }));
     }
 }
