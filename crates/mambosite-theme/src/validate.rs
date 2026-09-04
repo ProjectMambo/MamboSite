@@ -102,6 +102,7 @@ pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
         ("widths.sidebar", &theme.widths.sidebar),
         ("widths.card_min", &theme.widths.card_min),
         ("widths.hero_image_min", &theme.widths.hero_image_min),
+        ("widths.gallery_image_max", &theme.widths.gallery_image_max),
         ("dimensions.header_blur", &theme.dimensions.header_blur),
         (
             "dimensions.hero_min_height",
@@ -185,6 +186,7 @@ fn validate_palette(
         ("text_subtle", &palette.text_subtle),
         ("brand", &palette.brand),
         ("brand_hover", &palette.brand_hover),
+        ("brand_active", &palette.brand_active),
         ("on_brand", &palette.on_brand),
         ("selection", &palette.selection),
         ("focus", &palette.focus),

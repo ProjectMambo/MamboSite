@@ -26,13 +26,18 @@ export function DefaultLayout({
       id={frameId}
     >
       <PageBackBehavior targetId={frameId} />
+      {backLink("top")}
+      {sidebar ? (
+        <aside className="mambo-page-sidebar mambo-page-sidebar--inline">{sidebar}</aside>
+      ) : null}
       <article className="mambo-page-article">
-        {backLink("top")}
         {showGeneratedTitle ? <h1>{page.title}</h1> : null}
         {children}
         {backLink("bottom")}
       </article>
-      {sidebar ? <aside className="mambo-page-sidebar">{sidebar}</aside> : null}
+      {sidebar ? (
+        <aside className="mambo-page-sidebar mambo-page-sidebar--rail">{sidebar}</aside>
+      ) : null}
     </div>
   );
 }

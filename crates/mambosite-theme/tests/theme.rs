@@ -15,9 +15,37 @@ fn empty_file_resolves_to_the_generic_default() {
     assert_eq!(theme.components.collection.max_columns.content(), Some(&2));
     assert_eq!(theme.components.collection.max_columns.wide(), Some(&6));
     assert_eq!(theme.components.sidebar.mode.base(), &SidebarMode::Inline);
+    assert_eq!(theme.typography.body.size.base(), "1.125rem");
+    assert_eq!(theme.typography.navigation.size.base(), "1.2rem");
+    assert_eq!(theme.widths.gallery_image_max, "24rem");
+    assert_eq!(theme.dimensions.control_min_height, "2.75rem");
+    for radius in [
+        &theme.radii.small,
+        &theme.radii.medium,
+        &theme.radii.large,
+        &theme.radii.pill,
+    ] {
+        assert_eq!(radius, "0");
+    }
     let css = theme.compile().unwrap().css;
-    assert!(css.contains("--mambo-sidebar-order: -1;"));
-    assert!(media_section(&css, 900, Some(1200)).contains("--mambo-sidebar-order: 1;"));
+    assert!(css.contains("--mambo-color-brand-active:"));
+    assert!(css.contains("--mambo-width-gallery-image-max: 24rem;"));
+    assert!(css.contains("--mambo-sidebar-inline-display: block;"));
+    assert!(css.contains("--mambo-sidebar-rail-display: none;"));
+    assert!(media_section(&css, 900, Some(1200)).contains("--mambo-sidebar-inline-display: none;"));
+    assert!(media_section(&css, 900, Some(1200)).contains("--mambo-sidebar-rail-display: block;"));
+}
+
+#[test]
+fn default_interaction_colours_meet_contrast_thresholds() {
+    let theme = Theme::default();
+    for palette in [&theme.colors.dark, &theme.colors.light] {
+        for colour in [&palette.brand, &palette.brand_hover, &palette.brand_active] {
+            assert!(contrast(colour, &palette.background) >= 4.5);
+            assert!(contrast(colour, &palette.on_brand) >= 4.5);
+        }
+        assert!(contrast(&palette.focus, &palette.background) >= 3.0);
+    }
 }
 
 #[test]
@@ -67,7 +95,7 @@ fn nested_settings_override_without_erasing_default_siblings() {
     let output = theme.compile().unwrap();
 
     assert_eq!(theme.colors.light.surface, "#f3ece2");
-    assert_eq!(theme.typography.body.line_height, "1.78");
+    assert_eq!(theme.typography.body.line_height, "1.72");
     assert!(output.css.contains(":root,\n[data-theme=\"light\"]"));
     assert!(output.css.contains("@media (min-width: 600px)"));
     assert!(output.css.contains("@media (min-width: 800px)"));
@@ -111,10 +139,12 @@ fn emits_configured_font_faces_and_semantic_token_groups() {
     assert!(css.contains("font-style: italic;"));
     for variable in [
         "--mambo-color-background",
+        "--mambo-color-brand-active",
         "--mambo-font-body",
         "--mambo-type-heading-1-size",
         "--mambo-space-md",
         "--mambo-width-reading",
+        "--mambo-width-gallery-image-max",
         "--mambo-dimension-header-height",
         "--mambo-border-strong",
         "--mambo-radius-medium",
@@ -206,6 +236,24 @@ fn media_section(css: &str, width: u32, next_width: Option<u32>) -> &str {
         })
         .map_or(css.len(), |offset| start + start_marker.len() + offset);
     &css[start..end]
+}
+
+fn contrast(first: &str, second: &str) -> f64 {
+    let first = luminance(first);
+    let second = luminance(second);
+    (first.max(second) + 0.05) / (first.min(second) + 0.05)
+}
+
+fn luminance(hex: &str) -> f64 {
+    let channel = |start| {
+        let value = f64::from(u8::from_str_radix(&hex[start..start + 2], 16).unwrap()) / 255.0;
+        if value <= 0.040_45 {
+            value / 12.92
+        } else {
+            ((value + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5)
 }
 
 #[test]

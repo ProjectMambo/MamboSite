@@ -197,6 +197,7 @@ pub struct ColorPalette {
     pub text_subtle: String,
     pub brand: String,
     pub brand_hover: String,
+    pub brand_active: String,
     pub on_brand: String,
     pub selection: String,
     pub focus: String,
@@ -218,10 +219,11 @@ impl ColorPalette {
             text: "#faf7f2".to_owned(),
             text_muted: "#d5c9b8".to_owned(),
             text_subtle: "#969085".to_owned(),
-            brand: "#d44b36".to_owned(),
-            brand_hover: "#ef674f".to_owned(),
-            on_brand: "#ffffff".to_owned(),
-            selection: "#d44b36".to_owned(),
+            brand: "#e05a45".to_owned(),
+            brand_hover: "#f08068".to_owned(),
+            brand_active: "#d96752".to_owned(),
+            on_brand: "#181615".to_owned(),
+            selection: "#e05a45".to_owned(),
             focus: "#ffa775".to_owned(),
             success: "#9cbaac".to_owned(),
             warning: "#ffa775".to_owned(),
@@ -247,9 +249,10 @@ impl ColorPalette {
             text_subtle: "#765d3f".to_owned(),
             brand: "#a93622".to_owned(),
             brand_hover: "#822727".to_owned(),
+            brand_active: "#641b1b".to_owned(),
             on_brand: "#ffffff".to_owned(),
             selection: "#a93622".to_owned(),
-            focus: "#de8554".to_owned(),
+            focus: "#822727".to_owned(),
             success: "#6b8c85".to_owned(),
             warning: "#de8554".to_owned(),
             danger: "#8c5258".to_owned(),
@@ -390,16 +393,26 @@ pub struct TypographyTokens {
 impl Default for TypographyTokens {
     fn default() -> Self {
         Self {
-            body: TextStyle::new(Responsive::Value("1rem".to_owned()), "1.78", 400, "normal"),
-            small: TextStyle::new(Responsive::Value("0.8rem".to_owned()), "1.5", 400, "normal"),
+            body: TextStyle::new(
+                Responsive::Value("1.125rem".to_owned()),
+                "1.72",
+                400,
+                "normal",
+            ),
+            small: TextStyle::new(
+                Responsive::Value("0.95rem".to_owned()),
+                "1.5",
+                400,
+                "normal",
+            ),
             label: TextStyle::new(
-                Responsive::Value("0.75rem".to_owned()),
+                Responsive::Value("0.875rem".to_owned()),
                 "1.35",
                 700,
                 "0.08em",
             ),
             navigation: TextStyle::new(
-                responsive("0.72rem".to_owned(), Some("0.85rem".to_owned()), None, None),
+                responsive("1.2rem".to_owned(), Some("1.25rem".to_owned()), None, None),
                 "1.2",
                 700,
                 "0.08em",
@@ -508,6 +521,7 @@ pub struct WidthTokens {
     pub sidebar: String,
     pub card_min: String,
     pub hero_image_min: String,
+    pub gallery_image_max: String,
 }
 
 impl Default for WidthTokens {
@@ -521,6 +535,7 @@ impl Default for WidthTokens {
             sidebar: "15rem".to_owned(),
             card_min: "14rem".to_owned(),
             hero_image_min: "14rem".to_owned(),
+            gallery_image_max: "24rem".to_owned(),
         }
     }
 }
@@ -544,7 +559,7 @@ impl Default for DimensionTokens {
             header_blur: "16px".to_owned(),
             toc_offset: Responsive::Value("6.5rem".to_owned()),
             hero_min_height: "18rem".to_owned(),
-            control_min_height: "5rem".to_owned(),
+            control_min_height: "2.75rem".to_owned(),
         }
     }
 }
@@ -696,7 +711,7 @@ impl Default for RadiusTokens {
             small: "0".to_owned(),
             medium: "0".to_owned(),
             large: "0".to_owned(),
-            pill: "9999px".to_owned(),
+            pill: "0".to_owned(),
         }
     }
 }
@@ -734,7 +749,7 @@ impl Default for MotionTokens {
             fast: "160ms".to_owned(),
             normal: "180ms".to_owned(),
             slow: "300ms".to_owned(),
-            easing: "ease".to_owned(),
+            easing: "cubic-bezier(0.2, 0.8, 0.2, 1)".to_owned(),
         }
     }
 }
@@ -798,10 +813,17 @@ impl SidebarMode {
         }
     }
 
-    pub const fn order(self) -> i8 {
+    pub const fn inline_display(self) -> &'static str {
         match self {
-            Self::Inline => -1,
-            Self::Hidden | Self::Sticky => 1,
+            Self::Inline => "block",
+            Self::Hidden | Self::Sticky => "none",
+        }
+    }
+
+    pub const fn rail_display(self) -> &'static str {
+        match self {
+            Self::Sticky => "block",
+            Self::Hidden | Self::Inline => "none",
         }
     }
 }

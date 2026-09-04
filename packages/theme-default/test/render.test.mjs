@@ -30,6 +30,12 @@ test("default styles do not duplicate generated theme values as literal fallback
     css,
     /\.mambo-site-navigation\s*\{[^}]*overflow-x: auto/s,
   );
+  assert.match(css, /a:active\s*\{[^}]*--mambo-color-brand-active/s);
+  assert.match(css, /\.mambo-site-header:focus-within\s*\{[^}]*translateY\(0\)/s);
+  assert.match(css, /\.mambo-back-link--top\s*\{[^}]*grid-column: 1 \/ -1/s);
+  assert.match(css, /\.mambo-collection\[data-view="cards"\]/);
+  assert.match(css, /\[data-layout="gallery"\][^{]*\{[^}]*--mambo-width-gallery-image-max/s);
+  assert.doesNotMatch(css, /minmax\(min\(100%, var\(--mambo-width-card-min\)/);
 });
 
 test("default theme renders compiled Markdown and resolved directives", () => {
@@ -114,6 +120,7 @@ test("collection markup exposes requested columns without overriding responsive 
     id: "p_card",
     route: "/card/",
     title: "Card",
+    description: "Card description",
     status: "published",
     listed: true,
     tags: [],
@@ -133,6 +140,15 @@ test("collection markup exposes requested columns without overriding responsive 
   }));
   assert.match(html, /data-columns="6"/);
   assert.doesNotMatch(html, /--mambo-collection-columns/);
+
+  const cards = renderToStaticMarkup(createElement(CollectionView, {
+    items: [page],
+    runtime,
+    view: "cards",
+    show: ["title"],
+  }));
+  assert.match(cards, /data-view="cards"/);
+  assert.doesNotMatch(cards, /Card description/);
 });
 
 test("a hero hides the generated title only when its validated show-title is true", () => {
@@ -184,11 +200,14 @@ test("layouts render useful TOCs and predictable back controls", () => {
     const withHeadings = pageWithLayout(layout, { heading: true });
     const withToc = renderCompiledPage(withHeadings);
     assert.match(withToc, /class="mambo-toc"/);
-    assert.match(withToc, /class="mambo-page-sidebar"/);
+    assert.equal(withToc.match(/class="mambo-page-sidebar /g)?.length, 2);
     assert.match(
       withToc,
       new RegExp(`mambo-page-frame--${layout === "article" ? "normal" : "wide"}`),
     );
+    assert.ok(withToc.indexOf('data-mambo-back="top"') < withToc.indexOf("mambo-page-sidebar"));
+    assert.ok(withToc.indexOf("mambo-page-sidebar") < withToc.indexOf("mambo-page-article"));
+    assert.ok(withToc.indexOf("mambo-page-article") < withToc.lastIndexOf("mambo-page-sidebar"));
   }
 
   const nested = pageWithLayout("project", { route: "/project/example/" });

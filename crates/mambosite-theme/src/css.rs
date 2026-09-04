@@ -109,6 +109,7 @@ fn write_palette(css: &mut String, scheme: ColorScheme, palette: &ColorPalette) 
         ("text-subtle", &palette.text_subtle),
         ("brand", &palette.brand),
         ("brand-hover", &palette.brand_hover),
+        ("brand-active", &palette.brand_active),
         ("on-brand", &palette.on_brand),
         ("selection", &palette.selection),
         ("focus", &palette.focus),
@@ -162,6 +163,7 @@ fn write_base_tokens(css: &mut String, theme: &Theme) {
         ("width-sidebar", &theme.widths.sidebar),
         ("width-card-min", &theme.widths.card_min),
         ("width-hero-image-min", &theme.widths.hero_image_min),
+        ("width-gallery-image-max", &theme.widths.gallery_image_max),
         (
             "dimension-main-top-padding",
             theme.dimensions.main_top_padding.base(),
@@ -320,7 +322,14 @@ fn responsive_declarations(theme: &Theme, point: Point) -> Vec<(String, String)>
     if let Some(mode) = at(&theme.components.sidebar.mode, point) {
         declarations.push(("sidebar-display".to_owned(), mode.display().to_owned()));
         declarations.push(("sidebar-position".to_owned(), mode.position().to_owned()));
-        declarations.push(("sidebar-order".to_owned(), mode.order().to_string()));
+        declarations.push((
+            "sidebar-inline-display".to_owned(),
+            mode.inline_display().to_owned(),
+        ));
+        declarations.push((
+            "sidebar-rail-display".to_owned(),
+            mode.rail_display().to_owned(),
+        ));
     }
     if let Some(mode) = at(&theme.components.header.mode, point) {
         declarations.push(("header-display".to_owned(), mode.display().to_owned()));
@@ -416,7 +425,8 @@ fn typography(theme: &Theme) -> [(&'static str, &TextStyle); 9] {
 fn write_sidebar(css: &mut String, mode: SidebarMode) {
     declaration(css, "sidebar-display", mode.display());
     declaration(css, "sidebar-position", mode.position());
-    declaration(css, "sidebar-order", mode.order());
+    declaration(css, "sidebar-inline-display", mode.inline_display());
+    declaration(css, "sidebar-rail-display", mode.rail_display());
 }
 
 fn write_header_mode(css: &mut String, mode: HeaderMode) {
