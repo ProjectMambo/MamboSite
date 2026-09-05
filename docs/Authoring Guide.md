@@ -238,7 +238,7 @@ Content media has one root-relative author namespace. Store a direct-repository 
 ![Portrait](assets/profile/photo.jpg)
 ```
 
-The same namespace works in `cover`, `hero.image`, `button.href`, wikilinks, and Obsidian embeds. Do not write the generated `/mambo/assets/...` URL or deployment base path in source Markdown. Site icons and fonts stay outside this content-asset pipeline as site-owned public files.
+The same namespace works in `cover`, `hero.image`, `button.href`, wikilinks, and Obsidian embeds. Do not write the generated `/mambo/assets/...` URL or deployment base path in source Markdown. A site may also keep icons and social previews in `_assets/` and point its renderer metadata at their generated URLs; fonts may remain theme-package or site-owned files.
 
 ## 6. Mount project documentation
 

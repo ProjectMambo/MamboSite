@@ -242,7 +242,7 @@ GitHub's official flow and current action versions are documented in [Using cust
 
 Action major versions should be pinned and updated deliberately, preferably with automated dependency update proposals. Design documents should not make old action versions part of the MamboSite content contract.
 
-The scaffold currently names the intended `v0.1.0` compiler tag and `0.1.0` npm packages. Those release coordinates are not published yet. Until they are, integration workflows must check out MamboSite explicitly and use workspace or file dependencies, as the MamboFolio migration does.
+The scaffold substitutes the creating compiler's version into both its `vX.Y.Z` compiler checkout and four `@mambosite/*` package pins. GitHub source tags and npm package publication are separate; until the packages are published, integration workflows must check out MamboSite explicitly and use workspace or file dependencies, as MamboFolio and MamboWiki do.
 
 ## Generated-file policy
 
@@ -286,3 +286,19 @@ mbsite build
 ## Package and schema versions
 
 Generated data declares a schema version which `@mambosite/runtime` checks at startup. Website lockfiles will pin the independently versioned runtime, React registry, default theme, and framework adapter packages after their first publication. Different websites can then remain on different compatible package versions without copying MamboSite components.
+
+## Maintainer source releases
+
+`mbsite release` is intentionally unsupported: source releases mutate MamboSite's own Git and GitHub state rather than a consuming website. After the version-preparation commit passes every repository gate, push `main`, create and inspect an annotated tag, then create an editable draft release from that verified tag:
+
+```bash
+git tag -a vX.Y.Z
+git show vX.Y.Z
+git push origin refs/tags/vX.Y.Z
+gh release create vX.Y.Z --repo ProjectMambo/MamboSite --verify-tag --draft --fail-on-no-commits --title "MamboSite vX.Y.Z" --notes-from-tag
+gh release view vX.Y.Z --repo ProjectMambo/MamboSite
+gh release edit vX.Y.Z --repo ProjectMambo/MamboSite --notes-file release-notes.md
+gh release edit vX.Y.Z --repo ProjectMambo/MamboSite --draft=false --latest
+```
+
+The annotated-tag editor supplies the first description. Review or replace it while the GitHub release is still a draft; `gh release edit --notes-file` also updates a mutable release later. Release notes should summarize user-visible changes, compatibility, validation, and any publication boundary such as workspace-local npm packages. `--verify-tag` prevents GitHub from silently creating a tag at another commit.

@@ -62,7 +62,7 @@ Compatibility has three explicit versions:
 - Runtime and adapter packages use semantic versions.
 - Theme packages use semantic versions independently of the compiler.
 
-Each site pins compatible package versions in its lockfile. The current runtime accepts generated schema 1 and fails before rendering another schema. All four local packages currently use version `0.1.1`; publishing and release tagging are still pending.
+Each site pins compatible package versions in its lockfile. The current runtime accepts generated schema 1 and fails before rendering another schema. The four local packages move together as one workspace compatibility unit; GitHub source tags and npm package publication remain separate release events.
 
 ## MamboSite repository structure
 

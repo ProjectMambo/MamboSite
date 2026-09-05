@@ -86,7 +86,7 @@ The initial end-to-end platform is implemented. The Rust compiler discovers and 
 - [Node.js](https://nodejs.org/) 20 or later and npm.
 - [Rust](https://www.rust-lang.org/tools/install) 1.95.0 or later.
 - Python 3 only when using a site's optional static preview script.
-- Git, plus the [GitHub CLI](https://cli.github.com/) when `mbsite deploy` needs to re-dispatch an existing commit.
+- Git, plus the [GitHub CLI](https://cli.github.com/) when `mbsite deploy` needs to re-dispatch an existing commit or a maintainer publishes a source release.
 
 Install this checkout and the development command wrapper:
 
@@ -112,7 +112,7 @@ Create a scaffold in an empty directory:
 mbsite init my-site
 ```
 
-The scaffold keeps authored pages in `docs/`, site settings in `mambo.toml`, and design tokens in `mambo.theme.toml`. Its dependency versions target the first MamboSite release; until those packages are published, point them at the sibling checkout described above before installing dependencies. See the [Authoring Guide](docs/Authoring%20Guide.md) for page patterns and the [Build and Deployment guide](docs/Build%20and%20Deployment.md) for the complete operating model.
+The scaffold keeps authored pages in `docs/`, site settings in `mambo.toml`, and design tokens in `mambo.theme.toml`. It substitutes the creating compiler's version into its MamboSite package and source-tag pins; until the npm packages are published, point them at the sibling checkout described above before installing dependencies. See the [Authoring Guide](docs/Authoring%20Guide.md) for page patterns and the [Build and Deployment guide](docs/Build%20and%20Deployment.md) for the complete operating model.
 
 ### Command line
 

@@ -242,7 +242,7 @@ Docs/Projects/_sites/MamboFolio/_assets/profile/a.jpg  -> docs/_assets/profile/a
 
 Markdown and directives refer to that file as `assets/profile/a.jpg`. This is a MamboSite root-relative content namespace, not a path relative to the current note directory. After sync, the compiler validates the matching `docs/_assets/` file, rewrites its URL to the configured `assets_out/assets/` path, and includes the generated file in the static export. For the default `assets_out = "public/mambo"`, that means `/mambo/assets/...` before the renderer adds `site.base_path`.
 
-The synchronizer never searches elsewhere in the private vault for attachments. A site without `_assets/` exports no content assets. Source symlinks are rejected, and the complete `docs/` replacement removes stale synchronized assets. Site icons and fonts remain site-owned files outside the managed `assets_out` subtree of `public/`; the sync script does not relocate them.
+The synchronizer never searches elsewhere in the private vault for attachments. A site without `_assets/` exports no content assets. Source symlinks are rejected, and the complete `docs/` replacement removes stale synchronized assets. Project Mambo sites keep icons and social previews in this same canonical `_assets/` tree, then point their renderer metadata at the generated `assets_out/assets/` URLs. MamboFont remains bundled by the MamboSite default-theme package.
 
 ## Separation of responsibilities
 
