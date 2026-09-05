@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Maintenance-Active-brightgreen?style=flat-square" alt="Maintenance status: active" />
   <img src="https://img.shields.io/github/last-commit/ProjectMambo/MamboSite?style=flat-square&color=7a5fff" alt="Last commit" />
   <img src="https://img.shields.io/github/repo-size/ProjectMambo/MamboSite?style=flat-square&color=yellow" alt="Repository size" />
-  <a href="../LICENSE"><img src="https://img.shields.io/github/license/ProjectMambo/MamboSite?style=flat-square&color=orange" alt="License" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/ProjectMambo/MamboSite?style=flat-square&color=orange" alt="License" /></a>
 </p>
 
 MamboSite is a Markdown-first static site platform for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data and theme CSS, renders it with MamboSite-owned React components, and exports static files for GitHub Pages.
@@ -169,4 +169,4 @@ Before the first deployment, set the repository's Pages source to **GitHub Actio
 
 ## License
 
-Distributed under the MIT License. See **[LICENSE](../LICENSE)** for more information.
+Distributed under the MIT License. See **[LICENSE](LICENSE)** for more information.
