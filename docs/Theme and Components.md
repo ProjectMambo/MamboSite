@@ -220,9 +220,9 @@ Content cards and `button variant="card"` action cells draw accents from the pai
 
 When both schemes use at least two sRGB hexadecimal colours in `#RGB` or `#RRGGBB` form, MamboSite compares paired slots in OKLab. Two slots are similar when their Euclidean distance is less than `0.10` in either scheme. If a cycle exists that keeps every neighboring pair at or above that threshold, the generated grid guarantees dissimilar direct neighbors. A one-colour, non-hex, or mathematically incompatible palette remains valid and uses a seeded shuffle instead; no algorithm can guarantee perceptual separation for values it cannot measure or a palette without a valid cycle.
 
-Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and shuffles the selected order. `SOURCE_DATE_EPOCH=<unsigned-integer>` fixes that seed for reproducible builds. Because the number of possible orders is finite, separate unseeded builds may occasionally choose the same result.
+Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and generates a new constrained colour pattern. `SOURCE_DATE_EPOCH=<unsigned-integer>` fixes that seed for reproducible builds. Because the number of possible patterns is finite, separate unseeded builds may occasionally choose the same result.
 
-For a grid with `N` accent slots, the generated CSS maps a cell at zero-based row and column to `order[(row + column) % N]`. When a safe OKLab cycle is available, direct neighbors above, below, left, and right therefore use dissimilar slots at every responsive column count. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
+For every effective responsive column count, MamboSite generates an irregular repeating grid from the shuffled palette. When a safe OKLab cycle is available, each cell is chosen so its direct neighbors above, below, left, and right use perceptually dissimilar slots, including where the pattern repeats. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
 
 ### Site shell and layouts
 
@@ -313,7 +313,7 @@ The default runtime derives an automatic TOC from level-two through level-four h
 
 Below the configured `content` breakpoint, the automatic TOC is a native `<details>` disclosure before the article and starts closed. At and above that breakpoint, it is an expanded sticky rail beside the article. The rail has a viewport-bounded height and its own scrolling area, and it follows the active entry when a long TOC cannot fit at once. It never overlays the article. Article pages expand their outer frame only when that rail exists; gallery pages retain their wide frame.
 
-Once a matching section is reached, each visible TOC tracks exactly one current section and marks its link with `aria-current="location"`. The active entry is the last heading that has crossed a header-aware top threshold. At the bottom of the document, the final matching heading wins even when its section is too short to reach that threshold; continued scrolling therefore advances the TOC to the end although the page itself cannot move farther. All links still use the compiler's heading IDs and work as ordinary anchors without scroll tracking.
+Once a matching section is reached, each visible TOC tracks exactly one current section and marks its link with `aria-current="location"`. The active entry is normally the last heading that has crossed a header-aware top threshold. At the physical bottom of the document, further downward wheel, touch, or keyboard scroll intent advances through any remaining short sections one entry at a time and keeps the TOC rail following the highlight. Upward intent immediately restores the geometry-derived entry. All links still use the compiler's heading IDs and work as ordinary anchors without scroll tracking.
 
 ## Responsive behaviour
 

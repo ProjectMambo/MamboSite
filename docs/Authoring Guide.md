@@ -13,7 +13,7 @@ This is the starting point for a person or agent creating MamboSite pages. It co
 MamboSite always compiles the repository-local directory configured by `content_root`, normally `docs/`. How files arrive there is separate.
 
 - In a standalone site, edit `docs/` directly.
-- In Project Mambo, edit the canonical Obsidian-vault copy. Project documentation belongs in `Docs/Projects/MamboXXX/`; site-owned pages belong in `Docs/Projects/_sites/<Site>/`; publishable site media belongs in `Docs/assets/<Site>/`.
+- In Project Mambo, edit the canonical Obsidian-vault copy. Project documentation belongs in `Docs/Projects/MamboXXX/`; site-owned pages and publishable media belong in `Docs/Projects/_sites/<Site>/`, with media under its `_assets/` child.
 - Do not edit synchronized repository files as if they were canonical. The next sync replaces the complete `docs/` snapshot.
 - Do not edit `src/generated/mambo/` or the managed directory configured by `assets_out`. A build replaces them.
 

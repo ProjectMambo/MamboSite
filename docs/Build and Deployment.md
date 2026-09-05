@@ -199,6 +199,25 @@ The current Next adapter prepends the configured base path to internal links and
 
 ## GitHub Actions pipeline
 
+### One-time repository setup
+
+Before the first deployment, configure the website repository on GitHub:
+
+1. Commit and push the Pages workflow under `.github/workflows/` to the branch named by `[deploy].branch`.
+2. Open **Settings → Pages**. Under **Build and deployment**, set **Source** to **GitHub Actions**. Do not select a branch publishing source; MamboSite uploads the finished `out/` artifact instead.
+3. Match `mambo.toml` to the public URL:
+   - A user or organisation site such as `https://example.github.io` uses that complete URL and `base_path = ""`.
+   - A project site such as `https://example.github.io/my-site` uses that complete URL and `base_path = "/my-site"`.
+   - A custom domain such as `https://example.com` uses that complete URL and normally `base_path = ""`.
+4. Keep `workflow_dispatch` and the configured branch's `push` trigger in the workflow. Keep `contents: read` for checkout and grant the deployment job at least `pages: write` and `id-token: write`. The standard Pages actions use `GITHUB_TOKEN`; no personal access token or repository secret is required.
+5. Keep the deployment job on the `github-pages` environment and set its URL from the deployment action's `page_url` output. GitHub creates this environment automatically if it does not exist. A deployment protection rule that permits only the default branch is recommended.
+6. Push to the configured branch for the first run, then inspect **Actions** and **Settings → Pages** for the deployment result. GitHub's Pages setting selects Actions as the publishing method; it is not bound to one named workflow.
+7. Enable **Enforce HTTPS** after it becomes available. For a custom domain, verify ownership when possible, add the domain under **Settings → Pages** before changing DNS, then use GitHub's current DNS values. With a custom Actions workflow, an existing repository `CNAME` file is ignored and is not required.
+
+GitHub documents the current controls in [Configuring a publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site), [Using custom workflows with GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages), [Managing a custom domain](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site), and [Securing a Pages site with HTTPS](https://docs.github.com/en/pages/getting-started-with-github-pages/securing-your-github-pages-site-with-https).
+
+Run `mbsite deploy --dry-run` locally before the first live deployment. The workflow must already exist on the remote branch for `workflow_dispatch` to start it. After the first push, `mbsite deploy` dispatches that workflow on the configured branch when local `HEAD` already equals the remote commit, so redeploying the same commit does not require an empty commit.
+
 The production workflow has separate build and deployment jobs.
 
 Build job:
