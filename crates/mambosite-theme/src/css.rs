@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 
-use crate::accent::{safe_cycle, shuffled_indices, slot_at};
+use crate::accent::{grid_slots, safe_cycle, shuffled_indices};
 use crate::model::{
     ColorPalette, ColorScheme, HeaderMode, Responsive, SidebarMode, TextStyle, Theme,
 };
@@ -69,8 +69,9 @@ pub(crate) fn render(theme: &Theme, accent_seed: u64) -> String {
         "",
         *theme.components.collection.max_columns.base(),
         &accent_cycle,
+        accent_seed,
     );
-    write_base_columns_rules(&mut css, &accent_cycle);
+    write_base_columns_rules(&mut css, &accent_cycle, accent_seed);
 
     for (point, width) in [
         (Point::Compact, theme.breakpoints.compact),
@@ -91,8 +92,9 @@ pub(crate) fn render(theme: &Theme, accent_seed: u64) -> String {
             "  ",
             collection_limit_at(theme, point),
             &accent_cycle,
+            accent_seed,
         );
-        write_columns_breakpoint_rule(&mut css, point, &accent_cycle);
+        write_columns_breakpoint_rule(&mut css, point, &accent_cycle, accent_seed);
         writeln!(css, "}}\n").unwrap();
     }
 
@@ -376,7 +378,7 @@ fn responsive_declarations(theme: &Theme, point: Point) -> Vec<(String, String)>
     declarations
 }
 
-fn write_collection_rules(css: &mut String, indent: &str, maximum: u8, cycle: &[usize]) {
+fn write_collection_rules(css: &mut String, indent: &str, maximum: u8, cycle: &[usize], seed: u64) {
     for requested in 1..=6 {
         let effective = requested.min(maximum);
         writeln!(
@@ -395,12 +397,12 @@ fn write_collection_rules(css: &mut String, indent: &str, maximum: u8, cycle: &[
         } else {
             format!(":is({})", containers.join(", "))
         };
-        write_accent_grid_rules(css, indent, &container, usize::from(effective), cycle);
+        write_accent_grid_rules(css, indent, &container, usize::from(effective), cycle, seed);
     }
     writeln!(css).unwrap();
 }
 
-fn write_base_columns_rules(css: &mut String, cycle: &[usize]) {
+fn write_base_columns_rules(css: &mut String, cycle: &[usize], seed: u64) {
     writeln!(
         css,
         "[data-mambo-columns][data-collapse=\"compact\"],\n[data-mambo-columns][data-collapse=\"content\"],\n[data-mambo-columns][data-collapse=\"wide\"] {{\n  --mambo-layout-columns-template: minmax(0, 1fr);\n}}"
@@ -417,6 +419,7 @@ fn write_base_columns_rules(css: &mut String, cycle: &[usize]) {
         "[data-mambo-columns]:not([data-collapse=\"never\"])",
         1,
         cycle,
+        seed,
     );
     for columns in 1..=4 {
         write_accent_grid_rules(
@@ -425,12 +428,13 @@ fn write_base_columns_rules(css: &mut String, cycle: &[usize]) {
             &format!("[data-mambo-columns][data-collapse=\"never\"][data-columns=\"{columns}\"]"),
             columns,
             cycle,
+            seed,
         );
     }
     writeln!(css).unwrap();
 }
 
-fn write_columns_breakpoint_rule(css: &mut String, point: Point, cycle: &[usize]) {
+fn write_columns_breakpoint_rule(css: &mut String, point: Point, cycle: &[usize], seed: u64) {
     writeln!(
         css,
         "  [data-mambo-columns][data-collapse=\"{}\"] {{",
@@ -453,6 +457,7 @@ fn write_columns_breakpoint_rule(css: &mut String, point: Point, cycle: &[usize]
             ),
             columns,
             cycle,
+            seed,
         );
     }
 }
@@ -463,11 +468,13 @@ fn write_accent_grid_rules(
     container: &str,
     columns: usize,
     cycle: &[usize],
+    seed: u64,
 ) {
-    let period = cycle.len() * columns;
+    let slots = grid_slots(cycle, columns, seed);
+    let period = slots.len();
     for slot in 0..cycle.len() {
         let selectors = (0..period)
-            .filter(|&index| slot_at(cycle, columns, index) == slot)
+            .filter(|&index| slots[index] == slot)
             .map(|index| {
                 format!(
                     "{indent}{container} > [data-mambo-accent-item]:nth-child({period}n + {})",
@@ -572,7 +579,7 @@ fn quoted(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::write_accent_grid_rules;
-    use crate::accent::{safe_cycle, slot_at};
+    use crate::accent::{grid_slots, safe_cycle};
     use crate::model::Theme;
 
     #[test]
@@ -582,9 +589,10 @@ mod tests {
 
         for columns in 1..=6 {
             let mut css = String::new();
-            write_accent_grid_rules(&mut css, "", "[data-grid]", columns, &cycle);
-            let period = cycle.len() * columns;
-            for index in 0..period {
+            write_accent_grid_rules(&mut css, "", "[data-grid]", columns, &cycle, 42);
+            let slots = grid_slots(&cycle, columns, 42);
+            let period = slots.len();
+            for (index, slot) in slots.iter().enumerate() {
                 let selector = format!(
                     "[data-grid] > [data-mambo-accent-item]:nth-child({period}n + {})",
                     index + 1
@@ -593,7 +601,7 @@ mod tests {
                 let rule = &rule[..rule.find('}').unwrap()];
                 assert!(rule.contains(&format!(
                     "--mambo-card-accent: var(--mambo-color-accent-{})",
-                    slot_at(&cycle, columns, index) + 1
+                    slot + 1
                 )));
             }
         }

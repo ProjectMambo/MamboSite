@@ -51,8 +51,56 @@ pub(crate) fn safe_cycle(
     None
 }
 
-pub(crate) fn slot_at(cycle: &[usize], columns: usize, index: usize) -> usize {
-    cycle[(index / columns + index % columns) % cycle.len()]
+pub(crate) fn grid_slots(cycle: &[usize], columns: usize, seed: u64) -> Vec<usize> {
+    if cycle.len() == 1 {
+        return cycle.to_vec();
+    }
+
+    let count = cycle.len();
+    let mut state = seed
+        ^ u64::try_from(columns)
+            .expect("grid columns fit u64")
+            .wrapping_mul(0xd1b5_4a32_d192_ed03);
+    let mut rows = Vec::with_capacity(count + 1);
+    let mut first = Vec::with_capacity(columns);
+    first.push(random_below(&mut state, count));
+    for column in 1..columns {
+        first.push(random_neighbour(first[column - 1], count, &mut state));
+    }
+    rows.push(first);
+
+    let vertical_step = if next_random(&mut state) & 1 == 0 {
+        1
+    } else {
+        count - 1
+    };
+    for _ in 0..count {
+        let above = rows.last().expect("the grid has a first row");
+        let mut row = Vec::with_capacity(columns);
+        row.push((above[0] + vertical_step) % count);
+        for column in 1..columns {
+            let left = row[column - 1];
+            let above = above[column];
+            let candidates = neighbours(left, count)
+                .into_iter()
+                .filter(|candidate| are_neighbours(*candidate, above, count))
+                .collect::<Vec<_>>();
+            row.push(candidates[random_below(&mut state, candidates.len())]);
+        }
+        rows.push(row);
+    }
+
+    // Walk the generated rows back to the first one so the nth-child pattern
+    // also remains safe where its period repeats.
+    let mut slots = rows
+        .iter()
+        .flatten()
+        .map(|position| cycle[*position])
+        .collect::<Vec<_>>();
+    for row in rows[1..count].iter().rev() {
+        slots.extend(row.iter().map(|position| cycle[*position]));
+    }
+    slots
 }
 
 fn extend_cycle(
@@ -97,15 +145,41 @@ pub(crate) fn shuffled_indices(count: usize, seed: u64) -> Vec<usize> {
     let mut indices = (0..count).collect::<Vec<_>>();
     let mut state = seed ^ 0x9e37_79b9_7f4a_7c15;
     for upper in (1..count).rev() {
-        state ^= state >> 12;
-        state ^= state << 25;
-        state ^= state >> 27;
-        let random = state.wrapping_mul(0x2545_f491_4f6c_dd1d);
-        let choices = u64::try_from(upper + 1).expect("accent palettes contain at most 12 slots");
-        let selected = usize::try_from(random % choices).expect("the selected slot fits usize");
+        let selected = random_below(&mut state, upper + 1);
         indices.swap(upper, selected);
     }
     indices
+}
+
+fn random_neighbour(position: usize, count: usize, state: &mut u64) -> usize {
+    let neighbours = neighbours(position, count);
+    neighbours[random_below(state, neighbours.len())]
+}
+
+fn neighbours(position: usize, count: usize) -> Vec<usize> {
+    let previous = (position + count - 1) % count;
+    let next = (position + 1) % count;
+    if previous == next {
+        vec![previous]
+    } else {
+        vec![previous, next]
+    }
+}
+
+fn are_neighbours(first: usize, second: usize, count: usize) -> bool {
+    (first + 1) % count == second || (second + 1) % count == first
+}
+
+fn random_below(state: &mut u64, upper: usize) -> usize {
+    usize::try_from(next_random(state) % u64::try_from(upper).expect("accent count fits u64"))
+        .expect("the selected slot fits usize")
+}
+
+fn next_random(state: &mut u64) -> u64 {
+    *state ^= *state >> 12;
+    *state ^= *state << 25;
+    *state ^= *state >> 27;
+    state.wrapping_mul(0x2545_f491_4f6c_dd1d)
 }
 
 fn difference(first: [f64; 3], second: [f64; 3]) -> f64 {
@@ -163,7 +237,7 @@ fn oklab(value: &str) -> Option<[f64; 3]> {
 
 #[cfg(test)]
 mod tests {
-    use super::{DIFFERENCE_THRESHOLD, difference, oklab, safe_cycle, slot_at};
+    use super::{DIFFERENCE_THRESHOLD, difference, grid_slots, oklab, safe_cycle};
     use crate::model::Theme;
 
     #[test]
@@ -173,15 +247,21 @@ mod tests {
 
         assert_eq!(cycle.len(), theme.colors.dark.accents.len());
         for columns in 1..=6 {
-            for index in 0..100 {
-                let slot = slot_at(&cycle, columns, index);
+            let slots = grid_slots(&cycle, columns, 73);
+            assert_eq!(slots.len(), cycle.len() * columns * 2);
+            for index in 0..slots.len() {
+                let slot = slots[index];
                 if index % columns > 0 {
-                    assert_safe(&theme, slot, slot_at(&cycle, columns, index - 1));
+                    assert_safe(&theme, slot, slots[index - 1]);
                 }
                 if index >= columns {
-                    assert_safe(&theme, slot, slot_at(&cycle, columns, index - columns));
+                    assert_safe(&theme, slot, slots[index - columns]);
                 }
             }
+            for column in 0..columns {
+                assert_safe(&theme, slots[column], slots[slots.len() - columns + column]);
+            }
+            assert!(cycle.iter().all(|slot| slots.contains(slot)));
         }
     }
 
@@ -196,6 +276,22 @@ mod tests {
         assert_ne!(
             first,
             safe_cycle(&theme.colors.dark, &theme.colors.light, 2).unwrap()
+        );
+    }
+
+    #[test]
+    fn grid_seed_is_stable_without_repeating_the_diagonal_cycle() {
+        let theme = Theme::default();
+        let cycle = safe_cycle(&theme.colors.dark, &theme.colors.light, 42).unwrap();
+        let first = grid_slots(&cycle, 4, 42);
+
+        assert_eq!(first, grid_slots(&cycle, 4, 42));
+        assert_ne!(first, grid_slots(&cycle, 4, 43));
+        assert_ne!(
+            first,
+            (0..first.len())
+                .map(|index| cycle[(index / 4 + index % 4) % cycle.len()])
+                .collect::<Vec<_>>()
         );
     }
 
