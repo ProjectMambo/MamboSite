@@ -215,10 +215,16 @@ a:active {
   z-index: 1;
 }
 
-.mambo-tooltip:hover .mambo-tooltip__content,
-.mambo-tooltip:focus-within .mambo-tooltip__content {
+.mambo-tooltip:has(:focus-visible) .mambo-tooltip__content {
   opacity: 1;
   transform: translateY(0);
+}
+
+@media (hover: hover) {
+  .mambo-tooltip:hover .mambo-tooltip__content {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mambo-site-navigation-menu {

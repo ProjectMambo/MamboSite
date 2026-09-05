@@ -33,7 +33,9 @@ test("default styles do not duplicate generated theme values as literal fallback
     /\.mambo-navigation-toggle\s*\{[^}]*display: var\(--mambo-header-toggle-display\)/s,
   );
   assert.match(css, /\.mambo-theme-toggle > span\s*\{[^}]*font-size: 1\.5em/s);
-  assert.match(css, /\.mambo-tooltip:focus-within \.mambo-tooltip__content/);
+  assert.match(css, /\.mambo-tooltip:has\(:focus-visible\) \.mambo-tooltip__content/);
+  assert.match(css, /@media \(hover: hover\)[\s\S]*\.mambo-tooltip:hover/);
+  assert.doesNotMatch(css, /\.mambo-tooltip:focus-within/);
   assert.match(css, /a:active\s*\{[^}]*--mambo-color-brand-active/s);
   assert.match(css, /\.mambo-site-header:has\([^}]*\{[^}]*translateY\(0\)/s);
   assert.match(css, /\.mambo-back-link--top\s*\{[^}]*grid-column: 1 \/ -1/s);
