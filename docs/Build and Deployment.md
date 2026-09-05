@@ -258,11 +258,11 @@ A repository may temporarily commit generated output for migration, but CI must 
 
 ## Reproducibility
 
-A production build must not require network access after dependencies are installed. The compiler does not fetch remote images, validate external links, read Git metadata for page dates, or insert the current time into semantic output.
+A production build must not require network access after dependencies are installed. The compiler does not fetch remote images, validate external links, or read Git metadata for page dates. Each output-producing CLI build records one current Unix timestamp in the generated manifest so `::timestamp` can render the build instant; page modules, asset names, and routes do not depend on it.
 
-Content data, routes, copied assets, and generated TypeScript remain deterministic. An ordinary output-producing `mbsite build` deliberately chooses a fresh collection-accent seed, so the accent selector order in generated theme CSS may change. Set `SOURCE_DATE_EPOCH` to an unsigned 64-bit integer in CI when the complete output must be byte-reproducible; the same settings and seed produce the same theme output, while an invalid value fails the build.
+Content data, routes, copied assets, and generated page modules remain deterministic. An ordinary output-producing `mbsite build` records the current build time in `manifest.ts` and deliberately chooses a fresh collection-accent seed, so those two outputs may change. Set `SOURCE_DATE_EPOCH` to a supported non-negative Unix timestamp when the complete output must be byte-reproducible; it fixes both the manifest timestamp and theme seed, while an invalid or out-of-range value fails the build.
 
-Build information may record compiler and schema versions in `build-info.ts`, but nondeterministic timestamps must not affect page modules, asset names, or route output.
+Future build information may also record compiler and schema versions, but it must not affect page modules, asset names, or route output.
 
 ## Failure behaviour
 

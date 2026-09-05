@@ -16,7 +16,7 @@ The repository has passed the compiler-skeleton milestone and now contains an in
 | CommonMark/GFM and supported Obsidian-compatible AST           | Implemented with source spans and fixtures                                                                                                                             |
 | Directive parsing and registry validation                      | Implemented for the documented core registry                                                                                                                           |
 | Page, link, embed, backlink, mount, route, and asset resolution | Implemented for note references and explicit `assets/...` paths; directive target edges and fragment transclusion remain incomplete                                    |
-| Generated output                                               | TypeScript and binary content assets are deterministic; theme CSS is deterministic for a supplied accent seed; every managed tree is atomically published               |
+| Generated output                                               | Page modules and binary assets are deterministic; manifest build time and theme CSS are reproducible with `SOURCE_DATE_EPOCH`; every managed tree is atomically published |
 | React runtime                                                  | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio and MamboWiki content                                        |
 | Theme settings                                                 | Rust-validated overrides compile to generated CSS and typed metadata; the default model and package are refreshed through MamboColour and MamboFont provider commands    |
 | Lifecycle commands                                             | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented                                                                  |
@@ -71,7 +71,7 @@ Deliverable: `mbsite inspect` explains complete resolution for repository-local 
 ## Phase 4 — TypeScript generation
 
 - Implement schema-versioned runtime types.
-- Emit manifest, page modules, navigation, and build information.
+- Emit manifest build information, page modules, and navigation inputs.
 - Implement deterministic and atomic writers.
 - Copy and deduplicate referenced assets.
 - Type-check golden output against the runtime package.
@@ -131,7 +131,7 @@ MamboSite only consumes the resulting repository tree. The compiler does not own
 - Rust emits schema-valid TypeScript with no runtime Markdown parser.
 - The runtime presents an initial MamboFolio-inspired theme and a usable Wiki layout.
 - Both sites deploy successfully through GitHub Actions to GitHub Pages.
-- A clean repeated build with a fixed `SOURCE_DATE_EPOCH` is byte-deterministic; without it, only the generated collection-accent order may reroll.
+- A clean repeated build with a fixed `SOURCE_DATE_EPOCH` is byte-deterministic; without it, the manifest timestamp changes and the generated collection-accent order may reroll.
 
 ## Explicit non-goals for version 0.1
 

@@ -215,7 +215,7 @@ The first release targets static hosting. It must not depend on cookies, server 
 
 ### Complete builds first
 
-The current implementation performs a complete build on every invocation. Semantic content, routes, TypeScript modules, and copied assets remain deterministic. The CLI deliberately gives collection accents a fresh build seed; `SOURCE_DATE_EPOCH` fixes that seed when byte-reproducible theme CSS is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
+The current implementation performs a complete build on every invocation. Semantic content, routes, page modules, and copied assets remain deterministic. The CLI records one build epoch in the manifest and gives collection accents a fresh build seed; `SOURCE_DATE_EPOCH` fixes both values when byte-reproducible output is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
 
 ### Safe defaults
 

@@ -1,5 +1,5 @@
 import { objectValue, type JsonObject, type JsonValue } from "@mambosite/runtime";
-import type { SiteFooterProps } from "@mambosite/react";
+import { MarkdownRenderer, type SiteFooterProps } from "@mambosite/react";
 
 interface FooterLink {
   readonly label: string;
@@ -13,10 +13,17 @@ export function SiteFooter({ runtime }: SiteFooterProps) {
     : runtime.store.manifest.site.title;
   const links = footerLinks(data?.links);
   const Link = runtime.registry.primitives.Link;
+  const entry = runtime.store.entryPage;
+  const authored = entry.body.children?.find(
+    (node) => node.type === "directive" && node.invocation.name === "footer",
+  );
 
   return (
     <footer className="mambo-site-footer" data-mambo-footer>
       <p>© {copyright}</p>
+      {authored ? (
+        <MarkdownRenderer nodes={authored.children ?? []} page={entry} runtime={runtime} />
+      ) : null}
       <nav aria-label="Footer navigation">
         {links.map((item) => (
           <Link href={item.href} key={item.href}>{item.label}</Link>

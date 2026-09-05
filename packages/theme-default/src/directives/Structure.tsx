@@ -6,6 +6,27 @@ export function HiddenDirective() {
   return null;
 }
 
+export function Timestamp({
+  config,
+  runtime,
+}: DirectiveComponentProps<"timestamp">) {
+  const generatedAt = runtime.store.manifest.generatedAt;
+  if (generatedAt === undefined) {
+    throw new Error("the timestamp directive requires build-generated site metadata");
+  }
+  const date = new Date(generatedAt * 1_000);
+  const formatted = new Intl.DateTimeFormat(
+    runtime.options.locale ?? runtime.store.manifest.site.language,
+    { dateStyle: "medium", timeStyle: "long", timeZone: config.timezone },
+  ).format(date);
+  return (
+    <p className="mambo-timestamp">
+      {config.label ? `${config.label}: ` : null}
+      <time dateTime={date.toISOString()}>{formatted}</time>
+    </p>
+  );
+}
+
 export function Breadcrumbs({
   config,
   model,

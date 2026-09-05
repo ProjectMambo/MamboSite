@@ -19,6 +19,7 @@ import {
   RelatedCollection,
   Section,
   TableOfContents,
+  Timestamp,
 } from "./directives/index.js";
 import { defaultFallbacks } from "./fallbacks.js";
 import {
@@ -42,6 +43,7 @@ export const defaultDirectiveRegistry = Object.freeze({
   breadcrumbs: Breadcrumbs,
   meta: Metadata,
   toc: TableOfContents,
+  timestamp: Timestamp,
   children: ChildrenCollection,
   related: RelatedCollection,
   backlinks: BacklinkCollection,
@@ -51,6 +53,7 @@ export const defaultDirectiveRegistry = Object.freeze({
   section: Section,
   columns: Columns,
   column: Column,
+  footer: HiddenDirective,
 }) satisfies DirectiveRegistry;
 
 export const defaultLayoutRegistry = Object.freeze({

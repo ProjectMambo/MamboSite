@@ -127,7 +127,7 @@ data:
         href: https://github.com/example/site
 ```
 
-`navigation` and `footer` are read from the site entry. The first navigation item becomes the brand control; later items become the primary navigation. When no first item exists, the configured site title becomes the brand label. `footer.copyright` is rendered after a generated copyright symbol. `hero` is read from the current page when a `::hero` directive is present. Invalid or differently shaped values are ignored by the default theme rather than acquiring new semantics.
+`navigation` and `footer` are read from the site entry. The first navigation item becomes the brand control; later items become the primary navigation. When no first item exists, the configured site title becomes the brand label. `footer.copyright` is rendered after a generated copyright symbol. A top-level entry `:::footer` adds compiled Markdown and directives between that copyright text and the footer navigation; `::timestamp` uses this slot in MamboFolio and MamboWiki. `hero` is read from the current page when a `::hero` directive is present. Invalid or differently shaped values are ignored by the default theme rather than acquiring new semantics.
 
 ## Layered runtime structure
 
@@ -219,7 +219,7 @@ Content cards and `button variant="card"` action cells draw accents from the pai
 
 Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and shuffles the palette slots. Within each collection or action grid, cards consume that shuffled order without replacement: every configured colour is used once before the order resets and repeats. There is no neighbor-distance constraint.
 
-`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes the shuffle for reproducible builds. Because the number of possible orders is finite, separate unseeded builds may occasionally choose the same result. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
+`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes both the shuffle and the manifest build timestamp for reproducible builds. Because the number of possible orders is finite, separate unseeded builds may occasionally choose the same result. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
 
 ### Site shell and layouts
 
@@ -228,7 +228,7 @@ MamboSite's default theme package owns:
 - Header and primary navigation.
 - A vertically centered rectangular brand link with configured brand, hover, and active colours.
 - A compact stacked navigation menu below the configured breakpoint and inline navigation above it.
-- Footer.
+- Footer with an optional entry-authored Markdown/directive slot.
 - Theme selection and persistence.
 - A reusable tooltip, used by the theme control instead of a browser `title` popup. Mouse-click focus cannot leave it stuck after the pointer departs; intentional keyboard focus keeps it available.
 - Site metadata.
@@ -341,7 +341,7 @@ These are release requirements, not a claim that a complete automated accessibil
 
 ## Client JavaScript policy
 
-The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, history-aware Back clicks, and TOC current-section tracking. Header visibility samples scroll position once per animation frame and ignores tiny direction reversals, while the TOC changes its active-link markup only when the active heading changes. Search and carousel interaction are planned.
+The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, history-aware Back clicks, and TOC current-section tracking. Header visibility samples scroll position once per animation frame and ignores tiny direction reversals, while the TOC changes its active-link markup only when the active heading changes. Build timestamps render statically and do not add another client timer. Search and carousel interaction are planned.
 
 Cards, Markdown, navigation links, callouts, embeds, ordinary child collections, and the route-parent Back fallback work without hydration. Hydrated same-page fragment links replace their current hash entry, so several TOC jumps still need only one Back activation to leave the page. Native wheel, touch, and history scrolling remain browser-owned; fragment jumps use CSS smooth scrolling. Page entry uses an opacity-only animation, while link, navigation, brand, theme, card, and button feedback uses native CSS transitions. The reduced-motion media query disables smooth fragment scrolling and reduces animation and transition durations, so this feedback does not require another client animation system.
 

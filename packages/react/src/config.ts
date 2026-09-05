@@ -60,6 +60,11 @@ function configByName(
         title: stringProperty(properties, "title", "On this page"),
         collapse: booleanProperty(properties, "collapse", false),
       };
+    case "timestamp":
+      return {
+        timezone: stringProperty(properties, "timezone", "UTC"),
+        label: stringProperty(properties, "label", "Built"),
+      };
     case "children": {
       const source = stringProperty(properties, "source") || undefined;
       const direction = stringProperty(properties, "direction") || undefined;
@@ -136,6 +141,7 @@ function configByName(
         collapseAt: stringProperty(properties, "collapse-at", "md") as "sm" | "md" | "lg" | "never",
       };
     case "column":
+    case "footer":
       return {};
   }
 }

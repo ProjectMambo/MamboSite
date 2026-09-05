@@ -193,7 +193,17 @@ data:
         href: https://github.com/example/site
 ```
 
-The footer adds the copyright symbol. Contact and action collections use ordinary links inside responsive columns:
+The footer adds the copyright symbol. To append compiled Markdown or directives, add one top-level `footer` container to the entry page. This example records one build instant and formats it in the named IANA timezone:
+
+```md
+:::footer
+
+::timestamp{timezone="Asia/Singapore" label="Last built"}
+
+:::
+```
+
+Contact and action collections use ordinary links inside responsive columns:
 
 ```md
 ::::columns{count=3 gap="small" collapse-at="md"}

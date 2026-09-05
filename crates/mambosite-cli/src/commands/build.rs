@@ -2,6 +2,7 @@ use std::fmt::Write as _;
 use std::fs;
 use std::hash::{BuildHasher, Hasher};
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use mambosite_codegen_ts::{GeneratedFile, GeneratedTree};
 use mambosite_core::{CompileOutcome, Config, Diagnostic, PackageManager, RendererKind};
@@ -13,6 +14,7 @@ use crate::commands::CommandError;
 use crate::process::{ChildStdout, ProcessSpec, run_inherited};
 
 const RENDERER_ACTIVE_ENV: &str = "MAMBOSITE_INTERNAL_RENDERER_ACTIVE";
+const MAX_JAVASCRIPT_DATE_SECONDS: u64 = 8_640_000_000_000;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BuildMode {
@@ -54,17 +56,21 @@ pub fn run(
     if diagnostics.iter().any(Diagnostic::is_error) {
         return Err(CommandError::Diagnostics(diagnostics));
     }
-    let Some(site) = site else {
+    let Some(mut site) = site else {
         return Err(CommandError::Message(
             "compilation produced neither a site nor an error diagnostic".to_owned(),
         ));
     };
     let page_count = site.pages.len();
-    let accent_seed = if mode == BuildMode::Check {
-        0
+    let (accent_seed, generated_at) = if mode == BuildMode::Check {
+        (0, None)
+    } else if let Some(epoch) = source_date_epoch(std::env::var_os("SOURCE_DATE_EPOCH").as_deref())?
+    {
+        (epoch, Some(epoch))
     } else {
-        build_accent_seed(std::env::var_os("SOURCE_DATE_EPOCH").as_deref())?
+        (random_accent_seed(), Some(current_epoch_seconds()?))
     };
+    site.generated_at = generated_at;
     let mut theme = compile_project_theme(&project_root, accent_seed)?;
 
     if mode == BuildMode::Check {
@@ -179,20 +185,35 @@ fn compile_project_theme(
     }
 }
 
-fn build_accent_seed(source_date_epoch: Option<&std::ffi::OsStr>) -> Result<u64, CommandError> {
-    if let Some(value) = source_date_epoch {
-        return value
-            .to_str()
-            .and_then(|value| value.parse().ok())
-            .ok_or_else(|| {
-                CommandError::Message(
-                    "`SOURCE_DATE_EPOCH` must be an unsigned 64-bit integer".to_owned(),
-                )
-            });
-    }
-    Ok(std::collections::hash_map::RandomState::new()
+fn source_date_epoch(value: Option<&std::ffi::OsStr>) -> Result<Option<u64>, CommandError> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    value
+        .to_str()
+        .and_then(|value| value.parse().ok())
+        .filter(|epoch| *epoch <= MAX_JAVASCRIPT_DATE_SECONDS)
+        .map(Some)
+        .ok_or_else(|| {
+            CommandError::Message(format!(
+                "`SOURCE_DATE_EPOCH` must be an integer from 0 to {MAX_JAVASCRIPT_DATE_SECONDS}"
+            ))
+        })
+}
+
+fn current_epoch_seconds() -> Result<u64, CommandError> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .map_err(|error| {
+            CommandError::Message(format!("system clock precedes Unix epoch: {error}"))
+        })
+}
+
+fn random_accent_seed() -> u64 {
+    std::collections::hash_map::RandomState::new()
         .build_hasher()
-        .finish())
+        .finish()
 }
 
 fn theme_error(error: ThemeError) -> CommandError {
@@ -294,12 +315,17 @@ mod tests {
     }
 
     #[test]
-    fn source_date_epoch_fixes_the_accent_seed() {
+    fn validates_source_date_epoch_for_javascript_dates() {
         assert_eq!(
-            build_accent_seed(Some(std::ffi::OsStr::new("1234"))).unwrap(),
-            1234
+            source_date_epoch(Some(std::ffi::OsStr::new("1234"))).unwrap(),
+            Some(1234)
         );
-        assert!(build_accent_seed(Some(std::ffi::OsStr::new("tomorrow"))).is_err());
+        assert_eq!(
+            source_date_epoch(Some(std::ffi::OsStr::new("8640000000000"))).unwrap(),
+            Some(MAX_JAVASCRIPT_DATE_SECONDS)
+        );
+        assert!(source_date_epoch(Some(std::ffi::OsStr::new("8640000000001"))).is_err());
+        assert!(source_date_epoch(Some(std::ffi::OsStr::new("tomorrow"))).is_err());
     }
 
     #[test]
@@ -399,6 +425,11 @@ mod tests {
                 .contains("--mambo-color-background: #abcdef;")
         );
         assert!(temporary.path().join("generated/manifest.ts").is_file());
+        assert!(
+            fs::read_to_string(temporary.path().join("generated/manifest.ts"))
+                .unwrap()
+                .contains("\"generatedAt\":")
+        );
         assert!(
             temporary
                 .path()

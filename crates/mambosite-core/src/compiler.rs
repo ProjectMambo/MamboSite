@@ -133,6 +133,7 @@ impl Compiler {
                     body: &parsed.body,
                     body_start_line: parsed.body_start_line,
                     body_start_byte: parsed.body_start_byte,
+                    is_entry: source.is_entry,
                     is_index: Path::new(&source.route_source)
                         .file_name()
                         .and_then(|name| name.to_str())
@@ -273,6 +274,7 @@ impl Compiler {
             .map_or_else(|| "MamboSite".to_owned(), |page| page.title.clone());
         let site = Site {
             schema_version: SCHEMA_VERSION,
+            generated_at: None,
             site: SiteMetadata {
                 title: self
                     .config
@@ -419,6 +421,12 @@ fn collect_headings(root: &MarkdownNode) -> Vec<HeadingRecord> {
         headings: &mut Vec<HeadingRecord>,
         used: &mut HashMap<String, usize>,
     ) {
+        if matches!(
+            &node.kind,
+            NodeKind::Directive { invocation, .. } if invocation.name == "footer"
+        ) {
+            return;
+        }
         if let NodeKind::Heading { level, .. } = node.kind {
             let text = plain_text(node);
             let base = {
@@ -833,6 +841,33 @@ mod tests {
         assert_eq!(
             site.pages[0].description.as_deref(),
             Some("Top-level summary.")
+        );
+    }
+
+    #[test]
+    fn footer_headings_do_not_enter_the_page_heading_index() {
+        let temp = tempdir().unwrap();
+        let docs = temp.path().join("docs");
+        fs::create_dir_all(&docs).unwrap();
+        fs::write(
+            docs.join("index.md"),
+            "# Home\n\n:::footer\n\n## Footer heading\n\n:::\n",
+        )
+        .unwrap();
+        let config = Config::from_toml(
+            "schema=1\ncontent_root=\"docs\"",
+            temp.path().join("mambo.toml"),
+        )
+        .unwrap();
+
+        let site = Compiler::new(config).compile().site.unwrap();
+        assert_eq!(
+            site.pages[0]
+                .headings
+                .iter()
+                .map(|heading| heading.text.as_str())
+                .collect::<Vec<_>>(),
+            ["Home"]
         );
     }
 

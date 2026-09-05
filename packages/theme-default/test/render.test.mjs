@@ -203,6 +203,68 @@ test("default theme renders compiled Markdown and resolved directives", () => {
   assert.match(html, /Compiled body/);
 });
 
+test("entry footer renders the build timestamp in its requested timezone", () => {
+  const footerSpan = sourceSpan(1, 0, 10);
+  const timestampSpan = sourceSpan(2, 11, 72);
+  const timestampProperties = {
+    timezone: { type: "string", value: "Asia/Singapore" },
+    label: { type: "string", value: "Last built" },
+  };
+  const page = compiledPage({
+    id: "p_footer",
+    route: "/",
+    sourcePath: "index.md",
+    data: { footer: { copyright: "Fixture owner" } },
+    directives: [
+      { name: "footer", form: "container", properties: {}, span: footerSpan },
+      { name: "timestamp", form: "leaf", properties: timestampProperties, span: timestampSpan },
+    ],
+    body: {
+      type: "document",
+      children: [{
+        type: "directive",
+        invocation: {
+          name: "footer",
+          form: "container",
+          properties: [],
+          span: { start: 0, end: 10 },
+          nameSpan: { start: 3, end: 9 },
+          raw: ":::footer",
+        },
+        span: footerSpan,
+        children: [{
+          type: "directive",
+          invocation: {
+            name: "timestamp",
+            form: "leaf",
+            properties: [],
+            span: { start: 11, end: 72 },
+            nameSpan: { start: 13, end: 22 },
+            raw: "::timestamp{timezone=\"Asia/Singapore\" label=\"Last built\"}",
+          },
+          span: timestampSpan,
+        }],
+      }],
+    },
+  });
+  const manifest = {
+    schemaVersion: 1,
+    generatedAt: 0,
+    site: { title: "Fixture", basePath: "", language: "en-SG", trailingSlash: true },
+    entryPage: page.id,
+    routes: { "/": page.id },
+    pages: [page],
+  };
+  const runtime = createMamboRuntime({ manifest, pages: [page], registry: defaultRegistry });
+  const Footer = defaultRegistry.shell.Footer;
+  const footer = renderToStaticMarkup(createElement(Footer, { runtime }));
+  const body = renderToStaticMarkup(createElement(MamboPage, { runtime, page }));
+
+  assert.match(footer, /© Fixture owner/);
+  assert.match(footer, /Last built: <time dateTime="1970-01-01T00:00:00\.000Z">[^<]*1970/);
+  assert.doesNotMatch(body, /Last built/);
+});
+
 test("collection markup exposes requested columns without overriding responsive theme CSS", async () => {
   const { CollectionView } = await import("../dist/index.js");
   const page = {

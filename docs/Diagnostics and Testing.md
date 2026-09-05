@@ -64,13 +64,13 @@ Compilation or theme-validation errors leave existing generated trees untouched.
 
 ## Current tests
 
-Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, theme compilation and seeded accent ordering, CLI parsing, init safety, build orchestration, and deploy decisions.
+Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, footer context, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, build timestamps, theme compilation and seeded accent ordering, CLI parsing, init safety, build orchestration, and deploy decisions.
 
 The npm workspace has focused Node tests for:
 
 - Generated schema compatibility and immutable content-store queries.
 - Typed registry composition and rendering.
-- Default-theme rendering and unsupported-mode behavior.
+- Default-theme rendering, static timezone timestamps, footer content, and unsupported-mode behavior.
 - Next.js route, metadata, base-path, image, and theme-bootstrap adapters.
 
 Run the current gates with:

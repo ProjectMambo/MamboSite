@@ -44,6 +44,7 @@ const DIRECTIVE_NAMES = new Set<DirectiveName>([
   "breadcrumbs",
   "meta",
   "toc",
+  "timestamp",
   "children",
   "related",
   "backlinks",
@@ -53,6 +54,7 @@ const DIRECTIVE_NAMES = new Set<DirectiveName>([
   "section",
   "columns",
   "column",
+  "footer",
 ]);
 
 export interface MarkdownRendererProps {

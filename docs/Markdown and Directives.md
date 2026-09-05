@@ -211,6 +211,35 @@ Properties:
 
 The runtime receives already validated values. It must not interpret arbitrary YAML.
 
+### `timestamp`
+
+Renders the instant recorded once for the current output build as a static, timezone-aware date and time.
+
+```md
+::timestamp{timezone="Asia/Singapore" label="Last built"}
+```
+
+| Property | Values | Default |
+|---|---|---|
+| `timezone` | IANA timezone identifier | `UTC` |
+| `label` | string placed before the time | `Built` |
+
+The generated manifest stores Unix epoch seconds. The default renderer uses the site language and the requested timezone to emit a semantic `<time>` element including date, time, seconds, and zone. An invalid timezone stops static rendering with an error. `SOURCE_DATE_EPOCH` supplies the recorded instant when set; otherwise the CLI records the current build time.
+
+### `footer`
+
+Provides entry-authored content for the site footer while remaining hidden at its source position in the page body.
+
+```md
+:::footer
+
+::timestamp{timezone="Asia/Singapore" label="Last built"}
+
+:::
+```
+
+`footer` accepts no properties. It may appear once, must be a top-level container on the configured entry page, and may contain ordinary Markdown or other valid directives. The default theme renders its children between the legacy `data.footer.copyright` text and footer navigation. Headings inside it are excluded from the page heading index and automatic table of contents.
+
 ### `toc`
 
 Renders a table of contents from the compiler's heading index.

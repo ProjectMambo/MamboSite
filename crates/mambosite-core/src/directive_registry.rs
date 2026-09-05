@@ -19,6 +19,7 @@ pub struct DirectiveValidationContext<'source> {
     pub body_start_line: usize,
     /// Zero-based original-source byte at which `body` begins.
     pub body_start_byte: usize,
+    pub is_entry: bool,
     pub is_index: bool,
 }
 
@@ -54,14 +55,15 @@ pub fn validate_directives(
         directives: Vec::new(),
         diagnostics: Vec::new(),
         page_count: 0,
+        footer_count: 0,
     };
 
     if matches!(root.kind, NodeKind::Document) {
         for (index, child) in root.children.iter().enumerate() {
-            validator.visit(child, None, index == 0);
+            validator.visit(child, None, Some(index));
         }
     } else {
-        validator.visit(root, None, true);
+        validator.visit(root, None, Some(0));
     }
 
     DirectiveValidationOutcome {
@@ -75,6 +77,7 @@ struct Validator<'source> {
     directives: Vec<ValidatedDirective>,
     diagnostics: Vec<Diagnostic>,
     page_count: usize,
+    footer_count: usize,
 }
 
 impl Validator<'_> {
@@ -82,22 +85,17 @@ impl Validator<'_> {
         &mut self,
         node: &MarkdownNode,
         direct_parent_directive: Option<&str>,
-        is_first_top_level: bool,
+        top_level_index: Option<usize>,
     ) {
         let current_name = if let NodeKind::Directive { invocation, .. } = &node.kind {
-            self.validate_invocation(
-                invocation,
-                node,
-                direct_parent_directive,
-                is_first_top_level,
-            );
+            self.validate_invocation(invocation, node, direct_parent_directive, top_level_index);
             Some(invocation.name.as_str())
         } else {
             None
         };
 
         for child in &node.children {
-            self.visit(child, current_name, false);
+            self.visit(child, current_name, None);
         }
     }
 
@@ -107,7 +105,7 @@ impl Validator<'_> {
         invocation: &ParsedDirective,
         node: &MarkdownNode,
         direct_parent_directive: Option<&str>,
-        is_first_top_level: bool,
+        top_level_index: Option<usize>,
     ) {
         let diagnostic_start = self.diagnostics.len();
         let Some(spec) = directive_spec(&invocation.name) else {
@@ -214,7 +212,7 @@ impl Validator<'_> {
             invocation,
             node,
             direct_parent_directive,
-            is_first_top_level,
+            top_level_index,
             &normalized,
         );
 
@@ -254,7 +252,7 @@ impl Validator<'_> {
         invocation: &ParsedDirective,
         node: &MarkdownNode,
         direct_parent_directive: Option<&str>,
-        is_first_top_level: bool,
+        top_level_index: Option<usize>,
         normalized: &BTreeMap<String, DirectiveValue>,
     ) {
         match invocation.name.as_str() {
@@ -267,11 +265,31 @@ impl Validator<'_> {
                         node,
                     );
                 }
-                if !is_first_top_level {
+                if top_level_index != Some(0) {
                     self.push_invocation_diagnostic(
                         Diagnostic::error(
                             "MS3508",
                             "`page` must be the first body node other than comments or blank lines",
+                        ),
+                        invocation,
+                        node,
+                    );
+                }
+            }
+            "footer" => {
+                self.footer_count += 1;
+                if self.footer_count > 1 {
+                    self.push_invocation_diagnostic(
+                        Diagnostic::error("MS3507", "a site may declare `footer` at most once"),
+                        invocation,
+                        node,
+                    );
+                }
+                if !self.context.is_entry || top_level_index.is_none() {
+                    self.push_invocation_diagnostic(
+                        Diagnostic::error(
+                            "MS3509",
+                            "`footer` is valid only as a top-level directive on the configured site entry",
                         ),
                         invocation,
                         node,
@@ -513,6 +531,11 @@ const TOC: &[PropertyRule] = &[
     property("collapse", BOOLEAN),
 ];
 
+const TIMESTAMP: &[PropertyRule] = &[
+    defaulted("timezone", STRING, DefaultValue::String("UTC")),
+    defaulted("label", STRING, DefaultValue::String("Built")),
+];
+
 const CHILDREN: &[PropertyRule] = &[
     property("source", STRING),
     defaulted(
@@ -656,6 +679,11 @@ const SPECS: &[DirectiveSpec] = &[
         properties: TOC,
     },
     DirectiveSpec {
+        name: "timestamp",
+        form: DirectiveForm::Leaf,
+        properties: TIMESTAMP,
+    },
+    DirectiveSpec {
         name: "children",
         form: DirectiveForm::Leaf,
         properties: CHILDREN,
@@ -700,6 +728,11 @@ const SPECS: &[DirectiveSpec] = &[
         form: DirectiveForm::Container,
         properties: &[],
     },
+    DirectiveSpec {
+        name: "footer",
+        form: DirectiveForm::Container,
+        properties: &[],
+    },
 ];
 
 const DIRECTIVE_NAMES: &[&str] = &[
@@ -708,6 +741,7 @@ const DIRECTIVE_NAMES: &[&str] = &[
     "breadcrumbs",
     "meta",
     "toc",
+    "timestamp",
     "children",
     "related",
     "backlinks",
@@ -717,6 +751,7 @@ const DIRECTIVE_NAMES: &[&str] = &[
     "section",
     "columns",
     "column",
+    "footer",
 ];
 
 fn directive_spec(name: &str) -> Option<&'static DirectiveSpec> {
@@ -916,6 +951,15 @@ mod tests {
     }
 
     fn validate(root: &MarkdownNode, body: &str, is_index: bool) -> DirectiveValidationOutcome {
+        validate_in_context(root, body, is_index, is_index)
+    }
+
+    fn validate_in_context(
+        root: &MarkdownNode,
+        body: &str,
+        is_entry: bool,
+        is_index: bool,
+    ) -> DirectiveValidationOutcome {
         validate_directives(
             root,
             DirectiveValidationContext {
@@ -923,6 +967,7 @@ mod tests {
                 body,
                 body_start_line: 1,
                 body_start_byte: 0,
+                is_entry,
                 is_index,
             },
         )
@@ -933,9 +978,14 @@ mod tests {
         let root = document(vec![
             leaf("::page{}"),
             leaf("::hero{}"),
+            leaf("::timestamp{}"),
             leaf("::children{}"),
         ]);
-        let outcome = validate(&root, "::page{}\n::hero{}\n::children{}", true);
+        let outcome = validate(
+            &root,
+            "::page{}\n::hero{}\n::timestamp{}\n::children{}",
+            true,
+        );
         assert_eq!(outcome.diagnostics, []);
         assert_eq!(
             outcome.directives[0].properties["layout"],
@@ -947,10 +997,18 @@ mod tests {
             DirectiveValue::Boolean(true)
         );
         assert_eq!(
-            outcome.directives[2].properties["depth"],
+            outcome.directives[2].properties["timezone"],
+            DirectiveValue::String("UTC".into())
+        );
+        assert_eq!(
+            outcome.directives[2].properties["label"],
+            DirectiveValue::String("Built".into())
+        );
+        assert_eq!(
+            outcome.directives[3].properties["depth"],
             DirectiveValue::Number(1.into())
         );
-        assert!(!outcome.directives[2].properties.contains_key("direction"));
+        assert!(!outcome.directives[3].properties.contains_key("direction"));
     }
 
     #[test]
@@ -1035,6 +1093,36 @@ mod tests {
             .map(|diagnostic| diagnostic.code.as_str())
             .collect();
         assert_eq!(codes, ["MS3508", "MS3507", "MS3508", "MS3509"]);
+    }
+
+    #[test]
+    fn validates_footer_context() {
+        let footer = container("footer", vec![leaf("::timestamp{}")]);
+        assert_eq!(
+            validate_in_context(&document(vec![footer]), "", true, true).diagnostics,
+            []
+        );
+
+        let nested = container("section", vec![container("footer", vec![])]);
+        assert_eq!(
+            validate_in_context(&document(vec![nested]), "", true, true).diagnostics[0].code,
+            "MS3509"
+        );
+
+        let duplicate = document(vec![
+            container("footer", vec![]),
+            container("footer", vec![]),
+        ]);
+        assert_eq!(
+            validate_in_context(&duplicate, "", true, true).diagnostics[0].code,
+            "MS3507"
+        );
+
+        let non_entry = document(vec![container("footer", vec![])]);
+        assert_eq!(
+            validate_in_context(&non_entry, "", false, true).diagnostics[0].code,
+            "MS3509"
+        );
     }
 
     #[test]

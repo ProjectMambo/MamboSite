@@ -3,6 +3,7 @@ import type { SiteMetadata } from "./metadata.js";
 
 interface SiteBase {
   readonly schemaVersion: number;
+  readonly generatedAt?: number;
   readonly site: SiteMetadata;
   readonly entryPage: PageId;
   readonly routes: Readonly<Record<string, PageId>>;

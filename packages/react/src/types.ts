@@ -13,6 +13,7 @@ export type DirectiveName =
   | "breadcrumbs"
   | "meta"
   | "toc"
+  | "timestamp"
   | "children"
   | "related"
   | "backlinks"
@@ -21,7 +22,8 @@ export type DirectiveName =
   | "button"
   | "section"
   | "columns"
-  | "column";
+  | "column"
+  | "footer";
 
 export type LayoutName =
   | "default"
@@ -66,6 +68,11 @@ export interface TocDirectiveConfig {
   readonly ordered: boolean;
   readonly title: string;
   readonly collapse: boolean;
+}
+
+export interface TimestampDirectiveConfig {
+  readonly timezone: string;
+  readonly label: string;
 }
 
 export interface ChildrenDirectiveConfig {
@@ -134,6 +141,7 @@ export interface ColumnsDirectiveConfig {
 }
 
 export interface ColumnDirectiveConfig {}
+export interface FooterDirectiveConfig {}
 
 export interface DirectiveConfigMap {
   readonly page: PageDirectiveConfig;
@@ -141,6 +149,7 @@ export interface DirectiveConfigMap {
   readonly breadcrumbs: BreadcrumbsDirectiveConfig;
   readonly meta: MetaDirectiveConfig;
   readonly toc: TocDirectiveConfig;
+  readonly timestamp: TimestampDirectiveConfig;
   readonly children: ChildrenDirectiveConfig;
   readonly related: RelatedDirectiveConfig;
   readonly backlinks: BacklinksDirectiveConfig;
@@ -150,6 +159,7 @@ export interface DirectiveConfigMap {
   readonly section: SectionDirectiveConfig;
   readonly columns: ColumnsDirectiveConfig;
   readonly column: ColumnDirectiveConfig;
+  readonly footer: FooterDirectiveConfig;
 }
 
 export interface EmptyModel {}
@@ -192,6 +202,7 @@ export interface DirectiveModelMap {
   readonly breadcrumbs: BreadcrumbsModel;
   readonly meta: EmptyModel;
   readonly toc: TocModel;
+  readonly timestamp: EmptyModel;
   readonly children: CollectionModel;
   readonly related: CollectionModel;
   readonly backlinks: CollectionModel;
@@ -201,6 +212,7 @@ export interface DirectiveModelMap {
   readonly section: EmptyModel;
   readonly columns: EmptyModel;
   readonly column: EmptyModel;
+  readonly footer: EmptyModel;
 }
 
 export interface RenderState {

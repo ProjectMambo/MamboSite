@@ -239,6 +239,8 @@ pub struct SiteMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct Site {
     pub schema_version: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub generated_at: Option<u64>,
     pub site: SiteMetadata,
     pub entry_page: String,
     pub routes: BTreeMap<String, String>,

@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Maintenance-Active-brightgreen?style=flat-square" alt="Maintenance status: active" />
   <img src="https://img.shields.io/github/last-commit/ProjectMambo/MamboSite?style=flat-square&color=7a5fff" alt="Last commit" />
   <img src="https://img.shields.io/github/repo-size/ProjectMambo/MamboSite?style=flat-square&color=yellow" alt="Repository size" />
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/ProjectMambo/MamboSite?style=flat-square&color=orange" alt="License" /></a>
+  <a href="../LICENSE"><img src="https://img.shields.io/github/license/ProjectMambo/MamboSite?style=flat-square&color=orange" alt="License" /></a>
 </p>
 
 MamboSite is a Markdown-first static site platform for Project Mambo. It reads repository-local Markdown, validates and compiles it with Rust, emits typed TypeScript data and theme CSS, renders it with MamboSite-owned React components, and exports static files for GitHub Pages.
@@ -75,7 +75,7 @@ Extend MamboSite:
 
 ## Status
 
-The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboColour-backed tokens, bundled MamboFont faces, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
+The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits typed TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboColour-backed tokens, bundled MamboFont faces, MamboFolio-inspired default components, static build timestamps and footer content, and a thin Next.js static-export adapter.
 
 `mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio and MamboWiki integrations, including validated content-asset publication. Fragment transclusion, tree/table collections, masonry/carousel galleries, and search remain planned.
 
@@ -169,4 +169,4 @@ Before the first deployment, set the repository's Pages source to **GitHub Actio
 
 ## License
 
-Distributed under the MIT License. See **[LICENSE](LICENSE)** for more information.
+Distributed under the MIT License. See **[LICENSE](../LICENSE)** for more information.
