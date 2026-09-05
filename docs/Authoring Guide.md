@@ -280,13 +280,7 @@ npm run dev
 mbsite build
 ```
 
-For Project Mambo, first run the sync command from the vault root:
-
-```bash
-node Scripts/sync_docs.js --sync MamboSite
-```
-
-Then run `mbsite check`, the local preview, and `mbsite build` from the destination repository.
+For Project Mambo, synchronize the canonical change before validating its destination. Follow [[Documentation Sync#After every sync]] to include every affected repository or site mount, review the materialized files, and either commit and publish them or hold them for manual review. MamboSite itself uses `mbsite check`; local preview, full site builds, and deployment apply only to website repositories with a configured renderer.
 
 Before finishing an authored change, verify:
 

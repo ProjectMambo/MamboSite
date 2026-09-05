@@ -237,7 +237,7 @@ MamboSite's default theme package owns:
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
 - Optional search UI when implemented.
 
-A site repository supplies content data, theme settings, and an optional typed override registry. MamboFolio uses this default package during migration; MamboWiki is intended to start from it rather than copy component source.
+A site repository supplies content data, theme settings, and an optional typed override registry. MamboFolio and MamboWiki use this default package during migration rather than copy component source.
 
 ## Component override contract
 

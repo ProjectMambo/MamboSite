@@ -76,7 +76,7 @@ Extend MamboSite:
 
 The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
 
-`mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio content patterns used during migration, including validated content-asset publication. Fragment transclusion, tree/table collections, masonry/carousel galleries, search, and MamboWiki integration remain planned.
+`mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio and MamboWiki integrations, including validated content-asset publication. Fragment transclusion, tree/table collections, masonry/carousel galleries, and search remain planned.
 
 ## Local setup
 

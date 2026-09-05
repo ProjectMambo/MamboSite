@@ -20,7 +20,7 @@ The repository has passed the compiler-skeleton milestone and now contains an in
 | React runtime                                                  | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio content                                                      |
 | Theme settings                                                 | Rust-validated `mambo.theme.toml` compiles to generated CSS variables, responsive rules, and typed metadata                                                            |
 | Lifecycle commands                                             | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented                                                                  |
-| Site migrations                                                | MamboFolio's thin integration builds and exports successfully; MamboWiki and clean-CI deployment remain acceptance work                                                |
+| Site migrations                                                | MamboFolio and MamboWiki build and export locally; clean-CI deployment remains acceptance work                                                                        |
 
 The phases below describe the full 0.1 target. A phase is not considered complete merely because its first usable slice exists.
 

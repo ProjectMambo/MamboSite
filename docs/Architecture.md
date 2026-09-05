@@ -54,7 +54,7 @@ The presentation implementation is split into independently versioned packages:
 @mambosite/next           static Next.js route and metadata adapter
 ```
 
-The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. MamboFolio uses the default theme during migration; MamboWiki integration remains planned.
+The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. MamboFolio and MamboWiki use the default theme during migration.
 
 Compatibility has three explicit versions:
 
@@ -62,7 +62,7 @@ Compatibility has three explicit versions:
 - Runtime and adapter packages use semantic versions.
 - Theme packages use semantic versions independently of the compiler.
 
-Each site pins compatible package versions in its lockfile. The current runtime accepts generated schema 1 and fails before rendering another schema. All four local packages currently use version `0.1.0`; publishing and release tagging are still pending.
+Each site pins compatible package versions in its lockfile. The current runtime accepts generated schema 1 and fails before rendering another schema. All four local packages currently use version `0.1.1`; publishing and release tagging are still pending.
 
 ## MamboSite repository structure
 

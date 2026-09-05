@@ -75,6 +75,35 @@ node Scripts/sync_docs.js --sync-all
 
 A targeted sync stages and replaces only the named repositories and skips standalone exports. Unknown or empty selections fail before a destination is changed.
 
+## After every sync
+
+The synchronizer only materializes files. It does not validate, stage, commit, push, or deploy them. Start with a clean working tree in every selected destination: its synchronized `README.md` and complete `docs/` snapshot are replaced, so uncommitted edits there can be lost.
+
+A targeted sync updates only the named repositories. `--sync-all` updates every repository profile and the standalone exports. A site that mounts changed project documentation must also be synchronized; for example, refreshing MamboSite and its MamboWiki mount together uses:
+
+```bash
+node Scripts/sync_docs.js --sync MamboSite MamboWiki
+```
+
+For each changed destination, run its documented validation commands. A repository with `mambo.toml` should pass `mbsite check`. Then review and commit only the synchronized paths:
+
+```bash
+cd ~/ProjectMambo/<Project>
+git status --short
+git diff -- README.md docs/
+git diff --check
+git add -- README.md docs/
+git diff --cached --check
+git diff --cached -- README.md docs/
+git commit -m "docs: sync documentation"
+```
+
+If the staged diff is empty, skip the commit. If the change requires manual review, stop after local validation and the optional commit; do not push or deploy it.
+
+For an ordinary repository, including MamboSite itself, push the reviewed commit explicitly with `git push origin main`. For a configured website repository, run `npm run deploy` instead of a separate push. `mbsite deploy` requires a clean deployment branch, builds locally, and either pushes the new commit or dispatches the Pages workflow when that commit is already remote. Pushing first and then running it may start a duplicate deployment.
+
+If synchronization fails, inspect every selected destination before retrying or committing. All replacement trees are staged first, but final repository replacements happen sequentially; a late filesystem failure can leave an earlier destination updated without rolling it back.
+
 ## Ordinary repository export
 
 For an ordinary project, the complete canonical directory becomes the repository's `docs/` directory:
@@ -91,7 +120,7 @@ Docs/Projects/MamboSite/        ---->  docs/
 Docs/Projects/MamboSite/README.md ---> README.md
 ```
 
-The root `README.md` is a second transformed copy of the canonical project README. Canonical inline links use root-relative `docs/...` destinations; the copy inside `docs/` removes that prefix so both copies resolve locally. The repository root itself is never cleaned; source code and configuration outside `docs/` are not touched.
+The root `README.md` is a second transformed copy of the canonical project README. In the copy inside `docs/`, `docs/...` destinations lose that prefix while other repository-relative destinations gain `../`; absolute URLs, fragments, queries, root-relative paths, and existing parent-relative paths stay unchanged. The repository root copy is not link-rewritten. The repository root itself is never cleaned; source code and configuration outside `docs/` are not touched.
 
 Within a MamboSite content root, `README.md` is repository documentation and is non-routable by default. `index.md` remains the publishable landing page.
 
@@ -138,7 +167,7 @@ mounts:
 For each mount, the sync script:
 
 1. Resolves `source` to a canonical `index.md` beneath `Docs/Projects/` and rejects `_sites/`, fragments, aliases, missing files, and paths outside that root.
-2. Copies the source index's complete containing directory into `docs/_mounts/<mount-path>/`.
+2. Copies the source index's containing directory into `docs/_mounts/<mount-path>/`, excluding non-routable `README.md` files and vault-only `_info.md` files at every depth.
 3. Rewrites only the staged/exported site entry so its source is repository-local.
 4. Leaves the vault entry unchanged.
 
@@ -180,7 +209,7 @@ The ordinary-page transformation is intentionally narrow:
 - When removing the complete block, leading blank separator lines are removed with it; authored Markdown is not globally trimmed by MamboSite.
 - Markdown bodies and non-Markdown files are otherwise copied as authored.
 
-`README.md` is the exception. Every file whose exact basename is `README.md` has its complete leading YAML frontmatter block removed, whether it is copied into `docs/`, to a repository root, or through a standalone file export. Inline `docs/...` links are localized only in the `docs/README.md` copy. A byte-order mark is also removed. If a README begins a frontmatter block without closing it, the sync fails before replacing any destination.
+`README.md` is the exception. Each repository README has its complete leading YAML frontmatter block removed when copied into `docs/`, to a repository root, or through a standalone file export. The `docs/README.md` copy localizes both Markdown destinations and HTML `href`/`src` attributes: it removes a leading `docs/` or `./docs/`, prefixes other repository-relative paths with `../`, and preserves destinations that are already absolute or parent-relative. Mounted trees omit `README.md` files because they are non-routable and their repository-relative links have no stable meaning inside `_mounts/`. A byte-order mark is also removed. If a README begins a frontmatter block without closing it, the sync fails before replacing any destination.
 
 Any file whose exact basename is `_info.md` is excluded at every depth. It is vault organisation metadata, not repository documentation or site content.
 

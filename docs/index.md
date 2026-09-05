@@ -1,7 +1,7 @@
 ---
 description: Static site generator for Project Mambo websites.
 title: MamboSite
-order: 0
+order: 60
 ---
 
 # MamboSite
@@ -32,4 +32,4 @@ The initial compiler, React runtime, default theme, Next.js adapter, and `check`
 - [[TypeScript Output]] — generated module and runtime contracts.
 - [[Roadmap]] — current status, remaining phases, non-goals, and unresolved decisions.
 
-The current milestone covers the content patterns used by MamboFolio, including validated content-asset publication. Fragment transclusion, advanced collection/gallery views, search, package publication, and MamboWiki integration remain planned.
+The current milestone covers the MamboFolio and MamboWiki integrations, including validated content-asset publication. Fragment transclusion, advanced collection/gallery views, search, and package publication remain planned.
