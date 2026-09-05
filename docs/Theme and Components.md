@@ -231,7 +231,7 @@ MamboSite's default theme package owns:
 - A compact stacked navigation menu below the configured breakpoint and inline navigation above it.
 - Footer.
 - Theme selection and persistence.
-- A reusable CSS tooltip, used by the theme control instead of a browser `title` popup.
+- A reusable tooltip, used by the theme control instead of a browser `title` popup. Mouse-click focus cannot leave it stuck after the pointer departs; intentional keyboard focus keeps it available.
 - Site metadata.
 - Page chrome.
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
@@ -311,7 +311,7 @@ The default runtime derives an automatic TOC from level-two through level-four h
 
 Below the configured `content` breakpoint, the automatic TOC is a native `<details>` disclosure before the article and starts closed. At and above that breakpoint, it is an expanded sticky rail beside the article. The rail has a viewport-bounded height and its own scrolling area, and it follows the active entry when a long TOC cannot fit at once. It never overlays the article. Article pages expand their outer frame only when that rail exists; gallery pages retain their wide frame.
 
-Once a matching section is reached, each visible TOC tracks exactly one current section and marks its link with `aria-current="location"`. The active entry is normally the last heading that has crossed a header-aware top threshold. At the physical bottom of the document, further downward wheel, touch, or keyboard scroll intent advances through any remaining short sections one entry at a time and keeps the TOC rail following the highlight. Upward intent immediately restores the geometry-derived entry. All links still use the compiler's heading IDs and work as ordinary anchors without scroll tracking.
+Once a matching section is reached, each visible TOC tracks exactly one current section and marks its link with `aria-current="location"`. The active entry is normally the last heading that has crossed a header-aware top threshold. Clicking an entry selects and reveals that exact TOC link throughout the fragment jump, including for a short section near the physical bottom that cannot reach the threshold. At the physical bottom, further downward wheel, touch, or keyboard scroll intent advances through any remaining short sections one entry at a time and keeps the TOC rail following the highlight. Upward intent immediately restores the geometry-derived entry. All links still use the compiler's heading IDs and work as ordinary anchors without scroll tracking.
 
 ## Responsive behaviour
 
