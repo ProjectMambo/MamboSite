@@ -54,7 +54,7 @@ The presentation implementation is split into independently versioned packages:
 @mambosite/next           static Next.js route and metadata adapter
 ```
 
-The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. MamboFolio and MamboWiki use the default theme during migration.
+The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. Its checked-in colour model is generated through MamboColour's public CLI, and its package bundles MamboFont web assets generated through MamboFont's public CLI. MamboFolio and MamboWiki consume that self-contained default package without invoking either provider during ordinary builds.
 
 Compatibility has three explicit versions:
 
@@ -87,8 +87,11 @@ MamboSite/
 ├── packages/
 │   ├── runtime/                 # generated contracts and content store
 │   ├── react/                   # renderer and typed registry
-│   ├── theme-default/           # default components and CSS
+│   ├── theme-default/           # default components, CSS, and font assets
 │   └── next/                    # static Next.js adapter
+├── script/
+│   ├── sync_mambocolour.mjs     # refresh the checked-in colour model
+│   └── sync_mambofont.mjs       # refresh bundled web fonts and CSS
 └── templates/default/           # scaffold embedded by `mbsite init`
 ```
 
@@ -100,8 +103,9 @@ Responsibilities:
 - `mambosite-cli` handles lifecycle commands, safe paths, subprocess boundaries, terminal output, and exit codes.
 - `packages/runtime` defines the generated contract and immutable graph/query API.
 - `packages/react` renders normalized nodes through a complete typed registry.
-- `packages/theme-default` supplies the replaceable MamboFolio-inspired presentation.
+- `packages/theme-default` supplies the replaceable MamboFolio-inspired presentation and bundled MamboFont assets.
 - `packages/next` contains only Next-specific navigation, base-path, route, and metadata behavior.
+- `script/sync_mambocolour.mjs` and `script/sync_mambofont.mjs` are maintainer-only consumer adapters for the providers' installed CLIs. They update reviewed, checked-in inputs; normal package and site builds remain self-contained.
 - `templates/default` is the allowlisted scaffold embedded into the CLI.
 
 Do not split every core module into a crate initially. A new crate is justified only when it has a stable public boundary or independent consumers.
@@ -113,7 +117,7 @@ MamboFolio and MamboWiki should remain independent website repositories that con
 ```text
 MamboWiki/
 ├── mambo.toml
-├── mambo.theme.toml
+├── mambo.theme.toml              # optional site-specific overrides
 ├── README.md                     # the MamboWiki project's README
 ├── docs/
 │   ├── index.md                  # site entry
@@ -121,6 +125,7 @@ MamboWiki/
 │   ├── _assets/                  # non-routable content assets
 │   └── _mounts/                  # materialized mounted sources
 │       ├── mambocolour/
+│       ├── mambodocs/
 │       ├── mambodot/
 │       ├── mambofinance/
 │       ├── mambofolio/

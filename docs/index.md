@@ -1,7 +1,7 @@
 ---
 description: Static site generator for Project Mambo websites.
 title: MamboSite
-order: 60
+order: 70
 ---
 
 # MamboSite
@@ -11,6 +11,8 @@ MamboSite is a Markdown-first static site compiler for Project Mambo. It reads a
 MamboSite does not require Obsidian or prescribe where authors maintain their original notes. Project Mambo uses a separate `sync-docs` workflow to export selected documents from an Obsidian vault into each repository's `docs/` tree.
 
 The initial compiler, React runtime, default theme, Next.js adapter, and `check`, `build`, `init`, and `deploy` commands are implemented. These documents describe both the current schema-1 behavior and the remaining version-0.1 work; planned features are labeled as such.
+
+::button{label="Source code" href="https://github.com/ProjectMambo/MamboSite" variant="secondary" external=true}
 
 ## Author content
 

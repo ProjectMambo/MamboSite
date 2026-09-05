@@ -21,6 +21,7 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 
 | Goal | First document |
 |---|---|
+| Read the canonical Wiki documentation | [projectmambo.org/mambosite/](https://projectmambo.org/mambosite/) |
 | Create or expand Markdown pages | [Authoring Guide](Authoring%20Guide.md) |
 | Configure, build, or deploy a site | [Build and Deployment](Build%20and%20Deployment.md) |
 | Understand or extend MamboSite itself | [Architecture](Architecture.md) |
@@ -43,12 +44,12 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 repository docs/
     -> MamboSite Rust compiler
     -> generated TypeScript + compiled theme/content assets
-    -> versioned React runtime + selected theme
+    -> versioned React runtime + MamboColour/MamboFont-backed default theme
     -> static web build
     -> GitHub Pages
 ```
 
-The compiler, React rendering engine, default components, theme contract, and static-framework adapter are maintained together in MamboSite. A website repository owns only its content, `mambo.toml`, `mambo.theme.toml`, and optional typed component overrides.
+The compiler, React rendering engine, default components, theme contract, and static-framework adapter are maintained together in MamboSite. A website repository owns only its content, `mambo.toml`, optional `mambo.theme.toml`, and optional typed component overrides.
 
 ## Documentation map
 
@@ -74,7 +75,7 @@ Extend MamboSite:
 
 ## Status
 
-The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
+The initial end-to-end platform is implemented. The Rust compiler discovers and validates repository-local content, parses Markdown and MamboSite directives, resolves note references and embeds, and emits deterministic TypeScript plus a compiled theme. Local packages provide the framework-neutral content runtime, modular React registry, MamboColour-backed tokens, bundled MamboFont faces, MamboFolio-inspired default components, and a thin Next.js static-export adapter.
 
 `mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio and MamboWiki integrations, including validated content-asset publication. Fragment transclusion, tree/table collections, masonry/carousel galleries, and search remain planned.
 
@@ -97,9 +98,11 @@ npm run build:packages
 ./script/install.sh
 ```
 
-The wrapper links `mbsite` into `/usr/local/bin` and runs the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different command directory is preferred; the installer uses `sudo` only when the selected directory is not writable.
+The installer links `mbsite` and the compatibility alias `mambosite` into `/usr/local/bin`; both run the workspace CLI with the repository's pinned Rust toolchain. Set `MAMBOSITE_BIN_DIR` when a different command directory is preferred. The installer uses `sudo` only when the selected directory is not writable and refuses to replace a pre-existing non-symlink command target.
 
 Until the first packages are published, a consuming site can use `file:../MamboSite/packages/...` dependencies. Keep MamboSite and the site repository as siblings, install both dependency trees, and rebuild the shared packages after changing MamboSite.
+
+Updating the checked-in Project Mambo default theme is a maintainer task. Install the MamboColour and MamboFont commands, including MamboFont's Inkscape, XMLStarlet, and FontForge dependencies, then run `npm run sync:theme`. Ordinary package, site, and CI builds consume the reviewed generated files and do not require either provider checkout.
 
 ## Using MamboSite
 
@@ -123,6 +126,15 @@ mbsite deploy
 `check` validates without writing output. `build` performs content compilation and the configured static web build. `init` creates a safe default site scaffold in an empty repository. `deploy` builds, pushes committed work, and starts the configured GitHub Pages workflow; `workflow_dispatch` allows the same commit to be deployed again when there is nothing new to push.
 
 The React packages and generated schema are versioned separately. A site pins compatible `@mambosite/runtime`, `@mambosite/react`, `@mambosite/theme-default`, and `@mambosite/next` versions, then replaces only named registry entries when it needs custom presentation. The packages currently live in this workspace; publishing the first release remains deployment work.
+
+### Maintainer theme update
+
+```bash
+npm run sync:theme
+npm run sync:theme:check
+```
+
+The first command invokes the public `mbcolor` and `mbfont` interfaces through MamboSite-owned wrappers, maps provider output into the theme model, and refreshes the packaged WOFF2 files. The check command regenerates into temporary directories and fails when committed outputs are stale.
 
 ### Typical site workflow
 

@@ -14,8 +14,10 @@ git add package-lock.json
 git commit -m "build: lock site dependencies"
 ```
 
-The default scaffold expects the `0.1.0` release of MamboSite and checks out the
-matching compiler tag in its Pages workflow.
+The default scaffold pins MamboSite package version `0.1.1`. Package
+publication and the matching compiler release tag are still pending, so this
+template remains a repository-development preview rather than a released
+bootstrap path.
 
 ## Commands
 
@@ -28,5 +30,5 @@ npm run deploy    # build, push committed work, and trigger GitHub Pages
 Edit `docs/index.md` to change the home page. The starter page at
 `docs/getting-started.md` can be replaced with your own content. Add Markdown
 files or `folder/index.md` files below `docs/` for more pages. Site
-configuration lives in `mambo.toml`; design tokens live in
-`mambo.theme.toml`.
+configuration lives in `mambo.toml`. Add `mambo.theme.toml` only when the
+built-in MamboColour and MamboFont-backed theme needs site-specific overrides.

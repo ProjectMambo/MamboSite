@@ -17,8 +17,8 @@ The repository has passed the compiler-skeleton milestone and now contains an in
 | Directive parsing and registry validation                      | Implemented for the documented core registry                                                                                                                           |
 | Page, link, embed, backlink, mount, route, and asset resolution | Implemented for note references and explicit `assets/...` paths; directive target edges and fragment transclusion remain incomplete                                    |
 | Generated output                                               | TypeScript and binary content assets are deterministic; theme CSS is deterministic for a supplied accent seed; every managed tree is atomically published               |
-| React runtime                                                  | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio content                                                      |
-| Theme settings                                                 | Rust-validated `mambo.theme.toml` compiles to generated CSS variables, responsive rules, and typed metadata                                                            |
+| React runtime                                                  | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio and MamboWiki content                                        |
+| Theme settings                                                 | Rust-validated overrides compile to generated CSS and typed metadata; the default model and package are refreshed through MamboColour and MamboFont provider commands    |
 | Lifecycle commands                                             | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented                                                                  |
 | Site migrations                                                | MamboFolio and MamboWiki build and export locally; clean-CI deployment remains acceptance work                                                                        |
 
@@ -83,7 +83,7 @@ Deliverable: Rust-generated TypeScript representing complete fixture sites witho
 - Implement semantic content-node rendering.
 - Implement the core directive registry.
 - Build page layouts and site override registry.
-- Extract MamboColour tokens and MamboFont integration.
+- Maintain checked-in MamboColour tokens and bundled MamboFont assets through their public provider commands.
 - Adapt MamboFolio's bordered cards, grid/list collections, canvas treatment, metadata, navigation, and TOC into cleaner reusable components.
 - Build a documentation-oriented MamboWiki layout from the same node contract.
 
@@ -123,7 +123,7 @@ MamboSite only consumes the resulting repository tree. The compiler does not own
 
 ## Version 0.1 target acceptance criteria
 
-- MamboWiki mounts all seven Mambo projects from its repository-local `docs/` tree without symlinks.
+- MamboWiki mounts all eight Mambo projects from its repository-local `docs/` tree without symlinks.
 - MamboFolio renders pages, blog entries, project summaries, and gallery content from Markdown.
 - Every public page has a deterministic route and static HTML output.
 - CommonMark/GFM, supported Obsidian-compatible links/embeds, and schema-1 directives work as specified.

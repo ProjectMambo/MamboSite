@@ -81,8 +81,11 @@ cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 npm run check:packages
 npm run test:packages
+./script/test_install.sh
 git diff --check
 ```
+
+Maintainers changing the bundled Project Mambo theme also run `npm run sync:theme:check`. That check invokes the installed MamboColour and MamboFont provider commands and fails when the checked-in colour model, web fonts, or font stylesheet are stale; ordinary source and website builds do not require those providers.
 
 ## Remaining release tests
 

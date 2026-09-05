@@ -18,8 +18,8 @@ The current default runtime reinterprets MamboFolio's strongest visual traits wh
 
 The current MamboFolio establishes a recognizable Project Mambo style:
 
-- MamboColour-backed semantic colour variables and multiple light/dark themes.
-- MamboFont or a monospace fallback for a technical editorial character.
+- MamboColour-backed semantic colour variables for light and dark schemes.
+- Bundled MamboFont web faces with a monospace fallback for a technical editorial character.
 - A bounded, centered article column with generous responsive padding.
 - Strong two-pixel borders and restrained surface layers.
 - Square controls, cards, tags, code blocks, and panels; every default radius token is zero.
@@ -34,29 +34,13 @@ These are defaults, not parser rules. A future theme may change spacing, typogra
 
 ## Site settings
 
-Every site may provide `mambo.theme.toml`. It contains presentation settings only and overrides the built-in default recursively. Schema 1 accepts only `extends = "default"`; named third-party preset inheritance is not implemented.
+Every site may provide `mambo.theme.toml`. It contains presentation settings only and overrides the built-in default recursively; omit it when the default is sufficient. Schema 1 accepts only `extends = "default"`; named third-party preset inheritance is not implemented.
 
 ```toml
 schema = 1
 id = "mambofolio"
 extends = "default"
 default_scheme = "dark"
-
-[colors.dark]
-background = "#181615"
-text = "#faf7f2"
-brand = "#e05a45"
-brand_hover = "#f08068"
-brand_active = "#d96752"
-on_brand = "#181615"
-accents = ["#9cbaac", "#ffa775", "#c2cca8", "#8b9cbd", "#e08a4f", "#bf8087"]
-
-[colors.light]
-accents = ["#6b8c85", "#de8554", "#8fa382", "#4e687d", "#b86935", "#8c5258"]
-
-[fonts]
-body = "MamboFont, ui-monospace, monospace"
-heading = "MamboFont, ui-monospace, monospace"
 
 [breakpoints]
 compact = 640
@@ -103,7 +87,22 @@ base = "inline"
 content = "sticky"
 ```
 
-MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. `brand`, `brand_hover`, and `brand_active` provide distinct resting, hover, and pressed states. The larger body and navigation styles, compact control height, square radii, and gallery media cap are defaults that a site may replace in the same settings file. The default component package requires the generated stylesheet and consumes only the `--mambo-*` contract for site-variable values.
+MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. `brand`, `brand_hover`, and `brand_active` provide distinct resting, hover, and pressed states. The larger body and navigation styles, compact control height, square radii, and gallery media cap are defaults that a site may replace in the same settings file. The default component package imports its bundled MamboFont faces, requires the generated stylesheet, and consumes only the `--mambo-*` contract for site-variable values.
+
+## Provider-backed default updates
+
+MamboSite consumes other Project Mambo tools through two maintainer-only adapters:
+
+```bash
+npm run sync:theme
+npm run sync:theme:check
+```
+
+The colour adapter calls `mbcolor <theme> css --out <dir>`, maps named MamboColour tokens into the checked-in Rust default model, and validates required tokens and contrast. The font adapter calls `mbfont compile 0.2.4 --format woff2 --out <dir>` with a fixed `SOURCE_DATE_EPOCH`, then refreshes four checked-in web fonts and their generated stylesheet. `MAMBOCOLOUR_BIN` and `MAMBOFONT_BIN` may select an alternate executable for local testing.
+
+These adapters are the dependency boundary: provider output is reviewed and committed in MamboSite, while ordinary compiler, package, MamboFolio, and MamboWiki builds use only repository-local files. A provider update never silently changes a consumer build.
+
+The current snapshot was reviewed with MamboColour commit `66f0c26d6d6462c54c023a4842e49dc6fa0b3c1c` and MamboFont commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
 
@@ -167,7 +166,7 @@ motion.*
 contentWidth.*
 ```
 
-MamboColour maps onto these tokens. Directive properties such as `tone="warning"` refer to semantic tokens, never `--wildfire` or a literal hexadecimal colour.
+MamboColour maps onto these tokens by provider token name. Directive properties such as `tone="warning"` refer to semantic tokens, never `--wildfire` or a literal hexadecimal colour.
 
 ### Primitives
 
@@ -237,7 +236,7 @@ MamboSite's default theme package owns:
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
 - Optional search UI when implemented.
 
-A site repository supplies content data, theme settings, and an optional typed override registry. MamboFolio and MamboWiki use this default package during migration rather than copy component source.
+A site repository supplies content data, optional theme settings, and an optional typed override registry. MamboFolio and MamboWiki use this default package, including its MamboColour-backed model and MamboFont assets, rather than copying provider output or component source.
 
 ## Component override contract
 
