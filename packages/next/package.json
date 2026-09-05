@@ -1,6 +1,6 @@
 {
   "name": "@mambosite/next",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Thin Next.js static-export adapter for the MamboSite React runtime.",
   "type": "module",
   "sideEffects": false,
@@ -21,8 +21,8 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@mambosite/react": "0.1.0",
-    "@mambosite/runtime": "0.1.0"
+    "@mambosite/react": "0.1.1",
+    "@mambosite/runtime": "0.1.1"
   },
   "peerDependencies": {
     "next": ">=16.0.0 <17.0.0",

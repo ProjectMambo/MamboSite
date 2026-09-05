@@ -1,6 +1,6 @@
 {
   "name": "@mambosite/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-neutral React renderer and component registry for MamboSite.",
   "type": "module",
   "sideEffects": false,
@@ -21,7 +21,7 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@mambosite/runtime": "0.1.0"
+    "@mambosite/runtime": "0.1.1"
   },
   "peerDependencies": {
     "react": ">=19.0.0 <20.0.0"
