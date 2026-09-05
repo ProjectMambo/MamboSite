@@ -42,6 +42,7 @@ test("default styles do not duplicate generated theme values as literal fallback
   assert.match(css, /\.mambo-page-sidebar--inline \.mambo-toc__disclosure\s*\{[^}]*display: block/s);
   assert.match(css, /\.mambo-page-sidebar--rail \.mambo-toc__expanded\s*\{[^}]*display: block/s);
   assert.match(css, /\.mambo-toc a\[aria-current="location"\]/);
+  assert.match(css, /\.mambo-page-article ul\s*\{[^}]*list-style-type: square/s);
   assert.match(css, /\.mambo-collection\[data-view="cards"\]/);
   assert.match(css, /\[data-layout="gallery"\][^{]*\{[^}]*--mambo-width-gallery-image-max/s);
   assert.doesNotMatch(css, /minmax\(min\(100%, var\(--mambo-width-card-min\)/);

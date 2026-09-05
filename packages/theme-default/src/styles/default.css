@@ -388,6 +388,10 @@ a:active {
   padding-inline-start: var(--mambo-space-lg);
 }
 
+.mambo-page-article ul {
+  list-style-type: square;
+}
+
 .mambo-table-scroll {
   overflow-x: auto;
 }
