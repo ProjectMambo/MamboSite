@@ -1,6 +1,6 @@
 ---
-title: Diagnostics and Testing
 description: Current error model, validation coverage, tests, and remaining quality gates.
+title: Diagnostics and Testing
 order: 70
 ---
 

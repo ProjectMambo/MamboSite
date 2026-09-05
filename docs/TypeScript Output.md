@@ -1,6 +1,6 @@
 ---
-title: TypeScript Output
 description: Generated module schema and the boundary between Rust and the web runtime.
+title: TypeScript Output
 order: 50
 ---
 

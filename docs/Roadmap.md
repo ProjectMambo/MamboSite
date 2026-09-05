@@ -1,6 +1,6 @@
 ---
-title: Roadmap
 description: Planned implementation phases, release criteria, non-goals, and open decisions.
+title: Roadmap
 order: 80
 ---
 
@@ -10,17 +10,17 @@ order: 80
 
 The repository has passed the compiler-skeleton milestone and now contains an initial end-to-end implementation:
 
-| Area | Status |
-|---|---|
-| Content discovery, core frontmatter types, routes, diagnostics | Implemented for schema 1; date/taxonomy validation remains planned |
-| CommonMark/GFM and supported Obsidian-compatible AST | Implemented with source spans and fixtures |
-| Directive parsing and registry validation | Implemented for the documented core registry |
-| Page, link, embed, backlink, mount, route, and asset resolution | Implemented for note references and explicit `assets/...` paths; directive target edges and fragment transclusion remain incomplete |
-| Generated output | TypeScript and binary content assets are deterministic; theme CSS is deterministic for a supplied accent seed; every managed tree is atomically published |
-| React runtime | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio content |
-| Theme settings | Rust-validated `mambo.theme.toml` compiles to generated CSS variables, responsive rules, and typed metadata |
-| Lifecycle commands | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented |
-| Site migrations | MamboFolio's thin integration builds and exports successfully; MamboWiki and clean-CI deployment remain acceptance work |
+| Area                                                           | Status                                                                                                                                                                 |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Content discovery, core frontmatter types, routes, diagnostics | Implemented for schema 1; date/taxonomy validation remains planned                                                                                                     |
+| CommonMark/GFM and supported Obsidian-compatible AST           | Implemented with source spans and fixtures                                                                                                                             |
+| Directive parsing and registry validation                      | Implemented for the documented core registry                                                                                                                           |
+| Page, link, embed, backlink, mount, route, and asset resolution | Implemented for note references and explicit `assets/...` paths; directive target edges and fragment transclusion remain incomplete                                    |
+| Generated output                                               | TypeScript and binary content assets are deterministic; theme CSS is deterministic for a supplied accent seed; every managed tree is atomically published               |
+| React runtime                                                  | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio content                                                      |
+| Theme settings                                                 | Rust-validated `mambo.theme.toml` compiles to generated CSS variables, responsive rules, and typed metadata                                                            |
+| Lifecycle commands                                             | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented                                                                  |
+| Site migrations                                                | MamboFolio's thin integration builds and exports successfully; MamboWiki and clean-CI deployment remain acceptance work                                                |
 
 The phases below describe the full 0.1 target. A phase is not considered complete merely because its first usable slice exists.
 
