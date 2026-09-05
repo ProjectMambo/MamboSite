@@ -211,59 +211,11 @@ pub struct ColorPalette {
 
 impl ColorPalette {
     fn dark() -> Self {
-        Self {
-            background: "#181615".to_owned(),
-            surface: "#24201e".to_owned(),
-            surface_strong: "#312b28".to_owned(),
-            border: "#4a403b".to_owned(),
-            text: "#faf7f2".to_owned(),
-            text_muted: "#d5c9b8".to_owned(),
-            text_subtle: "#969085".to_owned(),
-            brand: "#e05a45".to_owned(),
-            brand_hover: "#f08068".to_owned(),
-            brand_active: "#d96752".to_owned(),
-            on_brand: "#181615".to_owned(),
-            selection: "#e05a45".to_owned(),
-            focus: "#ffa775".to_owned(),
-            success: "#9cbaac".to_owned(),
-            warning: "#ffa775".to_owned(),
-            danger: "#bf8087".to_owned(),
-            header_background: "rgb(24 22 21 / 92%)".to_owned(),
-            shadow: "rgb(0 0 0 / 28%)".to_owned(),
-            accents: [
-                "#9cbaac", "#ffa775", "#c2cca8", "#8b9cbd", "#e08a4f", "#bf8087",
-            ]
-            .map(str::to_owned)
-            .to_vec(),
-        }
+        crate::mambo_colour::dark()
     }
 
     fn light() -> Self {
-        Self {
-            background: "#faf7f2".to_owned(),
-            surface: "#f3ece2".to_owned(),
-            surface_strong: "#eadfce".to_owned(),
-            border: "#c9bba7".to_owned(),
-            text: "#1c1111".to_owned(),
-            text_muted: "#5c4d4a".to_owned(),
-            text_subtle: "#765d3f".to_owned(),
-            brand: "#a93622".to_owned(),
-            brand_hover: "#822727".to_owned(),
-            brand_active: "#641b1b".to_owned(),
-            on_brand: "#ffffff".to_owned(),
-            selection: "#a93622".to_owned(),
-            focus: "#822727".to_owned(),
-            success: "#6b8c85".to_owned(),
-            warning: "#de8554".to_owned(),
-            danger: "#8c5258".to_owned(),
-            header_background: "rgb(250 247 242 / 92%)".to_owned(),
-            shadow: "rgb(49 35 31 / 14%)".to_owned(),
-            accents: [
-                "#6b8c85", "#de8554", "#8fa382", "#4e687d", "#b86935", "#8c5258",
-            ]
-            .map(str::to_owned)
-            .to_vec(),
-        }
+        crate::mambo_colour::light()
     }
 }
 
@@ -284,7 +236,8 @@ pub struct FontTokens {
 
 impl Default for FontTokens {
     fn default() -> Self {
-        let family = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+        let family =
+            "\"MamboFont\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
         Self {
             body: family.to_owned(),
             heading: family.to_owned(),

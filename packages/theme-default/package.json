@@ -8,7 +8,9 @@
   ],
   "files": [
     "dist",
-    "src/styles/default.css"
+    "src/fonts",
+    "src/styles/default.css",
+    "src/styles/mambofont.css"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

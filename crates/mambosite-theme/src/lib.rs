@@ -1,6 +1,7 @@
 mod accent;
 mod css;
 mod error;
+mod mambo_colour;
 mod model;
 mod resolve;
 mod typescript;

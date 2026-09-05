@@ -7,6 +7,24 @@ import { createElement } from "react";
 import { createMamboRuntime, MamboPage } from "@mambosite/react";
 import { defaultRegistry } from "../dist/index.js";
 
+test("default styles bundle every generated MamboFont weight", async () => {
+  const defaults = await readFile(new URL("../src/styles/default.css", import.meta.url), "utf8");
+  const css = await readFile(new URL("../src/styles/mambofont.css", import.meta.url), "utf8");
+  const faces = [
+    ["Regular", 400],
+    ["Medium", 500],
+    ["SemiBold", 600],
+    ["Bold", 700],
+  ];
+
+  assert.match(defaults, /@import "\.\/mambofont\.css";/);
+  for (const [style, weight] of faces) {
+    const filename = `MamboFont-${style}_v0.2.4.woff2`;
+    assert.match(css, new RegExp(`${filename.replaceAll(".", "\\.")}[^}]*font-weight: ${weight}`, "s"));
+    assert.ok((await readFile(new URL(`../src/fonts/${filename}`, import.meta.url))).length > 0);
+  }
+});
+
 test("default styles do not duplicate generated theme values as literal fallbacks", async () => {
   const css = await readFile(new URL("../src/styles/default.css", import.meta.url), "utf8");
   const callsWithFallbacks = cssVariableCalls(css)

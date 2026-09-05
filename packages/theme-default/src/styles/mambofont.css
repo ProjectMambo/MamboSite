@@ -1,0 +1,33 @@
+/* Generated from MamboFont v0.2.4 by `node script/sync_mambofont.mjs`; do not edit. */
+
+@font-face {
+  font-family: "MamboFont";
+  src: url("../fonts/MamboFont-Regular_v0.2.4.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MamboFont";
+  src: url("../fonts/MamboFont-Medium_v0.2.4.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MamboFont";
+  src: url("../fonts/MamboFont-SemiBold_v0.2.4.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MamboFont";
+  src: url("../fonts/MamboFont-Bold_v0.2.4.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

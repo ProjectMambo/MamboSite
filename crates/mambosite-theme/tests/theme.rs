@@ -9,7 +9,7 @@ fn empty_file_resolves_to_the_generic_default() {
 
     assert_eq!(theme, Theme::default());
     assert!(theme.fonts.faces.is_empty());
-    assert!(!theme.fonts.body.contains("MamboFont"));
+    assert!(theme.fonts.body.contains("MamboFont"));
     assert_eq!(theme.components.collection.max_columns.base(), &1);
     assert_eq!(theme.components.collection.max_columns.compact(), Some(&2));
     assert_eq!(theme.components.collection.max_columns.content(), Some(&2));

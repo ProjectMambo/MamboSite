@@ -6,6 +6,8 @@
  * supplied by rendered content rather than `mambo.theme.toml`.
  */
 
+@import "./mambofont.css";
+
 *,
 *::before,
 *::after {

@@ -9,6 +9,8 @@
   "scripts": {
     "build:packages": "npm run build -w @mambosite/runtime && npm run build -w @mambosite/react && npm run build -w @mambosite/theme-default && npm run build -w @mambosite/next",
     "check:packages": "npm run build:packages && npm run check -w @mambosite/runtime && npm run check -w @mambosite/react && npm run check -w @mambosite/theme-default && npm run check -w @mambosite/next",
+    "sync:theme": "node script/sync_mambocolour.mjs && node script/sync_mambofont.mjs",
+    "sync:theme:check": "node script/sync_mambocolour.mjs --check && node script/sync_mambofont.mjs --check",
     "test:packages": "npm run build:packages && npm run test --workspaces --if-present"
   },
   "devDependencies": {
