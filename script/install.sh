@@ -2,6 +2,7 @@
 set -euo pipefail
 
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 BLUE='\033[0;34m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
@@ -13,8 +14,15 @@ INSTALL_DIR="${MAMBOSITE_BIN_DIR:-/usr/local/bin}"
 COMMAND_TARGET="$INSTALL_DIR/mbsite"
 COMPAT_TARGET="$INSTALL_DIR/mambosite"
 
+for target in "$COMMAND_TARGET" "$COMPAT_TARGET"; do
+    if [[ -e "$target" && ! -L "$target" ]]; then
+        echo -e "${RED}[!] Refusing to replace non-symlink command: $target${NC}" >&2
+        exit 1
+    fi
+done
+
 chmod +x "$COMMAND_SOURCE"
-if [[ -w "$INSTALL_DIR" ]]; then
+if [[ -d "$INSTALL_DIR" && -w "$INSTALL_DIR" ]]; then
     ln -sfn "$COMMAND_SOURCE" "$COMMAND_TARGET"
     ln -sfn "$COMMAND_SOURCE" "$COMPAT_TARGET"
 else
