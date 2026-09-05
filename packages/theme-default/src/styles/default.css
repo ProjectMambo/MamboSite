@@ -16,6 +16,7 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -68,7 +69,7 @@ a:active {
   min-height: var(--mambo-dimension-header-height);
   position: fixed;
   transform: translateY(0);
-  transition: transform var(--mambo-motion-normal) var(--mambo-motion-easing);
+  transition: transform var(--mambo-motion-slow) var(--mambo-motion-easing);
   z-index: 100;
 }
 
@@ -284,10 +285,17 @@ a:active {
   color: var(--mambo-color-text-subtle);
   display: var(--mambo-header-clock-display);
   font-size: var(--mambo-type-small-size);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
+@keyframes mambo-page-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .mambo-page-frame {
+  animation: mambo-page-enter var(--mambo-motion-slow) var(--mambo-motion-easing) both;
   display: grid;
   gap: var(--mambo-space-xl);
   grid-template-columns: minmax(0, 1fr);
@@ -950,6 +958,7 @@ a:active {
   *,
   *::before,
   *::after {
+    animation-duration: 0.01ms !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }

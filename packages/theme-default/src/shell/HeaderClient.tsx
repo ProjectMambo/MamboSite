@@ -16,27 +16,43 @@ export interface HeaderBehaviorProps {
   readonly targetId: string;
 }
 
+export function headerHiddenForScroll(
+  previous: number,
+  current: number,
+  threshold: number,
+) {
+  if (Math.abs(current - previous) < 8) return undefined;
+  return current > previous && current > threshold;
+}
+
 /** Adds scroll behaviour to the server-rendered header without owning its links. */
 export function HeaderBehavior({ targetId }: HeaderBehaviorProps) {
   useEffect(() => {
     const header = document.getElementById(targetId);
     if (!header) return;
+    const styles = window.getComputedStyle(document.documentElement);
+    const enabled = styles.getPropertyValue("--mambo-header-hide-on-scroll").trim() !== "0";
+    const threshold = Number.parseFloat(
+      styles.getPropertyValue("--mambo-header-hide-after").trim(),
+    ) || 80;
+    let animationFrame = 0;
     let previous = window.scrollY;
     const updateVisibility = () => {
-      const styles = window.getComputedStyle(document.documentElement);
-      const enabled = styles.getPropertyValue("--mambo-header-hide-on-scroll").trim() !== "0";
-      const threshold = Number.parseFloat(
-        styles.getPropertyValue("--mambo-header-hide-after").trim(),
-      ) || 80;
+      animationFrame = 0;
       const current = window.scrollY;
-      header.classList.toggle(
-        "mambo-site-header--hidden",
-        enabled && current > previous && current > threshold,
-      );
+      const hidden = headerHiddenForScroll(previous, current, threshold);
+      if (hidden === undefined) return;
+      header.classList.toggle("mambo-site-header--hidden", enabled && hidden);
       previous = current;
     };
-    window.addEventListener("scroll", updateVisibility, { passive: true });
-    return () => window.removeEventListener("scroll", updateVisibility);
+    const schedule = () => {
+      if (animationFrame === 0) animationFrame = window.requestAnimationFrame(updateVisibility);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    return () => {
+      if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener("scroll", schedule);
+    };
   }, [targetId]);
 
   return null;

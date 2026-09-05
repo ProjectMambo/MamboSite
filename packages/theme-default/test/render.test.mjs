@@ -6,6 +6,7 @@ import { createElement } from "react";
 
 import { createMamboRuntime, MamboPage } from "@mambosite/react";
 import { defaultRegistry } from "../dist/index.js";
+import { headerHiddenForScroll } from "../dist/shell/HeaderClient.js";
 
 test("default styles bundle every generated MamboFont weight", async () => {
   const defaults = await readFile(new URL("../src/styles/default.css", import.meta.url), "utf8");
@@ -32,6 +33,20 @@ test("default styles do not duplicate generated theme values as literal fallback
     .map(({ name, fallback }) => [name, fallback]);
 
   assert.deepEqual(callsWithFallbacks, [["--mambo-card-fit", "cover"]]);
+  assert.match(css, /html\s*\{[^}]*scrollbar-gutter: stable/s);
+  assert.match(
+    css,
+    /\.mambo-site-header\s*\{[^}]*transform var\(--mambo-motion-slow\)/s,
+  );
+  assert.match(css, /\.mambo-site-clock\s*\{[^}]*font-variant-numeric: tabular-nums/s);
+  assert.match(
+    css,
+    /\.mambo-page-frame\s*\{[^}]*animation: mambo-page-enter var\(--mambo-motion-slow\)/s,
+  );
+  assert.match(
+    css,
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*animation-duration: 0\.01ms !important/,
+  );
   assert.match(
     css,
     /\.mambo-site-header__inner\s*\{[^}]*display: var\(--mambo-header-display\)/s,
@@ -64,6 +79,13 @@ test("default styles do not duplicate generated theme values as literal fallback
   assert.match(css, /\.mambo-collection\[data-view="cards"\]/);
   assert.match(css, /\[data-layout="gallery"\][^{]*\{[^}]*--mambo-width-gallery-image-max/s);
   assert.doesNotMatch(css, /minmax\(min\(100%, var\(--mambo-width-card-min\)/);
+});
+
+test("header scroll behavior ignores jitter and follows deliberate direction", () => {
+  assert.equal(headerHiddenForScroll(100, 107, 80), undefined);
+  assert.equal(headerHiddenForScroll(100, 108, 80), true);
+  assert.equal(headerHiddenForScroll(100, 92, 80), false);
+  assert.equal(headerHiddenForScroll(0, 8, 80), false);
 });
 
 test("header renders an accessible compact menu and custom theme tooltip", () => {

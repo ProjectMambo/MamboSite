@@ -28,7 +28,7 @@ The current MamboFolio establishes a recognizable Project Mambo style:
 - Clear metadata chips, descriptions, dates, and external links.
 - A sticky navigation bar with a vertically centered rectangular brand control and accessible theme switch.
 - A conditional table-of-contents navigator for long documents.
-- Small hover, active, and movement transitions rather than heavy animation.
+- Restrained hover, active, page-entry, and header transitions rather than heavy animation.
 
 These are defaults, not parser rules. A future theme may change spacing, typography, shape, navigation, cards, or motion without recompiling Markdown under a new language.
 
@@ -341,9 +341,9 @@ These are release requirements, not a claim that a complete automated accessibil
 
 ## Client JavaScript policy
 
-The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, history-aware Back clicks, and TOC current-section tracking. Search and carousel interaction are planned.
+The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, history-aware Back clicks, and TOC current-section tracking. Header visibility samples scroll position once per animation frame and ignores tiny direction reversals, while the TOC changes its active-link markup only when the active heading changes. Search and carousel interaction are planned.
 
-Cards, Markdown, navigation links, callouts, embeds, ordinary child collections, and the route-parent Back fallback work without hydration. Hydrated same-page fragment links replace their current hash entry, so several TOC jumps still need only one Back activation to leave the page. Link, navigation, brand, theme, card, and button feedback uses native CSS transitions. The reduced-motion media query disables smooth scrolling and reduces transition durations, so this feedback does not require another client animation system.
+Cards, Markdown, navigation links, callouts, embeds, ordinary child collections, and the route-parent Back fallback work without hydration. Hydrated same-page fragment links replace their current hash entry, so several TOC jumps still need only one Back activation to leave the page. Native wheel, touch, and history scrolling remain browser-owned; fragment jumps use CSS smooth scrolling. Page entry uses an opacity-only animation, while link, navigation, brand, theme, card, and button feedback uses native CSS transitions. The reduced-motion media query disables smooth fragment scrolling and reduces animation and transition durations, so this feedback does not require another client animation system.
 
 ## Redesign rules
 

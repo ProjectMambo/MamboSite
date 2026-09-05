@@ -36,4 +36,6 @@ test("clicked entries stay current until fragment scrolling settles", async () =
   );
   assert.match(source, /addEventListener\("hashchange", handleHashChange\)/);
   assert.match(source, /addEventListener\("scrollend", settleClick\)/);
+  assert.match(source, /if \(index === activeIndex\) return;/);
+  assert.match(source, /addEventListener\("toggle", refresh, true\)/);
 });

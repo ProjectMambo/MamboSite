@@ -48,7 +48,7 @@ export function TableOfContentsBehavior({
     if (!firstHeading || links.length === 0) return;
 
     let animationFrame = 0;
-    let activeIndex = -1;
+    let activeIndex: number | undefined;
     let bottomIndex: number | undefined;
     let clickedHash: string | undefined;
     let clickedIndex: number | undefined;
@@ -67,6 +67,7 @@ export function TableOfContentsBehavior({
       Number.parseFloat(getComputedStyle(firstHeading).scrollMarginTop) || 0,
     );
     const show = (index: number) => {
+      if (index === activeIndex) return;
       activeIndex = index;
       const activeId = headings[index]?.id;
       let activeLink: HTMLAnchorElement | undefined;
@@ -109,7 +110,12 @@ export function TableOfContentsBehavior({
         intentDistance = 0;
         bottomIndex = undefined;
         if (navigation.offsetParent !== null) {
-          show(headingIndexForScrollIntent(geometricIndex(), activeIndex, direction, headings.length));
+          show(headingIndexForScrollIntent(
+            geometricIndex(),
+            activeIndex ?? -1,
+            direction,
+            headings.length,
+          ));
         }
         schedule();
         return;
@@ -121,7 +127,7 @@ export function TableOfContentsBehavior({
       intentDistance = 0;
       bottomIndex = headingIndexForScrollIntent(
         geometricIndex(),
-        bottomIndex ?? activeIndex,
+        bottomIndex ?? activeIndex ?? -1,
         direction,
         headings.length,
       );
@@ -192,12 +198,16 @@ export function TableOfContentsBehavior({
       clickedIndex = undefined;
       schedule();
     };
+    const refresh = () => {
+      activeIndex = undefined;
+      schedule();
+    };
     const reset = () => {
       clickedHash = undefined;
       clickedIndex = undefined;
       bottomIndex = undefined;
       intentDistance = 0;
-      schedule();
+      refresh();
     };
     const handleHashChange = () => {
       if (clickedIndex !== undefined && window.location.hash === clickedHash) schedule();
@@ -214,7 +224,7 @@ export function TableOfContentsBehavior({
     window.addEventListener("hashchange", handleHashChange);
     document.addEventListener("scrollend", settleClick);
     navigation.addEventListener("click", handleClick);
-    navigation.addEventListener("toggle", schedule, true);
+    navigation.addEventListener("toggle", refresh, true);
     return () => {
       if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("scroll", schedule);
@@ -226,7 +236,7 @@ export function TableOfContentsBehavior({
       window.removeEventListener("hashchange", handleHashChange);
       document.removeEventListener("scrollend", settleClick);
       navigation.removeEventListener("click", handleClick);
-      navigation.removeEventListener("toggle", schedule, true);
+      navigation.removeEventListener("toggle", refresh, true);
     };
   }, [headingIds]);
 
