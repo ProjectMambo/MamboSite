@@ -50,6 +50,8 @@ export function TableOfContentsBehavior({
     let animationFrame = 0;
     let activeIndex = -1;
     let bottomIndex: number | undefined;
+    let clickedHash: string | undefined;
+    let clickedIndex: number | undefined;
     let intentDistance = 0;
     let previousScrollY = window.scrollY;
     let previousTouchY: number | undefined;
@@ -95,12 +97,14 @@ export function TableOfContentsBehavior({
       const currentScrollY = window.scrollY;
       if (currentScrollY < previousScrollY || !atPageBottom()) bottomIndex = undefined;
       previousScrollY = currentScrollY;
-      show(bottomIndex ?? geometricIndex());
+      show(clickedIndex ?? bottomIndex ?? geometricIndex());
     };
     const schedule = () => {
       if (animationFrame === 0) animationFrame = window.requestAnimationFrame(update);
     };
     const handleIntent = (direction: -1 | 1, distance: number) => {
+      clickedHash = undefined;
+      clickedIndex = undefined;
       if (direction < 0) {
         intentDistance = 0;
         bottomIndex = undefined;
@@ -147,6 +151,7 @@ export function TableOfContentsBehavior({
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
+      clickedIndex = undefined;
       if (event.target instanceof Element
         && event.target.closest("a, button, input, select, summary, textarea, [contenteditable]")) return;
       const direction = event.key === "ArrowUp" || event.key === "PageUp" || event.key === "Home"
@@ -158,10 +163,45 @@ export function TableOfContentsBehavior({
           : 0;
       if (direction !== 0) handleIntent(direction, 40);
     };
+    const handleClick = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented
+        || event.button !== 0
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+      ) return;
+      const clicked = event.target;
+      if (!(clicked instanceof Element)) return;
+      const link = clicked.closest<HTMLAnchorElement>("a[data-mambo-toc-target]");
+      const target = link?.dataset.mamboTocTarget;
+      const index = headings.findIndex((heading) => heading.id === target);
+      if (!link || index < 0) return;
+
+      clickedHash = link.hash;
+      clickedIndex = index;
+      bottomIndex = undefined;
+      intentDistance = 0;
+      show(index);
+    };
+    const settleClick = () => {
+      if (clickedIndex === undefined) return;
+      bottomIndex = atPageBottom() ? clickedIndex : undefined;
+      clickedHash = undefined;
+      clickedIndex = undefined;
+      schedule();
+    };
     const reset = () => {
+      clickedHash = undefined;
+      clickedIndex = undefined;
       bottomIndex = undefined;
       intentDistance = 0;
       schedule();
+    };
+    const handleHashChange = () => {
+      if (clickedIndex !== undefined && window.location.hash === clickedHash) schedule();
+      else reset();
     };
 
     schedule();
@@ -171,7 +211,9 @@ export function TableOfContentsBehavior({
     window.addEventListener("touchmove", handleTouchMove, { passive: true });
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("resize", reset);
-    window.addEventListener("hashchange", reset);
+    window.addEventListener("hashchange", handleHashChange);
+    document.addEventListener("scrollend", settleClick);
+    navigation.addEventListener("click", handleClick);
     navigation.addEventListener("toggle", schedule, true);
     return () => {
       if (animationFrame !== 0) window.cancelAnimationFrame(animationFrame);
@@ -181,7 +223,9 @@ export function TableOfContentsBehavior({
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("resize", reset);
-      window.removeEventListener("hashchange", reset);
+      window.removeEventListener("hashchange", handleHashChange);
+      document.removeEventListener("scrollend", settleClick);
+      navigation.removeEventListener("click", handleClick);
       navigation.removeEventListener("toggle", schedule, true);
     };
   }, [headingIds]);

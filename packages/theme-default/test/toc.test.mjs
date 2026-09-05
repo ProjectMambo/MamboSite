@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
@@ -19,4 +20,20 @@ test("continued bottom scrolling advances progressively and upward intent resets
   assert.equal(headingIndexForScrollIntent(1, 4, 1, 5), 4);
   assert.equal(headingIndexForScrollIntent(3, 1, 1, 5), 3);
   assert.equal(headingIndexForScrollIntent(1, 3, -1, 5), 1);
+});
+
+test("clicked entries stay current until fragment scrolling settles", async () => {
+  const source = await readFile(
+    new URL("../src/directives/TableOfContentsBehavior.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /clickedIndex = index;[\s\S]*show\(index\);/);
+  assert.match(source, /show\(clickedIndex \?\? bottomIndex \?\? geometricIndex\(\)\)/);
+  assert.match(
+    source,
+    /clickedIndex !== undefined && window\.location\.hash === clickedHash[\s\S]*else reset\(\)/,
+  );
+  assert.match(source, /addEventListener\("hashchange", handleHashChange\)/);
+  assert.match(source, /addEventListener\("scrollend", settleClick\)/);
 });
