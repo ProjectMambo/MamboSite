@@ -286,7 +286,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "mambosite-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "clap",
  "mambosite-codegen-ts",
@@ -301,7 +301,7 @@ dependencies = [
 
 [[package]]
 name = "mambosite-codegen-ts"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "mambosite-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "comrak",
  "serde",
@@ -325,7 +325,7 @@ dependencies = [
 
 [[package]]
 name = "mambosite-theme"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde",
  "serde_json",

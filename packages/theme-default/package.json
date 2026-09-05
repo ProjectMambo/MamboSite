@@ -1,6 +1,6 @@
 {
   "name": "@mambosite/theme-default",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Accessible MamboFolio-inspired default components and styles for MamboSite.",
   "type": "module",
   "sideEffects": [
@@ -27,8 +27,8 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@mambosite/react": "0.1.1",
-    "@mambosite/runtime": "0.1.1"
+    "@mambosite/react": "0.1.2",
+    "@mambosite/runtime": "0.1.2"
   },
   "peerDependencies": {
     "react": ">=19.0.0 <20.0.0",

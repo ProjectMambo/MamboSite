@@ -1,6 +1,6 @@
 {
   "name": "@mambosite/runtime",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Framework-neutral contracts and content graph helpers for MamboSite output.",
   "type": "module",
   "sideEffects": false,
