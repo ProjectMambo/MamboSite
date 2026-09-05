@@ -14,10 +14,10 @@ git add package-lock.json
 git commit -m "build: lock site dependencies"
 ```
 
-The default scaffold pins MamboSite package version `0.1.1`. Package
-publication and the matching compiler release tag are still pending, so this
-template remains a repository-development preview rather than a released
-bootstrap path.
+The generated scaffold pins the MamboSite compiler and package compatibility
+version `__MAMBOSITE_VERSION__`. GitHub source releases and npm package
+publication are separate; until the `@mambosite/*` packages are published,
+use sibling-checkout `file:` dependencies as described in the MamboSite docs.
 
 ## Commands
 

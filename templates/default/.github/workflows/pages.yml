@@ -23,7 +23,7 @@ jobs:
         with:
           repository: ProjectMambo/MamboSite
           path: .mambosite-compiler
-          ref: v0.1.0
+          ref: v__MAMBOSITE_VERSION__
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.95.0

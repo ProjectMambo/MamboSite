@@ -9,6 +9,7 @@ use crate::commands::CommandError;
 
 const MANIFEST_PATH: &str = ".mambosite/scaffold.json";
 const TEMPLATE_VERSION: &str = env!("CARGO_PKG_VERSION");
+const VERSION_PLACEHOLDER: &str = "__MAMBOSITE_VERSION__";
 
 #[derive(Clone, Copy)]
 struct EmbeddedTemplateFile {
@@ -55,7 +56,7 @@ fn template_files() -> Result<Vec<TemplateFile>, CommandError> {
         .iter()
         .map(|file| TemplateFile {
             path: file.path,
-            contents: file.contents.to_owned(),
+            contents: file.contents.replace(VERSION_PLACEHOLDER, TEMPLATE_VERSION),
         })
         .collect();
     files.push(TemplateFile {
@@ -652,6 +653,14 @@ mod tests {
         assert_eq!(scripts["mambosite:render"], "next build");
         assert_eq!(scripts["deploy"], "mbsite deploy");
         assert!(!scripts.contains_key("prebuild"));
+        for dependency in [
+            "@mambosite/next",
+            "@mambosite/react",
+            "@mambosite/runtime",
+            "@mambosite/theme-default",
+        ] {
+            assert_eq!(package["dependencies"][dependency], TEMPLATE_VERSION);
+        }
 
         let workflow = fs::read_to_string(target.join(".github/workflows/pages.yml")).unwrap();
         assert!(workflow.contains("Require npm lockfile"));
@@ -661,7 +670,14 @@ mod tests {
             workflow.matches("--package mambosite-cli -- build").count(),
             1
         );
+        assert!(workflow.contains(&format!("ref: v{TEMPLATE_VERSION}")));
         assert!(!workflow.contains("next build"));
+
+        let readme = fs::read_to_string(target.join("README.md")).unwrap();
+        assert!(readme.contains(TEMPLATE_VERSION));
+        for generated in [package.to_string(), workflow, readme] {
+            assert!(!generated.contains(VERSION_PLACEHOLDER));
+        }
     }
 
     #[test]
