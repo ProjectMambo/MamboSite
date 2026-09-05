@@ -218,11 +218,9 @@ The default package currently renders direct child list/grid/card views and grid
 
 Content cards and `button variant="card"` action cells draw accents from the paired `colors.dark.accents` and `colors.light.accents` arrays. These arrays are the complete configuration surface: both arrays must have the same length from 1 to 12, and entries may be any valid CSS colour.
 
-When both schemes use at least two sRGB hexadecimal colours in `#RGB` or `#RRGGBB` form, MamboSite compares paired slots in OKLab. Two slots are similar when their Euclidean distance is less than `0.10` in either scheme. If a cycle exists that keeps every neighboring pair at or above that threshold, the generated grid guarantees dissimilar direct neighbors. A one-colour, non-hex, or mathematically incompatible palette remains valid and uses a seeded shuffle instead; no algorithm can guarantee perceptual separation for values it cannot measure or a palette without a valid cycle.
+Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and shuffles the palette slots. Within each collection or action grid, cards consume that shuffled order without replacement: every configured colour is used once before the order resets and repeats. There is no neighbor-distance constraint.
 
-Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and generates a new constrained colour pattern. `SOURCE_DATE_EPOCH=<unsigned-integer>` fixes that seed for reproducible builds. Because the number of possible patterns is finite, separate unseeded builds may occasionally choose the same result.
-
-For every effective responsive column count, MamboSite generates an irregular repeating grid from the shuffled palette. When a safe OKLab cycle is available, each cell is chosen so its direct neighbors above, below, left, and right use perceptually dissimilar slots, including where the pattern repeats. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
+`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes the shuffle for reproducible builds. Because the number of possible orders is finite, separate unseeded builds may occasionally choose the same result. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
 
 ### Site shell and layouts
 

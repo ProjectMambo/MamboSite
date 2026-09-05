@@ -233,12 +233,11 @@ fn configured_breakpoints_drive_layout_and_finite_column_rules() {
             .count(),
         24
     );
-    assert!(css.contains("> [data-mambo-accent-item]:nth-child("));
+    assert!(css.contains(
+        ":is([data-mambo-collection], [data-mambo-columns]) > [data-mambo-accent-item]:nth-child("
+    ));
 
     assert!(css.contains("[data-mambo-columns][data-collapse=\"never\"]"));
-    assert!(css.contains(
-        "[data-mambo-columns][data-collapse=\"never\"][data-columns=\"1\"] > [data-mambo-accent-item]"
-    ));
     assert!(compact.contains("[data-mambo-columns][data-collapse=\"compact\"]"));
     assert!(content.contains("[data-mambo-columns][data-collapse=\"content\"]"));
     assert!(wide.contains("[data-mambo-columns][data-collapse=\"wide\"]"));
