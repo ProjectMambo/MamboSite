@@ -6,6 +6,8 @@ order: 20
 
 # Content Model
 
+This document is the normative schema-1 content contract. For a page-form decision table and complete copy-ready examples, start with [[Authoring Guide]].
+
 ## Repository content root
 
 MamboSite compiles a self-contained directory inside the website repository. The normal configuration is explicit:
@@ -60,6 +62,8 @@ Rules:
 - `name.md` and `name/index.md` may not coexist because they produce the same route.
 - A directory without `index.md` is organisational only. Its descendants still receive routes, but the directory itself has no page.
 - Only the configured site-entry `index.md` may declare mounts in the first release. Any `index.md` may use child-layout directives.
+
+Routing children does not render them. An index page must place `::children` or `::gallery` in its body when and where those descendants should be visible; omitting a collection directive leaves the child routes reachable only through other links.
 
 ## Discovery and exclusions
 
@@ -179,7 +183,7 @@ Core fields:
 
 Empty strings normalize to absent values. Authors should use ISO 8601 dates because the default runtime sorts and formats those strings, but schema 1 does not yet validate date syntax. Tags are retained as authored strings; normalized taxonomy IDs are planned rather than generated today.
 
-Unknown top-level keys should be errors in strict mode because they are commonly misspellings. Site-specific values such as `period`, `githubUrl`, or `wikiUrl` belong beneath `data`:
+Unknown top-level keys are errors when `[frontmatter].strict = true` because they are commonly misspellings. Schema 1 defaults this option to `false` for migration compatibility; new sites and automated authoring workflows should enable it once their content uses only the documented fields. Site-specific values such as `period`, `githubUrl`, or `wikiUrl` belong beneath `data`:
 
 ```yaml
 data:

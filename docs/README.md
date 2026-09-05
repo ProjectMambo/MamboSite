@@ -4,6 +4,14 @@ MamboSite is a Markdown-first static site platform for Project Mambo. It reads r
 
 MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonical documentation in an Obsidian vault and exports it with a separate `sync-docs` workflow; other users may maintain `docs/` directly or provide their own synchronization process.
 
+## Start here
+
+| Goal | First document |
+|---|---|
+| Create or expand Markdown pages | [Authoring Guide](Authoring%20Guide.md) |
+| Configure, build, or deploy a site | [Build and Deployment](Build%20and%20Deployment.md) |
+| Understand or extend MamboSite itself | [Architecture](Architecture.md) |
+
 ## Goals
 
 - Keep Markdown as the source of truth without requiring a particular editor.
@@ -29,17 +37,26 @@ repository docs/
 
 The compiler, React rendering engine, default components, theme contract, and static-framework adapter are maintained together in MamboSite. A website repository owns only its content, `mambo.toml`, `mambo.theme.toml`, and optional typed component overrides.
 
-## Design documents
+## Documentation map
+
+Author content:
+
+- [Authoring Guide](Authoring%20Guide.md) — end-to-end workflow and copy-ready page patterns.
+- [Content Model](Content%20Model.md) — file hierarchy, routes, mounts, and frontmatter.
+- [Markdown and Directives](Markdown%20and%20Directives.md) — syntax and component reference.
+- [Theme and Components](Theme%20and%20Components.md) — layouts, responsive behavior, tokens, and overrides.
+
+Operate a site:
+
+- [Build and Deployment](Build%20and%20Deployment.md) — commands, static export, and GitHub Pages.
+- [Diagnostics and Testing](Diagnostics%20and%20Testing.md) — validation and quality gates.
+- [Documentation Sync](Documentation%20Sync.md) — optional Project Mambo authoring workflow.
+
+Extend MamboSite:
 
 - [Architecture](Architecture.md)
-- [Content Model](Content%20Model.md)
-- [Documentation Sync](Documentation%20Sync.md) — optional Project Mambo authoring workflow
-- [Markdown and Directives](Markdown%20and%20Directives.md)
 - [Parsing and Resolution](Parsing%20and%20Resolution.md)
 - [TypeScript Output](TypeScript%20Output.md)
-- [Theme and Components](Theme%20and%20Components.md)
-- [Build and Deployment](Build%20and%20Deployment.md)
-- [Diagnostics and Testing](Diagnostics%20and%20Testing.md)
 - [Roadmap](Roadmap.md)
 
 ## Status

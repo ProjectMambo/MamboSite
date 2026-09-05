@@ -85,7 +85,7 @@ branch = "main"
 workflow = ".github/workflows/pages.yml"
 ```
 
-`--config` chooses the TOML file; omitted fields use schema defaults. A full build passes the configured `site.base_path` and `site.url` to the renderer as `MAMBOSITE_BASE_PATH` and `MAMBOSITE_SITE_URL`. There are no environment overrides for content semantics.
+`--config` chooses the TOML file; omitted fields use schema defaults. The compiler writes `site.base_path`, `site.url`, `site.trailing_slash`, and other site metadata into the generated manifest consumed by the renderer. There are no environment overrides for content semantics.
 
 `site.base_path` is either empty or a canonical URL path with one leading slash, no trailing slash, and URL-safe segments. `assets_out` must be a non-empty URL-safe subdirectory of `public/`; its relative path becomes the browser-facing prefix for generated `theme.css` and the `assets/` content subtree.
 
@@ -169,10 +169,13 @@ The site config uses static export:
 
 ```ts
 import type { NextConfig } from "next";
+import manifest from "./src/generated/mambo/manifest";
 
 const nextConfig: NextConfig = {
   output: "export",
-  trailingSlash: true,
+  basePath: manifest.site.basePath,
+  trailingSlash: manifest.site.trailingSlash,
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
@@ -237,6 +240,8 @@ A repository may temporarily commit generated output for migration, but CI must 
 ## Reproducibility
 
 A production build must not require network access after dependencies are installed. The compiler does not fetch remote images, validate external links, read Git metadata for page dates, or insert the current time into semantic output.
+
+Content data, routes, copied assets, and generated TypeScript remain deterministic. An ordinary output-producing `mbsite build` deliberately chooses a fresh collection-accent seed, so the accent selector order in generated theme CSS may change. Set `SOURCE_DATE_EPOCH` to an unsigned 64-bit integer in CI when the complete output must be byte-reproducible; the same settings and seed produce the same theme output, while an invalid value fails the build.
 
 Build information may record compiler and schema versions in `build-info.ts`, but nondeterministic timestamps must not affect page modules, asset names, or route output.
 

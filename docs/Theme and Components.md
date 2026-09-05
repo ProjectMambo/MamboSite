@@ -6,6 +6,8 @@ order: 55
 
 # Theme and Components
 
+This document covers the default presentation contract and override boundary. Authors choosing page layouts should begin with [[Authoring Guide]]; theme implementers can use the complete contracts here.
+
 ## Design status
 
 MamboFolio is the initial visual reference for MamboSite, but it is not the permanent design specification. MamboFolio itself may be redesigned. The compiler and Markdown language must therefore depend on semantic component names and design tokens, never on its current React structure or Tailwind class strings.
@@ -47,6 +49,10 @@ brand = "#e05a45"
 brand_hover = "#f08068"
 brand_active = "#d96752"
 on_brand = "#181615"
+accents = ["#9cbaac", "#ffa775", "#c2cca8", "#8b9cbd", "#e08a4f", "#bf8087"]
+
+[colors.light]
+accents = ["#6b8c85", "#de8554", "#8fa382", "#4e687d", "#b86935", "#8c5258"]
 
 [fonts]
 body = "MamboFont, ui-monospace, monospace"
@@ -100,6 +106,29 @@ content = "sticky"
 MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. `brand`, `brand_hover`, and `brand_active` provide distinct resting, hover, and pressed states. The larger body and navigation styles, compact control height, square radii, and gallery media cap are defaults that a site may replace in the same settings file. The default component package requires the generated stylesheet and consumes only the `--mambo-*` contract for site-variable values.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
+
+## Default-theme entry and page data
+
+The core compiler accepts JSON-compatible values beneath frontmatter `data`. The default theme recognizes these exact optional shapes:
+
+```yaml
+data:
+  navigation:
+    - label: MY SITE
+      href: /
+    - label: PROJECTS
+      href: /projects/
+  hero:
+    quote: A short quotation.
+    attribution: Its source
+  footer:
+    copyright: 2026 My Site
+    links:
+      - label: Source Code
+        href: https://github.com/example/site
+```
+
+`navigation` and `footer` are read from the site entry. The first navigation item becomes the brand control; later items become the primary navigation. When no first item exists, the configured site title becomes the brand label. `footer.copyright` is rendered after a generated copyright symbol. `hero` is read from the current page when a `::hero` directive is present. Invalid or differently shaped values are ignored by the default theme rather than acquiring new semantics.
 
 ## Layered runtime structure
 
@@ -185,6 +214,16 @@ column         -> Column
 
 The default package currently renders direct child list/grid/card views and grid galleries. Tree/table child views, nested child depth, masonry/carousel galleries, and fragment includes show an explicit unsupported-mode message. A registry override may implement those contracts sooner.
 
+## Collection accent assignment
+
+Content cards and `button variant="card"` action cells draw accents from the paired `colors.dark.accents` and `colors.light.accents` arrays. These arrays are the complete configuration surface: both arrays must have the same length from 1 to 12, and entries may be any valid CSS colour.
+
+When both schemes use at least two sRGB hexadecimal colours in `#RGB` or `#RRGGBB` form, MamboSite compares paired slots in OKLab. Two slots are similar when their Euclidean distance is less than `0.10` in either scheme. If a cycle exists that keeps every neighboring pair at or above that threshold, the generated grid guarantees dissimilar direct neighbors. A one-colour, non-hex, or mathematically incompatible palette remains valid and uses a seeded shuffle instead; no algorithm can guarantee perceptual separation for values it cannot measure or a palette without a valid cycle.
+
+Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and shuffles the selected order. `SOURCE_DATE_EPOCH=<unsigned-integer>` fixes that seed for reproducible builds. Because the number of possible orders is finite, separate unseeded builds may occasionally choose the same result.
+
+For a grid with `N` accent slots, the generated CSS maps a cell at zero-based row and column to `order[(row + column) % N]`. When a safe OKLab cycle is available, direct neighbors above, below, left, and right therefore use dissimilar slots at every responsive column count. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
+
 ### Site shell and layouts
 
 MamboSite's default theme package owns:
@@ -242,7 +281,7 @@ This permits:
 
 ### `default`
 
-Centered page with generated title, body, optional heading sidebar, and Back links at both the start and end of every non-root page. An ordinary primary click uses browser history when a history entry exists, preserving the page the visitor actually came from. The link still targets the route parent as the no-JavaScript, direct-entry, and modified-click fallback.
+Centered page with generated title, body, optional heading sidebar, and Back links at both the start and end of every non-root page. An ordinary unmodified primary click uses native browser history when a history entry exists, restoring the prior route and its saved scroll position—including the collection card or next-page control that opened the page. The link still targets the route parent for direct entry, no JavaScript, or a modified click.
 
 ### `article`
 
@@ -270,9 +309,11 @@ A wider default page. Center-aligned gallery hero media is capped by `widths.gal
 
 ## Table of contents behavior
 
-The default runtime derives an automatic TOC from level-two through level-four headings when `page.sidebar` is enabled. Pages without matching headings render neither an empty TOC nor an empty sidebar, so both headerless articles and future structured articles use the same layout safely. A valid authored `::toc` renders at its Markdown position and suppresses the automatic copy.
+The default runtime derives an automatic TOC from level-two through level-four headings when `page.sidebar` is enabled. Pages without matching headings render neither an empty TOC nor an empty sidebar, so both headerless articles and structured articles use the same layout safely. A valid authored `::toc` renders at its Markdown position, honors its own `collapse` value, and suppresses the automatic copy.
 
-Below the configured `content` breakpoint, the automatic TOC is an inline block before the article. At and above that breakpoint, it becomes a sticky rail beside the article. Article pages expand their outer frame only when that rail exists; gallery pages retain their wide frame. Both forms use the same compiler heading IDs and remain ordinary anchor navigation.
+Below the configured `content` breakpoint, the automatic TOC is a native `<details>` disclosure before the article and starts closed. At and above that breakpoint, it is an expanded sticky rail beside the article. The rail has a viewport-bounded height and its own scrolling area, and it follows the active entry when a long TOC cannot fit at once. It never overlays the article. Article pages expand their outer frame only when that rail exists; gallery pages retain their wide frame.
+
+Once a matching section is reached, each visible TOC tracks exactly one current section and marks its link with `aria-current="location"`. The active entry is the last heading that has crossed a header-aware top threshold. At the bottom of the document, the final matching heading wins even when its section is too short to reach that threshold; continued scrolling therefore advances the TOC to the end although the page itself cannot move farther. All links still use the compiler's heading IDs and work as ordinary anchors without scroll tracking.
 
 ## Responsive behaviour
 
@@ -281,7 +322,7 @@ Below the configured `content` breakpoint, the automatic TOC is an inline block 
 - Card grids choose safe responsive minimum widths; `columns=6` is a maximum intent, not a command to squeeze six unreadable cards onto mobile.
 - Tables and code blocks scroll horizontally without widening the page; page copy, cards, controls, and long destinations wrap instead of forcing overflow.
 - Compact navigation opens from a labelled button into a stacked menu; it closes after link activation or Escape and does not consume persistent page height while closed.
-- The automatic TOC is inline below the content breakpoint and a sticky side rail at and above it, so it never overlays the article.
+- The automatic TOC is a closed inline disclosure below the content breakpoint and a viewport-bounded sticky rail at and above it, so it remains usable without overlaying the article.
 - Images remain constrained to their container, collection columns are capped at each configured breakpoint, and layout children use shrink-safe grid and flex sizing.
 
 Viewport thresholds never live in component CSS. Rust writes the configured compact, content, and wide values into literal media queries and emits finite selector rules for authored collection and column choices.
@@ -303,7 +344,7 @@ These are release requirements, not a claim that a complete automated accessibil
 
 ## Client JavaScript policy
 
-The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, and history-aware Back clicks. TOC tracking, search, and carousel interaction are planned.
+The page body renders during the static build. Current client code is limited to theme switching/persistence, the compact navigation disclosure, the header's hide-on-scroll behavior and clock, history-aware Back clicks, and TOC current-section tracking. Search and carousel interaction are planned.
 
 Cards, Markdown, navigation links, callouts, embeds, ordinary child collections, and the route-parent Back fallback work without hydration. Hydrated same-page fragment links replace their current hash entry, so several TOC jumps still need only one Back activation to leave the page. Link, navigation, brand, theme, card, and button feedback uses native CSS transitions. The reduced-motion media query disables smooth scrolling and reduces transition durations, so this feedback does not require another client animation system.
 

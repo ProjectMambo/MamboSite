@@ -22,6 +22,8 @@ Docs/assets/<Site>/             ---->  docs/_assets/                       publi
 
 Other users may edit `docs/` directly, generate it from another system, or implement a different synchronizer. The only compiler requirement is the final repository-local content contract described in [[Content Model]].
 
+Use [[Authoring Guide]] for page forms and copy-ready content patterns. This document covers only how Project Mambo turns its canonical copies into that compiler-facing structure.
+
 ## Vault ownership model
 
 The vault separates project ownership from site composition:

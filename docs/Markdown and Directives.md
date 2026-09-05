@@ -6,6 +6,8 @@ order: 30
 
 # Markdown and Directives
 
+This is the normative schema-1 syntax reference. Start with [[Authoring Guide]] when choosing a page pattern, then use this document to verify exact properties and current renderer limits.
+
 ## Design principles
 
 MamboSite documents should remain useful Markdown in editors including Obsidian, on GitHub, and as plain text. Custom syntax is reserved for features that Markdown cannot express: page layout, generated collections, site components, and controlled transclusion.
@@ -68,7 +70,7 @@ A leaf directive renders one component at its exact position and has no Markdown
 A container directive wraps Markdown or other directives:
 
 ```md
-:::section{width="wide" tone="muted"}
+:::section{width="wide" tone="subtle"}
 
 ## Featured projects
 
@@ -160,8 +162,8 @@ Properties:
 | Property | Values | Default |
 |---|---|---|
 | `layout` | `default`, `article`, `docs`, `project`, `collection`, `home`, `gallery` | `default` |
-| `width` | `narrow`, `normal`, `wide`, `full` | layout-dependent |
-| `sidebar` | boolean | layout-dependent |
+| `width` | `narrow`, `normal`, `wide`, `full` | `normal`; the default theme narrows or widens selected layouts as described in [[Theme and Components]] |
+| `sidebar` | boolean | `true`; the `docs` layout always enables it |
 
 It may appear at most once and must be the first body node other than comments or blank lines. It works on index and leaf pages.
 
@@ -170,7 +172,7 @@ It may appear at most once and must be the first body node other than comments o
 Renders a prominent title area. Missing values are derived from frontmatter.
 
 ```md
-::hero{image="[[Attachments/mambo.png]]" align="split" show-description=true}
+::hero{image="assets/mambo.png" align="split" show-description=true}
 ```
 
 Properties:
@@ -191,7 +193,7 @@ Renders route ancestry at its position.
 ::breadcrumbs{home="Wiki" separator="/"}
 ```
 
-Properties: `home`, `separator`, and `include-current`. Defaults are theme-controlled, `/`, and `true`.
+Properties: `home` is the home-link label and defaults to `/`; `separator` defaults to `/`; `include-current` is boolean and defaults to `true`.
 
 ### `meta`
 
@@ -203,9 +205,9 @@ Renders selected page metadata rather than automatically dumping all frontmatter
 
 Properties:
 
-- `show`: ordered array of core fields or keys beneath `data`.
-- `style`: `inline`, `stack`, or `table`.
-- `empty`: `hide` or `placeholder`.
+- `show`: ordered array containing `title`, `description`, `date`, `updated`, `tags`, or keys beneath `data`; defaults to an empty array.
+- `style`: `inline`, `stack`, or `table`; defaults to `stack`.
+- `empty`: `hide` or `placeholder`; defaults to `hide`.
 
 The runtime receives already validated values. It must not interpret arbitrary YAML.
 
@@ -217,7 +219,15 @@ Renders a table of contents from the compiler's heading index.
 ::toc{min-depth=2 max-depth=4 ordered=false}
 ```
 
-Properties: `min-depth`, `max-depth`, `ordered`, `title`, and `collapse`. Heading depth must be between 1 and 6 and the minimum may not exceed the maximum.
+| Property | Values | Default |
+|---|---|---|
+| `min-depth` | integer from 1 to 6 | `2` |
+| `max-depth` | integer from 1 to 6 | `4` |
+| `ordered` | boolean | `true` |
+| `title` | string | `On this page` |
+| `collapse` | boolean | `false` |
+
+The minimum may not exceed the maximum. The default component tracks the current heading and sets `aria-current="location"`; see [[Theme and Components]] for automatic desktop and mobile placement.
 
 ### `children`
 
@@ -236,13 +246,13 @@ Properties:
 | `depth` | positive integer or `-1` for all | `1` |
 | `sort` | `order`, `title`, `date`, `updated`, `path` | `order` |
 | `direction` | `asc`, `desc` | depends on sort |
-| `columns` | integer from 1 to 6 | theme-responsive default |
+| `columns` | integer from 1 to 6 | `3` |
 | `limit` | positive integer | unlimited |
 | `show` | array of preview fields | theme default |
 | `include-unlisted` | boolean | `false` |
 | `empty` | `hide` or `message` | `hide` |
 
-`children` is valid only on `index.md` in the first release. Without `source`, it uses the current page's route children. With `source`, it uses the children of the referenced index page; the source page itself is not rendered. The reference must resolve to a published index page during semantic compilation. Mounted and physical children behave consistently. `view="hidden"` declares that child routes exist without displaying them at this point.
+`children` is valid only on `index.md` in the first release. Without `source`, it uses the current page's route children. With `source`, the current runtime resolves a route or note-style reference to another compiled index page and uses that page's children; the source page itself is not rendered. Compiler-authoritative directive-source resolution is not implemented yet, so authors must verify these references in the rendered site as well as with `mbsite check`. Mounted and physical children otherwise behave consistently. `view="hidden"` declares that child routes exist without displaying them at this point.
 
 ### `related`
 
@@ -252,7 +262,7 @@ Renders pages related through tags or explicit links.
 ::related{by="tags" view="cards" limit=4}
 ```
 
-Properties: `by` (`tags`, `links`, or `both`), `view`, `limit`, `show`, and `include-unlisted`. Ranking must be deterministic and is calculated by Rust.
+Properties: `by` (`tags`, `links`, or `both`, default `tags`), `view` (default `cards`; the default theme supports `list`, `grid`, and `cards`), `limit` (default `4`), `show` (default empty), and `include-unlisted` (default `false`). Ranking is deterministic and is calculated by the runtime from compiler-produced graph data.
 
 ### `backlinks`
 
@@ -262,7 +272,7 @@ Renders pages that link to the current page.
 ::backlinks{view="list" limit=10}
 ```
 
-Properties: `view` (`list` or `cards`), `limit`, `show`, and `empty`.
+Properties: `view` (`list` or `cards`, default `list`), `limit` (default unlimited), `show` (default empty), and `empty` (message string, default `Nothing links here yet.`).
 
 ### `gallery`
 
@@ -274,31 +284,31 @@ Renders a set of media assets or child pages.
 
 Properties:
 
-- `source`: `children`, `page-embeds`, or a logical folder path.
-- `view`: `grid`, `masonry`, or `carousel`.
-- `columns`: 1 through 6.
-- `fit`: `cover`, `contain`, or `natural`.
-- `captions`: boolean.
+- `source`: `children`, or a route/note reference to a compiled index page; defaults to `children`.
+- `view`: `grid`, `masonry`, or `carousel`; defaults to `grid`.
+- `columns`: 1 through 6; defaults to `3`.
+- `fit`: `cover`, `contain`, or `natural`; defaults to `cover`.
+- `captions`: boolean; defaults to `true`.
 
-`carousel` may require a small client component; the other modes should render without client JavaScript.
+The default renderer currently implements only `grid` over page children. `page-embeds`, arbitrary folders without an index page, masonry, and carousel behavior are planned.
 
 ### `include`
 
 Provides explicit control over note transclusion. Plain `![[Note]]` remains the convenient default.
 
 ```md
-::include{source="[[MamboDot#Installation]]" mode="inline" headings="shift" show-title=false}
+::include{source="[[MamboDot]]" mode="inline" headings="shift" show-title=false}
 ```
 
 Properties:
 
-- `source`: a note, heading, or block wikilink.
-- `mode`: `embed` or `inline`.
-- `headings`: `shift`, `keep`, or `strip-title`.
-- `show-title`: boolean.
-- `show-source`: boolean.
+- `source`: required note or route reference.
+- `mode`: `embed` or `inline`; defaults to `embed`.
+- `headings`: `shift`, `keep`, or `strip-title`; defaults to `keep`.
+- `show-title`: boolean; defaults to `true`.
+- `show-source`: boolean; defaults to `false`.
 
-The source must resolve during compilation. Remote URLs are not supported by `include`.
+The current runtime resolves whole-page sources from compiled content. Fragment sources produce an explicit unsupported message, and compiler-authoritative directive edges remain planned. Remote URLs are not supported by `include`.
 
 ### `button`
 
@@ -308,7 +318,7 @@ Renders a themed link while retaining link semantics.
 ::button{label="Source code" href="https://github.com/ProjectMambo/MamboSite" variant="primary" external=true}
 ```
 
-Properties: `label`, `href`, `variant` (`primary`, `secondary`, `quiet`, `card`), `external`, and optional `icon`. `card` is intended for action/contact grids while retaining link semantics. An `assets/...` href uses the compiled content-asset namespace; other internal targets follow the current runtime resolution boundary described below.
+`label` and `href` are required. `variant` accepts `primary`, `secondary`, `quiet`, or `card` and defaults to `primary`; `external` defaults to `false`; `icon` is optional. `card` is intended for action/contact grids while retaining link semantics. An `assets/...` href uses the compiled content-asset namespace; other internal targets follow the current runtime resolution boundary described below.
 
 ### `section`
 
@@ -324,9 +334,9 @@ Markdown content.
 
 Properties:
 
-- `width`: `narrow`, `normal`, `wide`, or `full`.
-- `tone`: `plain`, `subtle`, `brand`, `success`, `warning`, or `danger`.
-- `align`: `left`, `center`, or `right`.
+- `width`: `narrow`, `normal`, `wide`, or `full`; defaults to `normal`.
+- `tone`: `plain`, `subtle`, `brand`, `success`, `warning`, or `danger`; defaults to `plain`.
+- `align`: `left`, `center`, or `right`; defaults to `left`.
 - `id`: an explicit unique fragment identifier.
 
 `tone` is semantic. It does not name a fixed colour.
@@ -353,7 +363,7 @@ Right content.
 ::::
 ```
 
-`columns` accepts `count` from 2 to 4, `gap` (`small`, `normal`, `large`), and `collapse-at` (`sm`, `md`, `lg`, `never`). `count` is the number of grid tracks, not a limit on items: the container may have more direct `column` children and wraps them into later rows, but it must have at least `count`. All direct directive children must be `column`.
+`columns` requires `count` from 2 to 4. `gap` accepts `small`, `normal`, or `large` and defaults to `normal`; `collapse-at` accepts `sm`, `md`, `lg`, or `never` and defaults to `md`. `count` is the number of grid tracks, not a limit on items: the container may have more direct `column` children and wraps them into later rows, but it must have at least `count`. All direct directive children must be `column`; `column` accepts no properties.
 
 ## Current default-renderer coverage
 
@@ -362,9 +372,9 @@ The schema-1 parser and validator recognize the contracts above, but the initial
 Current limitations are:
 
 - `children` renders direct children with `list`, `grid`, `cards`, or `hidden`; recursive depth and the `tree` and `table` views remain pending.
-- `gallery` renders the grid view; masonry and carousel behavior remain pending.
+- `gallery` renders the grid view from children of the current or referenced index page; `page-embeds`, arbitrary folders, masonry, and carousel behavior remain pending.
 - Whole-page note embeds render through compiler-resolved graph edges. Heading or block fragment transclusion and structurally spliced inline includes remain pending.
-- Buttons support safe web URLs and ordinary site routes. Compiler-authoritative resolution of note-style or source-relative directive targets is planned for a later generated-schema revision.
+- `children`, `gallery`, and `include` source properties currently resolve through the runtime content store rather than compiler-authored directive edges. Buttons support safe web URLs and ordinary site routes. Compiler-authoritative resolution of note-style or source-relative directive targets is planned for a later generated-schema revision.
 
 These are renderer boundaries, not permission for themes to reinterpret the authored properties. A site override may implement a pending view through the typed component registry while keeping the same directive contract.
 

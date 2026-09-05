@@ -96,7 +96,7 @@ Responsibilities:
 
 - `mambosite-core` owns the compiler pipeline and all semantic models.
 - `mambosite-codegen-ts` converts the validated intermediate representation into deterministic TypeScript modules.
-- `mambosite-theme` validates a complete settings model and deterministically compiles CSS and TypeScript metadata.
+- `mambosite-theme` validates a complete settings model and compiles CSS and TypeScript metadata deterministically for a supplied accent seed.
 - `mambosite-cli` handles lifecycle commands, safe paths, subprocess boundaries, terminal output, and exit codes.
 - `packages/runtime` defines the generated contract and immutable graph/query API.
 - `packages/react` renders normalized nodes through a complete typed registry.
@@ -208,9 +208,9 @@ Neither Comrak nodes nor TypeScript rendering types leak across the Rust workspa
 
 The first release targets static hosting. It must not depend on cookies, server actions, request-time route handlers, ISR, runtime filesystem access, or a Node.js server.
 
-### Deterministic full builds first
+### Complete builds first
 
-The current implementation performs a complete build on every invocation. Watch mode and incremental caching come only after deterministic full builds and dependency tracking are proven correct.
+The current implementation performs a complete build on every invocation. Semantic content, routes, TypeScript modules, and copied assets remain deterministic. The CLI deliberately gives collection accents a fresh build seed; `SOURCE_DATE_EPOCH` fixes that seed when byte-reproducible theme CSS is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
 
 ### Safe defaults
 

@@ -46,7 +46,7 @@ MamboSite currently rejects:
 - Empty or duplicate routes, invalid mount sources/routes, overlapping mount paths, and physical pages inside mounted namespaces.
 - Missing or ambiguous note targets/fragments, unsafe URL schemes, and note-embed cycles or excessive depth.
 - Missing, escaping, symlinked, unsupported, or normalized-colliding content assets.
-- Invalid theme schemas/tokens and unsafe or unowned generated-output directories.
+- Invalid theme schemas/tokens—including mismatched or empty accent palettes—and unsafe or unowned generated-output directories.
 
 Current warnings are multiple H1 headings, heading-level jumps, raw HTML when disabled, and unresolved/ambiguous note references when `markdown.strict_links = false`. There is no `--deny-warnings` option yet.
 
@@ -64,7 +64,7 @@ Compilation or theme-validation errors leave existing generated trees untouched.
 
 ## Current tests
 
-Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, theme compilation, CLI parsing, init safety, build orchestration, and deploy decisions.
+Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, theme compilation and seeded accent ordering, CLI parsing, init safety, build orchestration, and deploy decisions.
 
 The npm workspace has focused Node tests for:
 
@@ -92,6 +92,6 @@ Before version 0.1 is complete, add only the fixtures needed to cover behavior t
 - Clean end-to-end MamboFolio and MamboWiki static builds, including routes, base paths, 404 output, and public files.
 - Browser checks for keyboard use, focus, heading structure, responsive layouts, contrast, and reduced motion.
 - Property/fuzz coverage for parser inputs and path/output containment.
-- A byte-for-byte repeated-build check.
+- A byte-for-byte repeated-build check with `SOURCE_DATE_EPOCH` fixed.
 
 `mbsite inspect` and CI warning escalation remain planned. Every parser, resolver, route, embed, or writer regression should receive the smallest test that reproduces it.
