@@ -537,6 +537,7 @@ mod tests {
         assert_eq!(
             fs::read_to_string(target.join("README.md")).unwrap(),
             include_str!("../../../../templates/default/README.md")
+                .replace(VERSION_PLACEHOLDER, TEMPLATE_VERSION)
         );
         assert_eq!(
             fs::read_to_string(target.join("personal.txt")).unwrap(),
