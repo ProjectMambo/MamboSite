@@ -1,10 +1,10 @@
 ---
 description: Current error model, validation coverage, tests, and remaining quality gates.
-title: Diagnostics and Testing
+title: Diagnostics and testing
 order: 70
 ---
 
-# Diagnostics and Testing
+# Diagnostics and testing
 
 ## Diagnostic model
 
@@ -82,6 +82,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 npm run check:packages
 npm run test:packages
 ./script/test_install.sh
+../MamboDocs/script/check-repository.sh --strict .
 git diff --check
 ```
 

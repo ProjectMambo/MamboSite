@@ -1,10 +1,10 @@
 ---
 description: Replaceable presentation system using MamboFolio as the initial visual reference.
-title: Theme and Components
+title: Theme and components
 order: 55
 ---
 
-# Theme and Components
+# Theme and components
 
 This document covers the default presentation contract and override boundary. Authors choosing page layouts should begin with [[Authoring Guide]]; theme implementers can use the complete contracts here.
 
@@ -99,6 +99,8 @@ npm run sync:theme:check
 ```
 
 The colour adapter calls `mbcolor <theme> css --out <dir>`, maps named MamboColour tokens into the checked-in Rust default model, and validates required tokens and contrast. The font adapter calls `mbfont compile 0.2.4 --format woff2 --out <dir>` with a fixed `SOURCE_DATE_EPOCH`, then refreshes four checked-in web fonts and their generated stylesheet. `MAMBOCOLOUR_BIN` and `MAMBOFONT_BIN` may select an alternate executable for local testing.
+
+The font command must come from MamboFont revision `62f199e3bc49f921434ff0082947441dd0fde07c`. Check out and install that exact provider revision before a theme refresh; it emits the `MamboFont-<Style>_v0.2.4.woff2` contract consumed by the adapter. The current MamboFont pilot emits `MamboFontPilot-*` files and is intentionally incompatible. Follow the pinned checkout's own setup instructions instead of substituting the current pilot command.
 
 These adapters are the dependency boundary: provider output is reviewed and committed in MamboSite, while ordinary compiler, package, MamboFolio, and MamboWiki builds use only repository-local files. A provider update never silently changes a consumer build.
 
