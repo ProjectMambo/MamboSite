@@ -4,6 +4,8 @@ title: MamboSite
 order: 70
 ---
 
+::page{layout="project" width="normal" sidebar=true}
+
 # MamboSite
 
 MamboSite is a Markdown-first static site compiler for Project Mambo. It reads a clean repository-local `docs/` tree, uses Rust for parsing and validation, emits typed TypeScript modules and theme CSS, and produces a static Next.js export for deployment to GitHub Pages.
@@ -16,22 +18,14 @@ The initial compiler, React runtime, default theme, Next.js adapter, and `check`
 
 ## Author content
 
-- [[Authoring Guide]] — start here to create or expand a site, including copy-ready page patterns and an agent checklist.
-- [[Content Model]] — repository structure, page forms, routing, mounts, frontmatter, and navigation.
-- [[Markdown and Directives]] — supported Markdown and the page-component language.
-- [[Theme and Components]] — layouts, responsive behavior, design tokens, and component overrides.
+::children{include=["[[Authoring Guide]]","[[Content Model]]","[[Markdown and Directives]]","[[Theme and Components]]"] view="list" sort="order" direction="asc" show=["title","description"]}
 
 ## Configure and operate a site
 
-- [[Build and Deployment]] — configuration, compilation, static export, local preview, and GitHub Pages.
-- [[Diagnostics and Testing]] — validation, error reporting, fixtures, and quality gates.
-- [[Documentation Sync]] — Project Mambo's optional Obsidian-to-repository export workflow.
+::children{include=["[[Build and Deployment]]","[[Diagnostics and Testing]]","[[Documentation Sync]]"] view="list" sort="order" direction="asc" show=["title","description"]}
 
 ## Understand and extend MamboSite
 
-- [[Architecture]] — system boundaries, repositories, packages, and build stages.
-- [[Parsing and Resolution]] — Rust parsing pipeline, links, embeds, and assets.
-- [[TypeScript Output]] — generated module and runtime contracts.
-- [[Roadmap]] — current status, remaining phases, non-goals, and unresolved decisions.
+::children{include=["[[Architecture]]","[[Parsing and Resolution]]","[[TypeScript Output]]","[[Roadmap]]"] view="list" sort="order" direction="asc" show=["title","description"]}
 
 The current milestone covers the MamboFolio and MamboWiki integrations, including validated content-asset publication. Fragment transclusion, advanced collection/gallery views, search, and package publication remain planned.

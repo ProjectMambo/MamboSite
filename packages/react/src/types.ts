@@ -77,6 +77,7 @@ export interface TimestampDirectiveConfig {
 
 export interface ChildrenDirectiveConfig {
   readonly source?: string;
+  readonly include: readonly string[];
   readonly view: "list" | "grid" | "cards" | "tree" | "table" | "hidden";
   readonly depth: number;
   readonly sort: "order" | "title" | "date" | "updated" | "path";

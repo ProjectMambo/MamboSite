@@ -1,10 +1,10 @@
 ---
 description: Generated module schema and the boundary between Rust and the web runtime.
-title: TypeScript Output
+title: TypeScript output
 order: 50
 ---
 
-# TypeScript Output
+# TypeScript output
 
 ## Purpose
 

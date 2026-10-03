@@ -26,8 +26,8 @@ Project Mambo sites need one predictable path from reviewable Markdown to a vali
 | Goal | First document |
 |---|---|
 | Read the canonical Wiki documentation | [projectmambo.org/mambosite/](https://projectmambo.org/mambosite/) |
-| Create or expand Markdown pages | [Authoring Guide](docs/Authoring%20Guide.md) |
-| Configure, build, or deploy a site | [Build and Deployment](docs/Build%20and%20Deployment.md) |
+| Create or expand Markdown pages | [Authoring guide](docs/Authoring%20Guide.md) |
+| Configure, build, or deploy a site | [Build and deployment](docs/Build%20and%20Deployment.md) |
 | Understand or extend MamboSite itself | [Architecture](docs/Architecture.md) |
 
 ### Goals
@@ -59,22 +59,22 @@ The compiler, React rendering engine, default components, theme contract, and st
 
 Author content:
 
-- [Authoring Guide](docs/Authoring%20Guide.md) — end-to-end workflow and copy-ready page patterns.
-- [Content Model](docs/Content%20Model.md) — file hierarchy, routes, mounts, and frontmatter.
-- [Markdown and Directives](docs/Markdown%20and%20Directives.md) — syntax and component reference.
-- [Theme and Components](docs/Theme%20and%20Components.md) — layouts, responsive behavior, tokens, and overrides.
+- [Authoring guide](docs/Authoring%20Guide.md) — end-to-end workflow and copy-ready page patterns.
+- [Content model](docs/Content%20Model.md) — file hierarchy, routes, mounts, and frontmatter.
+- [Markdown and directives](docs/Markdown%20and%20Directives.md) — syntax and component reference.
+- [Theme and components](docs/Theme%20and%20Components.md) — layouts, responsive behavior, tokens, and overrides.
 
-Operate a site:
+Configure and operate a site:
 
-- [Build and Deployment](docs/Build%20and%20Deployment.md) — commands, static export, and GitHub Pages.
-- [Diagnostics and Testing](docs/Diagnostics%20and%20Testing.md) — validation and quality gates.
-- [Documentation Sync](docs/Documentation%20Sync.md) — optional Project Mambo authoring workflow.
+- [Build and deployment](docs/Build%20and%20Deployment.md) — commands, static export, and GitHub Pages.
+- [Diagnostics and testing](docs/Diagnostics%20and%20Testing.md) — validation and quality gates.
+- [Documentation sync](docs/Documentation%20Sync.md) — optional Project Mambo authoring workflow.
 
-Extend MamboSite:
+Understand and extend MamboSite:
 
 - [Architecture](docs/Architecture.md)
-- [Parsing and Resolution](docs/Parsing%20and%20Resolution.md)
-- [TypeScript Output](docs/TypeScript%20Output.md)
+- [Parsing and resolution](docs/Parsing%20and%20Resolution.md)
+- [TypeScript output](docs/TypeScript%20Output.md)
 - [Roadmap](docs/Roadmap.md)
 
 ## Status
@@ -123,7 +123,7 @@ Create a scaffold in an empty directory:
 mbsite init my-site
 ```
 
-The scaffold keeps authored pages in `docs/`, site settings in `mambo.toml`, and design tokens in `mambo.theme.toml`. It substitutes the creating compiler's version into its MamboSite package and source-tag pins; until the npm packages are published, point them at the sibling checkout described above before installing dependencies. See the [Authoring Guide](docs/Authoring%20Guide.md) for page patterns and the [Build and Deployment guide](docs/Build%20and%20Deployment.md) for the complete operating model.
+The scaffold keeps authored pages in `docs/`, site settings in `mambo.toml`, and design tokens in `mambo.theme.toml`. It substitutes the creating compiler's version into its MamboSite package and source-tag pins; until the npm packages are published, point them at the sibling checkout described above before installing dependencies. See the [Authoring guide](docs/Authoring%20Guide.md) for page patterns and the [Build and deployment guide](docs/Build%20and%20Deployment.md) for the complete operating model.
 
 ### Command line
 
@@ -160,7 +160,7 @@ npm run deploy
 
 ## Documentation
 
-The [Authoring Guide](docs/Authoring%20Guide.md) covers page patterns, [Build and Deployment](docs/Build%20and%20Deployment.md) covers site operation, [Diagnostics and Testing](docs/Diagnostics%20and%20Testing.md) defines the quality gates, and [Architecture](docs/Architecture.md) explains the compiler and runtime boundary. The documentation map above links the complete guide set.
+The [Authoring guide](docs/Authoring%20Guide.md) covers page patterns, [Build and deployment](docs/Build%20and%20Deployment.md) covers site operation, [Diagnostics and testing](docs/Diagnostics%20and%20Testing.md) defines the quality gates, and [Architecture](docs/Architecture.md) explains the compiler and runtime boundary. The documentation map above links the complete guide set.
 
 ## Project structure
 
@@ -203,7 +203,7 @@ Run a local deployment check without fetching, pushing, or dispatching:
 mbsite deploy --dry-run
 ```
 
-Before the first deployment, set the repository's Pages source to **GitHub Actions**, commit the generated workflow, and match `site.url` and `site.base_path` in `mambo.toml` to the public URL. The complete one-time setup and CI contract live in [Build and Deployment](docs/Build%20and%20Deployment.md).
+Before the first deployment, set the repository's Pages source to **GitHub Actions**, commit the generated workflow, and match `site.url` and `site.base_path` in `mambo.toml` to the public URL. The complete one-time setup and CI contract live in [Build and deployment](docs/Build%20and%20Deployment.md).
 
 ### Technology direction
 

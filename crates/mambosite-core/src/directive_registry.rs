@@ -538,6 +538,7 @@ const TIMESTAMP: &[PropertyRule] = &[
 
 const CHILDREN: &[PropertyRule] = &[
     property("source", STRING),
+    property("include", STRING_ARRAY),
     defaulted(
         "view",
         ValueRule::Enumeration(&["list", "grid", "cards", "tree", "table", "hidden"]),
@@ -1013,7 +1014,8 @@ mod tests {
 
     #[test]
     fn accepts_an_explicit_children_source() {
-        let source = "::children{source=\"/project/\" view=\"grid\" limit=3}";
+        let source =
+            "::children{source=\"/project/\" include=[\"Alpha\",\"Beta\"] view=\"grid\" limit=3}";
         let root = document(vec![leaf(source)]);
         let outcome = validate(&root, source, true);
 
@@ -1021,6 +1023,13 @@ mod tests {
         assert_eq!(
             outcome.directives[0].properties["source"],
             DirectiveValue::String("/project/".into())
+        );
+        assert_eq!(
+            outcome.directives[0].properties["include"],
+            DirectiveValue::Array(vec![
+                DirectiveScalar::String("Alpha".into()),
+                DirectiveScalar::String("Beta".into()),
+            ])
         );
     }
 

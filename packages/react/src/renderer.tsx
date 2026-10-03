@@ -448,10 +448,23 @@ function childrenModel(
   page: PageRecord,
   config: ChildrenDirectiveConfig,
 ) {
-  const available = runtime.store.childPages(page, config.source).filter(
+  const owner = config.source && config.source !== "children"
+    ? runtime.store.resolvePageReference(config.source, page)
+    : page;
+  let available = owner ? runtime.store.childPages(owner) : [];
+  if (owner && config.include.length > 0) {
+    const included = new Set(
+      config.include.flatMap((reference) => {
+        const target = runtime.store.resolvePageReference(reference, owner);
+        return target ? [target.id] : [];
+      }),
+    );
+    available = available.filter((child) => included.has(child.id));
+  }
+  const visible = available.filter(
     (child) => child.listed || config.includeUnlisted,
   );
-  const sorted = runtime.store.sortPages(available, config.sort, config.direction);
+  const sorted = runtime.store.sortPages(visible, config.sort, config.direction);
   const items = config.limit === undefined ? sorted : sorted.slice(0, config.limit);
   return {
     items,

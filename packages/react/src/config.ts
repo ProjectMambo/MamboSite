@@ -71,6 +71,7 @@ function configByName(
       const limit = optionalPositiveNumber(properties, "limit");
       return {
         ...(source ? { source } : {}),
+        include: stringArrayProperty(properties, "include"),
         view: stringProperty(properties, "view", "list") as DirectiveConfigMap["children"]["view"],
         depth: numberProperty(properties, "depth", 1),
         sort: stringProperty(properties, "sort", "order") as DirectiveConfigMap["children"]["sort"],

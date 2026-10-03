@@ -1,10 +1,10 @@
 ---
 description: Project Mambo's optional Obsidian-to-repository documentation workflow.
-title: Documentation Sync
+title: Documentation sync
 order: 25
 ---
 
-# Documentation Sync
+# Documentation sync
 
 ## Scope
 

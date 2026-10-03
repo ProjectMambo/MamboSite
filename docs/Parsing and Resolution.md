@@ -1,10 +1,10 @@
 ---
 description: Rust parsing pipeline and rules for links, embeds, headings, and assets.
-title: Parsing and Resolution
+title: Parsing and resolution
 order: 40
 ---
 
-# Parsing and Resolution
+# Parsing and resolution
 
 ## Input guarantees
 

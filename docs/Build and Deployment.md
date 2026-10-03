@@ -1,10 +1,10 @@
 ---
 description: Repository-local content, Rust compilation, Next.js static generation, and GitHub Pages deployment.
-title: Build and Deployment
+title: Build and deployment
 order: 60
 ---
 
-# Build and Deployment
+# Build and deployment
 
 ## End-to-end flow
 

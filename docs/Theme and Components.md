@@ -211,7 +211,7 @@ columns        -> Columns
 column         -> Column
 ```
 
-`children view="grid"` renders ordinary page-preview cards. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. This remains a semantic page collection, so it cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button variant="card"` directives instead. The buttons remain links, fill their cells, and cycle through the same positional accent borders as content cards.
+`children view="list"` renders full-width page-preview cards. `children view="grid"` arranges those previews in a multi-column grid. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. These remain semantic page collections, so they cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button variant="card"` directives instead. The buttons remain links, fill their cells, and cycle through the same positional accent borders as content cards.
 
 The default package currently renders direct child list/grid/card views and grid galleries. Tree/table child views, nested child depth, masonry/carousel galleries, and fragment includes show an explicit unsupported-mode message. A registry override may implement those contracts sooner.
 

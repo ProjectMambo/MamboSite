@@ -1,10 +1,10 @@
 ---
 description: End-to-end rules and copy-ready patterns for writing MamboSite content.
-title: Authoring Guide
+title: Authoring guide
 order: 5
 ---
 
-# Authoring Guide
+# Authoring guide
 
 This is the starting point for a person or agent creating MamboSite pages. It covers the decisions needed to produce valid content without knowing the Rust compiler or React runtime. [[Content Model]] and [[Markdown and Directives]] remain the normative references when a rule needs more detail.
 
@@ -117,6 +117,20 @@ description: Projects in this collection.
 ```
 
 Each child controls its position with `order`, whether it is included with `listed`, and its preview image with `cover`.
+
+Use multiple collections when one flat child set serves distinct reader tasks. Put a heading before each collection and select each section's direct children with note-style `include` references; an omitted or empty `include` keeps every child:
+
+```md
+## Start here
+
+::children{include=["[[Installation]]","[[Configuration]]"] view="list" sort="order" direction="asc" show=["title","description"]}
+
+## Maintain the project
+
+::children{include=["[[Developer Guide]]","[[Release Process]]"] view="list" sort="order" direction="asc" show=["title","description"]}
+```
+
+Keep each child in one section. Use `view="list"` for full-width preview cards, `view="grid"` for a multi-column preview grid, or `view="cards"` for compact title cards.
 
 ### Project page
 

@@ -1,10 +1,10 @@
 ---
 description: Rules for repository content roots, pages, routes, mounts, and metadata.
-title: Content Model
+title: Content model
 order: 20
 ---
 
-# Content Model
+# Content model
 
 This document is the normative schema-1 content contract. For a page-form decision table and complete copy-ready examples, start with [[Authoring Guide]].
 

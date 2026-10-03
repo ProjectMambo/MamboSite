@@ -1,10 +1,10 @@
 ---
 description: Authoring syntax and component directive contract for MamboSite pages.
-title: Markdown and Directives
+title: Markdown and directives
 order: 30
 ---
 
-# Markdown and Directives
+# Markdown and directives
 
 This is the normative schema-1 syntax reference. Start with [[Authoring Guide]] when choosing a page pattern, then use this document to verify exact properties and current renderer limits.
 
@@ -271,6 +271,7 @@ Properties:
 | Property | Values | Default |
 |---|---|---|
 | `source` | index-page route or note reference | current page |
+| `include` | array of direct-child page references | all children |
 | `view` | `list`, `grid`, `cards`, `tree`, `table`, `hidden` | `list` |
 | `depth` | positive integer or `-1` for all | `1` |
 | `sort` | `order`, `title`, `date`, `updated`, `path` | `order` |
@@ -281,7 +282,9 @@ Properties:
 | `include-unlisted` | boolean | `false` |
 | `empty` | `hide` or `message` | `hide` |
 
-`children` is valid only on `index.md` in the first release. Without `source`, it uses the current page's route children. With `source`, the current runtime resolves a route or note-style reference to another compiled index page and uses that page's children; the source page itself is not rendered. Compiler-authoritative directive-source resolution is not implemented yet, so authors must verify these references in the rendered site as well as with `mbsite check`. Mounted and physical children otherwise behave consistently. `view="hidden"` declares that child routes exist without displaying them at this point.
+`children` is valid only on `index.md` in the first release. Without `source`, it uses the current page's route children. With `source`, the current runtime resolves a route or note-style reference to another compiled index page and uses that page's children; the source page itself is not rendered. `include` resolves each page reference relative to that selected index and keeps only matching direct children. An omitted or empty `include` keeps every child. This lets one flat index place disjoint child collections beneath separate headings without changing routes.
+
+Compiler-authoritative directive-reference resolution is not implemented yet, so authors must verify `source` and `include` references in the rendered site as well as with `mbsite check`. Mounted and physical children otherwise behave consistently. `view="hidden"` declares that child routes exist without displaying them at this point.
 
 ### `related`
 

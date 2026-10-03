@@ -311,6 +311,79 @@ test("collection markup exposes requested columns without overriding responsive 
   assert.doesNotMatch(cards, /Card description/);
 });
 
+test("children include references render disjoint sections from the selected source", () => {
+  const firstSpan = sourceSpan(1, 0, 58);
+  const secondSpan = sourceSpan(2, 59, 116);
+  const childDirective = (span, include) => ({
+    record: {
+      name: "children",
+      form: "leaf",
+      properties: {
+        source: { type: "string", value: "/guide/" },
+        include: {
+          type: "array",
+          value: include.map((value) => ({ type: "string", value })),
+        },
+        view: { type: "string", value: "list" },
+      },
+      span,
+    },
+    node: {
+      type: "directive",
+      invocation: {
+        name: "children",
+        form: "leaf",
+        properties: [],
+        span: { start: span.startByte, end: span.endByte },
+        nameSpan: { start: span.startByte + 2, end: span.startByte + 10 },
+        raw: "::children{}",
+      },
+      span,
+    },
+  });
+  const first = childDirective(firstSpan, ["Alpha"]);
+  const second = childDirective(secondSpan, ["Beta"]);
+  const alpha = compiledPage({
+    id: "p_alpha",
+    route: "/guide/alpha/",
+    sourcePath: "guide/Alpha.md",
+    title: "Alpha page",
+  });
+  const beta = compiledPage({
+    id: "p_beta",
+    route: "/guide/beta/",
+    sourcePath: "guide/Beta.md",
+    title: "Beta page",
+  });
+  const gamma = compiledPage({
+    id: "p_gamma",
+    route: "/guide/gamma/",
+    sourcePath: "guide/Gamma.md",
+    title: "Gamma page",
+  });
+  const guide = compiledPage({
+    id: "p_guide",
+    route: "/guide/",
+    sourcePath: "guide/index.md",
+    title: "Guide",
+    children: [alpha.id, beta.id, gamma.id],
+  });
+  const home = compiledPage({
+    id: "p_home",
+    route: "/",
+    sourcePath: "index.md",
+    title: "Home",
+    children: [guide.id],
+    directives: [first.record, second.record],
+    body: { type: "document", children: [first.node, second.node] },
+  });
+
+  const html = renderCompiledPage(home, [home, guide, alpha, beta, gamma]);
+  assert.equal(html.match(/Alpha page/g)?.length, 1);
+  assert.equal(html.match(/Beta page/g)?.length, 1);
+  assert.doesNotMatch(html, /Gamma page/);
+});
+
 test("a hero hides the generated title only when its validated show-title is true", () => {
   const directiveSpan = sourceSpan(2, 10, 19);
   const page = compiledPage({
