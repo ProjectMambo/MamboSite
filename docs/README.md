@@ -17,7 +17,11 @@ MamboSite is a Markdown-first static site platform for Project Mambo. It reads r
 
 MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonical documentation in an Obsidian vault and exports it with a separate `sync-docs` workflow; other users may maintain `docs/` directly or provide their own synchronization process.
 
-## Start here
+## Motivation
+
+Project Mambo sites need one predictable path from reviewable Markdown to a validated static artifact. MamboSite keeps content portable, catches route and reference errors before rendering, and centralizes the shared web runtime without tying authors to a particular editor.
+
+### Start here
 
 | Goal | First document |
 |---|---|
@@ -26,7 +30,7 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 | Configure, build, or deploy a site | [Build and Deployment](Build%20and%20Deployment.md) |
 | Understand or extend MamboSite itself | [Architecture](Architecture.md) |
 
-## Goals
+### Goals
 
 - Keep Markdown as the source of truth without requiring a particular editor.
 - Accept a predictable, self-contained `docs/` tree inside each consuming repository.
@@ -38,7 +42,7 @@ MamboSite is authoring-tool agnostic. Project Mambo happens to maintain canonica
 - Validate routes, note links, note embeds, and component directives before the web build starts.
 - Produce a fully static Next.js export suitable for GitHub Pages.
 
-## Pipeline
+### Pipeline
 
 ```text
 repository docs/
@@ -51,7 +55,7 @@ repository docs/
 
 The compiler, React rendering engine, default components, theme contract, and static-framework adapter are maintained together in MamboSite. A website repository owns only its content, `mambo.toml`, optional `mambo.theme.toml`, and optional typed component overrides.
 
-## Documentation map
+### Documentation map
 
 Author content:
 
@@ -79,7 +83,14 @@ The initial end-to-end platform is implemented. The Rust compiler discovers and 
 
 `mbsite check`, `build`, `init`, and `deploy` cover the repository lifecycle. The current milestone supports the MamboFolio and MamboWiki integrations, including validated content-asset publication. Fragment transclusion, tree/table collections, masonry/carousel galleries, and search remain planned.
 
-## Local setup
+## User stories
+
+- As an author, I can keep content in Markdown and receive actionable errors for invalid routes, links, embeds, assets, or directives.
+- As a site owner, I can compose canonical documentation at stable routes and export a self-contained static site.
+- As a theme maintainer, I can update reviewed provider assets without making ordinary consumer builds depend on provider checkouts.
+- As a framework maintainer, I can evolve the compiler, runtime, components, and adapter behind explicit version pins.
+
+## Getting started
 
 ### Prerequisites
 
@@ -102,9 +113,9 @@ The installer links `mbsite` and the compatibility alias `mambosite` into `/usr/
 
 Until the first packages are published, a consuming site can use `file:../MamboSite/packages/...` dependencies. Keep MamboSite and the site repository as siblings, install both dependency trees, and rebuild the shared packages after changing MamboSite.
 
-Updating the checked-in Project Mambo default theme is a maintainer task. Install the MamboColour and MamboFont commands, including MamboFont's Inkscape, XMLStarlet, and FontForge dependencies, then run `npm run sync:theme`. Ordinary package, site, and CI builds consume the reviewed generated files and do not require either provider checkout.
+Updating the checked-in Project Mambo default theme is a maintainer task. Install the MamboColour command and install `mbfont` from the exact compatible MamboFont provider revision `62f199e3bc49f921434ff0082947441dd0fde07c`, which emits the expected `MamboFont-<Style>_v0.2.4.woff2` files. The current MamboFont pilot emits `MamboFontPilot-*` artifacts and cannot replace that pinned provider. Then run `npm run sync:theme`. Ordinary package, site, and CI builds consume the reviewed generated files and do not require either provider checkout.
 
-## Using MamboSite
+## Usage
 
 Create a scaffold in an empty directory:
 
@@ -147,7 +158,42 @@ npm run deploy
 
 `npm run dev` regenerates content and theme output before starting Next.js. `npm run build` delegates to one complete `mbsite build`, including the configured static renderer, and produces the configured output directory.
 
-## Deployment
+## Documentation
+
+The [Authoring Guide](Authoring%20Guide.md) covers page patterns, [Build and Deployment](Build%20and%20Deployment.md) covers site operation, [Diagnostics and Testing](Diagnostics%20and%20Testing.md) defines the quality gates, and [Architecture](Architecture.md) explains the compiler and runtime boundary. The documentation map above links the complete guide set.
+
+## Project structure
+
+```text
+crates/               Rust compiler, theme, and CLI workspaces
+packages/             versioned runtime, React, theme, and Next.js packages
+script/               command wrapper, installer, and provider adapters
+docs/                 synchronized public and maintainer documentation
+templates/            files emitted by mbsite init
+```
+
+## Validation
+
+Run the complete repository gate:
+
+```bash
+cargo fmt --all -- --check
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+npm run check:packages
+npm run test:packages
+./script/test_install.sh
+../MamboDocs/script/check-repository.sh --strict .
+git diff --check
+```
+
+Maintainers changing the bundled default theme also run `npm run sync:theme:check` with the pinned provider revisions documented above.
+
+## Development
+
+Keep Markdown semantics in the compiler and presentation behind typed runtime contracts. Add the smallest regression test that demonstrates a parser, resolver, writer, adapter, or component behavior change, and update the relevant canonical guide in `notes/Docs/Projects/MamboSite/`.
+
+### Deployment
 
 `mbsite deploy` requires a clean deployment branch and never creates a commit. It runs a complete local build, pushes committed work when the branch is ahead, and otherwise dispatches the configured GitHub Pages workflow for the current commit.
 
@@ -159,7 +205,7 @@ mbsite deploy --dry-run
 
 Before the first deployment, set the repository's Pages source to **GitHub Actions**, commit the generated workflow, and match `site.url` and `site.base_path` in `mambo.toml` to the public URL. The complete one-time setup and CI contract live in [Build and Deployment](Build%20and%20Deployment.md).
 
-## Technology direction
+### Technology direction
 
 - Rust for discovery, parsing, resolution, validation, and TypeScript generation.
 - [Comrak](https://github.com/kivikakk/comrak) as the initial CommonMark/GFM AST parser.
