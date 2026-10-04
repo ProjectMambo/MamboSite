@@ -285,6 +285,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
+name = "mambocolour"
+version = "0.1.0"
+source = "git+https://github.com/ProjectMambo/MamboColour?rev=1c6f928991b3c15f740aa5d5754344ab086e2399#1c6f928991b3c15f740aa5d5754344ab086e2399"
+
+[[package]]
 name = "mambosite-cli"
 version = "0.1.2"
 dependencies = [
@@ -327,6 +332,7 @@ dependencies = [
 name = "mambosite-theme"
 version = "0.1.2"
 dependencies = [
+ "mambocolour",
  "serde",
  "serde_json",
  "tempfile",

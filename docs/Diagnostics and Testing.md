@@ -64,13 +64,13 @@ Compilation or theme-validation errors leave existing generated trees untouched.
 
 ## Current tests
 
-Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, footer context, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, build timestamps, theme compilation and seeded accent ordering, CLI parsing, init safety, build orchestration, and deploy decisions.
+Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, footer context, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, build timestamps, MamboColour role mapping, paired seeded default accents, explicit custom-accent provenance and shuffle behavior, absence of private palette/file coupling, CLI parsing, init safety, build orchestration, and deploy decisions.
 
 The npm workspace has focused Node tests for:
 
 - Generated schema compatibility and immutable content-store queries.
 - Typed registry composition and rendering.
-- Default-theme rendering, static timezone timestamps, footer content, and unsupported-mode behavior.
+- Default-theme rendering, card top-accent borders, static timezone timestamps, footer content, and unsupported-mode behavior.
 - Next.js route, metadata, base-path, image, and theme-bootstrap adapters.
 
 Run the current gates with:
@@ -86,7 +86,7 @@ npm run test:packages
 git diff --check
 ```
 
-Maintainers changing the bundled Project Mambo theme also run `npm run sync:theme:check`. That check invokes the installed MamboColour and MamboFont provider commands and fails when the checked-in colour model, web fonts, or font stylesheet are stale; ordinary source and website builds do not require those providers.
+Maintainers changing bundled MamboFont assets also run `npm run sync:theme:check`. That command invokes only the pinned MamboFont provider and fails when the checked-in web fonts or stylesheet are stale. MamboColour is an ordinary pinned Cargo dependency; its compatibility boundary is exercised by the Rust theme and workspace tests rather than an asset-sync command.
 
 ## Remaining release tests
 

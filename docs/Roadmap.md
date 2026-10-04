@@ -18,7 +18,7 @@ The repository has passed the compiler-skeleton milestone and now contains an in
 | Page, link, embed, backlink, mount, route, and asset resolution | Implemented for note references and explicit `assets/...` paths; directive target edges and fragment transclusion remain incomplete                                    |
 | Generated output                                               | Page modules and binary assets are deterministic; manifest build time and theme CSS are reproducible with `SOURCE_DATE_EPOCH`; every managed tree is atomically published |
 | React runtime                                                  | Versioned runtime, React registry, default theme, and Next adapter are implemented for current MamboFolio and MamboWiki content                                        |
-| Theme settings                                                 | Rust-validated overrides compile to generated CSS and typed metadata; the default model and package are refreshed through MamboColour and MamboFont provider commands    |
+| Theme settings                                                 | Rust-validated overrides compile to generated CSS and typed metadata; defaults consume the pinned MamboColour Rust API, while bundled MamboFont assets retain a maintainer sync command |
 | Lifecycle commands                                             | `check`, full or content-only `build`, safe `init`, and guarded GitHub Pages `deploy` are implemented                                                                  |
 | Site migrations                                                | MamboFolio and MamboWiki build and export locally; clean-CI deployment remains acceptance work                                                                        |
 
@@ -83,7 +83,7 @@ Deliverable: Rust-generated TypeScript representing complete fixture sites witho
 - Implement semantic content-node rendering.
 - Implement the core directive registry.
 - Build page layouts and site override registry.
-- Maintain checked-in MamboColour tokens and bundled MamboFont assets through their public provider commands.
+- Maintain semantic defaults through MamboColour's pinned public Rust API and bundled MamboFont assets through its public provider command.
 - Adapt MamboFolio's bordered cards, grid/list collections, canvas treatment, metadata, navigation, and TOC into cleaner reusable components.
 - Build a documentation-oriented MamboWiki layout from the same node contract.
 
@@ -131,7 +131,7 @@ MamboSite only consumes the resulting repository tree. The compiler does not own
 - Rust emits schema-valid TypeScript with no runtime Markdown parser.
 - The runtime presents an initial MamboFolio-inspired theme and a usable Wiki layout.
 - Both sites deploy successfully through GitHub Actions to GitHub Pages.
-- A clean repeated build with a fixed `SOURCE_DATE_EPOCH` is byte-deterministic; without it, the manifest timestamp changes and the generated collection-accent order may reroll.
+- A clean repeated build with a fixed `SOURCE_DATE_EPOCH` is byte-deterministic; without it, the manifest timestamp changes and provider-managed accent values are reselected or site-owned custom accent slots are reshuffled.
 
 ## Explicit non-goals for version 0.1
 

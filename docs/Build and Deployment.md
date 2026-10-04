@@ -109,7 +109,7 @@ Runs the complete repository-local build:
 
 ### `mbsite init [path]`
 
-Creates the default site in an empty or Git-only directory. The scaffold includes content, configuration, a complete `mambo.theme.toml`, the framework adapter, package scripts, and a GitHub Pages workflow.
+Creates the default site in an empty or Git-only directory. The scaffold includes content, configuration, a human-editable `mambo.theme.toml`, the framework adapter, package scripts, and a GitHub Pages workflow. The generated theme file intentionally omits both accent arrays so the default remains provider-managed; adding either array makes both resolved schemes site-owned custom accents.
 
 Initialization never recursively cleans an unknown directory. `--force` refreshes only paths recorded as scaffold-owned and preserves unknown files; it still refuses an arbitrary non-scaffold directory. Initialization does not access the network or install dependencies. Run the chosen package manager explicitly and commit its lockfile before using the generated deployment workflow.
 
@@ -260,7 +260,7 @@ A repository may temporarily commit generated output for migration, but CI must 
 
 A production build must not require network access after dependencies are installed. The compiler does not fetch remote images, validate external links, or read Git metadata for page dates. Each output-producing CLI build records one current Unix timestamp in the generated manifest so `::timestamp` can render the build instant; page modules, asset names, and routes do not depend on it.
 
-Content data, routes, copied assets, and generated page modules remain deterministic. An ordinary output-producing `mbsite build` records the current build time in `manifest.ts` and deliberately chooses a fresh collection-accent seed, so those two outputs may change. Set `SOURCE_DATE_EPOCH` to a supported non-negative Unix timestamp when the complete output must be byte-reproducible; it fixes both the manifest timestamp and theme seed, while an invalid or out-of-range value fails the build.
+Content data, routes, copied assets, and generated page modules remain deterministic. An ordinary output-producing `mbsite build` records the current build time in `manifest.ts` and deliberately chooses a fresh collection-accent seed. For provider-managed defaults, that seed selects six paired light/dark MamboColour values through `random_seeded()`; for explicit custom arrays, it controls MamboSite's card-slot shuffle without changing the arrays themselves. Set `SOURCE_DATE_EPOCH` to a supported non-negative Unix timestamp when the complete output must be byte-reproducible; it fixes both the manifest timestamp and theme seed, while an invalid or out-of-range value fails the build.
 
 Future build information may also record compiler and schema versions, but it must not affect page modules, asset names, or route output.
 

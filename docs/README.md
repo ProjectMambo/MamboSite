@@ -48,7 +48,7 @@ Project Mambo sites need one predictable path from reviewable Markdown to a vali
 repository docs/
     -> MamboSite Rust compiler
     -> generated TypeScript + compiled theme/content assets
-    -> versioned React runtime + MamboColour/MamboFont-backed default theme
+    -> versioned React runtime + MamboColour API/MamboFont asset-backed default theme
     -> static web build
     -> GitHub Pages
 ```
@@ -87,7 +87,7 @@ The initial end-to-end platform is implemented. The Rust compiler discovers and 
 
 - As an author, I can keep content in Markdown and receive actionable errors for invalid routes, links, embeds, assets, or directives.
 - As a site owner, I can compose canonical documentation at stable routes and export a self-contained static site.
-- As a theme maintainer, I can update reviewed provider assets without making ordinary consumer builds depend on provider checkouts.
+- As a theme maintainer, I can update the pinned MamboColour API and reviewed MamboFont assets through explicit provider boundaries.
 - As a framework maintainer, I can evolve the compiler, runtime, components, and adapter behind explicit version pins.
 
 ## Getting started
@@ -113,7 +113,27 @@ The installer links `mbsite` and the compatibility alias `mambosite` into `/usr/
 
 Until the first packages are published, a consuming site can use `file:../MamboSite/packages/...` dependencies. Keep MamboSite and the site repository as siblings, install both dependency trees, and rebuild the shared packages after changing MamboSite.
 
-Updating the checked-in Project Mambo default theme is a maintainer task. Install the MamboColour command and install `mbfont` from the exact compatible MamboFont provider revision `62f199e3bc49f921434ff0082947441dd0fde07c`, which emits the expected `MamboFont-<Style>_v0.2.4.woff2` files. The current MamboFont pilot emits `MamboFontPilot-*` artifacts and cannot replace that pinned provider. Then run `npm run sync:theme`. Ordinary package, site, and CI builds consume the reviewed generated files and do not require either provider checkout.
+The Rust workspace fetches the exact MamboColour revision declared in `Cargo.toml` and locked in `Cargo.lock`. MamboColour embeds its four CSV palettes in the provider crate, so ordinary Rust builds use its typed role and seeded-random APIs without installing another command or materializing provider values into MamboSite source files.
+
+Updating the bundled MamboFont files is a maintainer task. Install `mbfont` from exact provider revision `62f199e3bc49f921434ff0082947441dd0fde07c`, which emits the expected `MamboFont-<Style>_v0.2.4.woff2` files, then run `npm run sync:theme`. The current MamboFont pilot emits `MamboFontPilot-*` artifacts and cannot replace that pinned provider. Ordinary package, site, and CI builds consume the committed fonts and stylesheet without requiring MamboFont.
+
+## Dependencies
+
+The ecosystem manifests are the authoritative direct-package inventories: Rust requirements and the MamboColour Git pin live in `Cargo.toml` and `Cargo.lock`; Node requirements and peer ranges live in the root/package `package.json` files and `package-lock.json`. Transitive packages are recorded by the lockfiles rather than repeated here.
+
+| Dependency | Classification | Purpose | Provider, version pin, or source | Scope | Update path |
+|---|---|---|---|---|---|
+| Rust toolchain | Tool | Compile, format, test, and lint the Rust workspace | Rust `1.95.0` with `rustfmt` and Clippy is pinned in `rust-toolchain.toml`; crates declare minimum Rust `1.85` | Build/test for the compiler, CLI, and Rust libraries | Update the toolchain and `rust-version` deliberately, then run all Cargo gates |
+| Direct Rust crates | Packages | Provide CLI parsing, Markdown, serialization, YAML/TOML, diagnostics, Unicode normalization, and safe temporary output | Version ranges in the workspace/crate `Cargo.toml` files; exact resolution in `Cargo.lock` | Build/runtime for the Rust workspace | Update manifests and lockfile together; run format, workspace tests, and Clippy |
+| [MamboColour](https://github.com/ProjectMambo/MamboColour) | Package and sibling repository | Supply stable UI roles and paired seeded accent selection to `mambosite-theme` | Repository revision `1c6f928991b3c15f740aa5d5754344ab086e2399`, pinned in `Cargo.toml` and `Cargo.lock` | Ordinary Rust builds; provider CSV is embedded in the compiled dependency, with no provider command or runtime file access | Change the manifest revision, refresh `Cargo.lock`, inspect provider compatibility, and run the theme plus full workspace tests |
+| Node.js, npm, and direct JavaScript packages | Platform, tool, and packages | Build and test the TypeScript runtime, React registry, default theme, and Next.js adapter | Node.js `20` or later; direct versions/ranges in `package.json` files and exact development resolution in `package-lock.json` | Build/runtime for the npm workspace and consuming static sites | Update manifests and lockfile; run `npm run check:packages` and `npm run test:packages` |
+| [MamboFont](https://github.com/ProjectMambo/MamboFont) `mbfont` | Tool and sibling repository | Regenerate the four bundled WOFF2 faces and `mambofont.css` | Repository revision `62f199e3bc49f921434ff0082947441dd0fde07c`; artifact contract `0.2.4` in `script/sync_mambofont.mjs` | Maintainer theme refresh only; ordinary builds use committed assets | Install that revision, run `npm run sync:theme` and `npm run sync:theme:check`, inspect font/CSS changes, then run package tests |
+| Git | Tool | Clone/version source and implement guarded build/deploy repository operations | System Git from its official distribution; no project-specific minimum is currently declared | Development and `mbsite deploy` runtime | Update the host tool deliberately, then run installer, CLI, deploy dry-run, and repository tests |
+| [GitHub CLI](https://cli.github.com/) | Tool | Re-dispatch an existing deployment commit and publish maintainer source releases | Official `gh` distribution; authenticated session required for those remote paths | Optional deploy dispatch and maintainer release | Update `gh`, then exercise `mbsite deploy --dry-run` locally before a guarded live dispatch |
+| GitHub Actions and Pages | External services | Build, upload, and deploy a consuming site's static artifact | Repository-owned workflow; the default scaffold pins `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-pages-artifact@v3`, and `actions/deploy-pages@v4` | Optional production deployment, not compiler semantics | Update `templates/default/.github/workflows/pages.yml`, scaffold tests, and deployment documentation together, then verify a protected deployment |
+| [MamboDocs](https://github.com/ProjectMambo/MamboDocs) checker | Tool and sibling repository | Validate repository and synchronized documentation structure | Compatible sibling checkout at `../MamboDocs`; no repository revision is currently pinned | Maintainer documentation validation only | Synchronize canonical docs, update the coordinated sibling checkout, then run `../MamboDocs/script/check-repository.sh --strict .` |
+
+Python is not a MamboSite package or compiler dependency; a consuming site needs Python 3 only if it chooses the optional static preview script.
 
 ## Usage
 
@@ -123,7 +143,7 @@ Create a scaffold in an empty directory:
 mbsite init my-site
 ```
 
-The scaffold keeps authored pages in `docs/`, site settings in `mambo.toml`, and design tokens in `mambo.theme.toml`. It substitutes the creating compiler's version into its MamboSite package and source-tag pins; until the npm packages are published, point them at the sibling checkout described above before installing dependencies. See the [Authoring guide](Authoring%20Guide.md) for page patterns and the [Build and deployment guide](Build%20and%20Deployment.md) for the complete operating model.
+The scaffold keeps authored pages in `docs/`, site settings in `mambo.toml`, and design tokens in `mambo.theme.toml`. The generated theme file intentionally omits both accent arrays, which leaves paired card accents under MamboColour's seeded selection; adding either array selects site-owned custom mode, where both arrays are required. The scaffold substitutes the creating compiler's version into its MamboSite package and source-tag pins; until the npm packages are published, point them at the sibling checkout described above before installing dependencies. See the [Authoring guide](Authoring%20Guide.md) for page patterns and the [Build and deployment guide](Build%20and%20Deployment.md) for the complete operating model.
 
 ### Command line
 
@@ -138,14 +158,14 @@ mbsite deploy
 
 The React packages and generated schema are versioned separately. A site pins compatible `@mambosite/runtime`, `@mambosite/react`, `@mambosite/theme-default`, and `@mambosite/next` versions, then replaces only named registry entries when it needs custom presentation. The packages currently live in this workspace; publishing the first release remains deployment work.
 
-### Maintainer theme update
+### Maintainer font update
 
 ```bash
 npm run sync:theme
 npm run sync:theme:check
 ```
 
-The first command invokes the public `mbcolor` and `mbfont` interfaces through MamboSite-owned wrappers, maps provider output into the theme model, and refreshes the packaged WOFF2 files. The check command regenerates into temporary directories and fails when committed outputs are stale.
+Both scripts concern only the pinned MamboFont assets. The first calls `mbfont` through `script/sync_mambofont.mjs` and refreshes the packaged WOFF2 files and stylesheet. The check regenerates into a temporary directory and fails when those committed assets are stale. MamboColour updates instead move through `Cargo.toml`, `Cargo.lock`, and the Rust theme tests.
 
 ### Typical site workflow
 
@@ -167,7 +187,7 @@ The [Authoring guide](Authoring%20Guide.md) covers page patterns, [Build and dep
 ```text
 crates/               Rust compiler, theme, and CLI workspaces
 packages/             versioned runtime, React, theme, and Next.js packages
-script/               command wrapper, installer, and provider adapters
+script/               command wrapper, installer, and MamboFont asset adapter
 docs/                 synchronized public and maintainer documentation
 templates/            files emitted by mbsite init
 ```
@@ -187,7 +207,7 @@ npm run test:packages
 git diff --check
 ```
 
-Maintainers changing the bundled default theme also run `npm run sync:theme:check` with the pinned provider revisions documented above.
+Maintainers changing bundled MamboFont assets also run `npm run sync:theme:check` with the pinned MamboFont revision documented above. MamboColour changes are covered by the pinned Cargo dependency and Rust theme tests.
 
 ## Development
 

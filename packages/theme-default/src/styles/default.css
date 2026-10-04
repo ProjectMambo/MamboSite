@@ -512,7 +512,7 @@ a:active {
 
 .mambo-collection--list .mambo-content-card {
   align-items: baseline;
-  border-inline-start-color: var(--mambo-card-accent);
+  border-block-start-color: var(--mambo-card-accent);
   display: grid;
   grid-template-columns: var(--mambo-layout-list-card-columns);
 }

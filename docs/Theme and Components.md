@@ -36,6 +36,8 @@ These are defaults, not parser rules. A future theme may change spacing, typogra
 
 Every site may provide `mambo.theme.toml`. It contains presentation settings only and overrides the built-in default recursively; omit it when the default is sufficient. Schema 1 accepts only `extends = "default"`; named third-party preset inheritance is not implemented.
 
+The file emitted by `mbsite init` is human-editable but deliberately omits `colors.dark.accents` and `colors.light.accents`. Omission keeps both arrays provider-managed, allowing each build seed to select paired MamboColour values. Adding either `accents` key selects site-owned custom mode—even when the explicit values equal the current provider defaults—and both arrays are then required.
+
 ```toml
 schema = 1
 id = "mambofolio"
@@ -89,22 +91,24 @@ content = "sticky"
 
 MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours, fonts and font faces, type sizes, spacing, content widths, component dimensions, borders, shadows, motion, responsive layout templates, and component behavior are typed semantic tokens. `brand`, `brand_hover`, and `brand_active` provide distinct resting, hover, and pressed states. The larger body and navigation styles, compact control height, square radii, and gallery media cap are defaults that a site may replace in the same settings file. The default component package imports its bundled MamboFont faces, requires the generated stylesheet, and consumes only the `--mambo-*` contract for site-variable values.
 
-## Provider-backed default updates
+## Provider boundaries
 
-MamboSite consumes other Project Mambo tools through two maintainer-only adapters:
+The Rust `mambosite-theme` crate directly depends on MamboColour revision `1c6f928991b3c15f740aa5d5754344ab086e2399`, pinned in both `Cargo.toml` and `Cargo.lock`. Its small consumer adapter calls stable UI role methods for the semantic defaults and `random_seeded()` for paired card accents. MamboColour embeds its CSV palettes in the provider crate, so ordinary Rust builds compile against the API without another installed command, runtime palette files, or materialized provider values in MamboSite source. Updating MamboColour means changing the manifest revision, refreshing the lockfile, and running the Rust theme and workspace tests.
+
+MamboFont remains a maintainer-time generated-asset dependency. Its adapter exposes these existing umbrella commands:
 
 ```bash
 npm run sync:theme
 npm run sync:theme:check
 ```
 
-The colour adapter calls `mbcolor <theme> css --out <dir>`, maps named MamboColour tokens into the checked-in Rust default model, and validates required tokens and contrast. The font adapter calls `mbfont compile 0.2.4 --format woff2 --out <dir>` with a fixed `SOURCE_DATE_EPOCH`, then refreshes four checked-in web fonts and their generated stylesheet. `MAMBOCOLOUR_BIN` and `MAMBOFONT_BIN` may select an alternate executable for local testing.
+Both commands now concern only MamboFont. The adapter calls `mbfont compile 0.2.4 --format woff2 --out <dir>` with a fixed `SOURCE_DATE_EPOCH`, then refreshes four checked-in web fonts and their generated stylesheet. `MAMBOFONT_BIN` may select an alternate executable for local testing.
 
 The font command must come from MamboFont revision `62f199e3bc49f921434ff0082947441dd0fde07c`. Check out and install that exact provider revision before a theme refresh; it emits the `MamboFont-<Style>_v0.2.4.woff2` contract consumed by the adapter. The current MamboFont pilot emits `MamboFontPilot-*` files and is intentionally incompatible. Follow the pinned checkout's own setup instructions instead of substituting the current pilot command.
 
-These adapters are the dependency boundary: provider output is reviewed and committed in MamboSite, while ordinary compiler, package, MamboFolio, and MamboWiki builds use only repository-local files. A provider update never silently changes a consumer build.
+The font adapter is the generated-asset boundary: provider output is reviewed and committed in MamboSite, while ordinary compiler, package, MamboFolio, and MamboWiki builds use the repository-local files. The MamboColour boundary is instead the exact Cargo dependency and its public Rust API.
 
-The current snapshot was reviewed with MamboColour commit `66f0c26d6d6462c54c023a4842e49dc6fa0b3c1c` and MamboFont commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
+The current MamboColour dependency is commit `1c6f928991b3c15f740aa5d5754344ab086e2399`. The current MamboFont snapshot was reviewed with commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
 
@@ -168,7 +172,7 @@ motion.*
 contentWidth.*
 ```
 
-MamboColour maps onto these tokens by provider token name. Directive properties such as `tone="warning"` refer to semantic tokens, never `--wildfire` or a literal hexadecimal colour.
+MamboSite's Rust theme adapter maps stable MamboColour role methods such as `bg()`, `fg()`, `brand_hover()`, and `error()` onto these consumer-owned tokens. Directive properties such as `tone="warning"` refer to MamboSite semantic tokens, never a private palette name or literal hexadecimal colour.
 
 ### Primitives
 
@@ -211,17 +215,19 @@ columns        -> Columns
 column         -> Column
 ```
 
-`children view="list"` renders full-width page-preview cards. `children view="grid"` arranges those previews in a multi-column grid. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. These remain semantic page collections, so they cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button variant="card"` directives instead. The buttons remain links, fill their cells, and cycle through the same positional accent borders as content cards.
+`children view="list"` renders full-width page-preview cards. `children view="grid"` arranges those previews in a multi-column grid. `children view="cards" show=["title"]` renders the same child-page routes as a compact grid of button-like cards. These remain semantic page collections, so they cannot represent arbitrary external destinations. A contact or action grid uses `columns` containing `button variant="card"` directives instead. The buttons remain links, fill their cells, and cycle through the same positional accent top lines as content cards. List, grid, compact-card, and action-card presentations all place the accent on the block-start border, which is the top border in the default horizontal writing mode.
 
 The default package currently renders direct child list/grid/card views and grid galleries. Tree/table child views, nested child depth, masonry/carousel galleries, and fragment includes show an explicit unsupported-mode message. A registry override may implement those contracts sooner.
 
 ## Collection accent assignment
 
-Content cards and `button variant="card"` action cells draw accents from the paired `colors.dark.accents` and `colors.light.accents` arrays. These arrays are the complete configuration surface: both arrays must have the same length from 1 to 12, and entries may be any valid CSS colour.
+Content cards and `button variant="card"` action cells draw accents from paired dark/light slots. Provider-managed defaults and site-owned custom arrays intentionally use different selection paths.
 
-Each output-producing `mbsite build` chooses a fresh standard-library-backed seed and shuffles the palette slots. Within each collection or action grid, cards consume that shuffled order without replacement: every configured colour is used once before the order resets and repeats. There is no neighbor-distance constraint.
+When both accent keys are omitted, each output-producing `mbsite build` chooses a fresh standard-library-backed seed. MamboSite derives six slot seeds and calls MamboColour `random_seeded()` with the same slot seed for the light and dark schemes. Because the provider files have matching order, each slot remains paired across schemes. Cards use the resulting six slots in order and repeat the cycle; provider selection does not promise six unique colours.
 
-`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes both the shuffle and the manifest build timestamp for reproducible builds. Because the number of possible orders is finite, separate unseeded builds may occasionally choose the same result. Dark and light schemes retain the same slot assignment and use their paired colour values. The mapping is compiled into CSS and needs no browser-side randomization.
+When either accent key is present, both resolved arrays are site-owned. They must have the same length from 1 to 12, and every entry may be any valid CSS colour. MamboSite preserves the configured arrays in the compiled model and applies its existing seeded shuffle only to card assignment. Within each collection or action grid, every custom slot is used once before the shuffled order repeats; light and dark use the same shuffled indices.
+
+`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes the provider selection or custom-array shuffle together with the manifest build timestamp for reproducible builds. Separate unseeded builds may occasionally produce the same finite result. The mapping is compiled into CSS and needs no browser-side randomization.
 
 ### Site shell and layouts
 
@@ -238,7 +244,7 @@ MamboSite's default theme package owns:
 - Layout implementations for `default`, `article`, `docs`, `project`, `collection`, `home`, and `gallery`.
 - Optional search UI when implemented.
 
-A site repository supplies content data, optional theme settings, and an optional typed override registry. MamboFolio and MamboWiki use this default package, including its MamboColour-backed model and MamboFont assets, rather than copying provider output or component source.
+A site repository supplies content data, optional theme settings, and an optional typed override registry. The Rust compiler maps the pinned MamboColour API into generated theme values; the default npm package supplies the components and bundled MamboFont assets. MamboFolio and MamboWiki consume those MamboSite boundaries rather than copying provider output or component source.
 
 ## Component override contract
 

@@ -27,17 +27,27 @@ pub struct CompiledTheme {
     pub typescript: String,
 }
 
-/// Returns the complete, human-editable default `mambo.theme.toml`.
+/// Returns the human-editable default `mambo.theme.toml`.
 ///
 /// `mbsite init` can write this value directly, keeping the scaffold in
-/// lockstep with the schema and Rust defaults.
+/// lockstep with the schema and Rust defaults. Provider-managed accents are
+/// omitted so builds can select them from `MamboColour`; adding either accent
+/// array makes both arrays site-owned overrides.
 ///
 /// # Errors
 ///
 /// Returns a TOML serialization error if a future schema adds a value that
 /// TOML cannot represent.
 pub fn default_theme_toml() -> Result<String, toml::ser::Error> {
-    toml::to_string_pretty(&Theme::default())
+    let mut value = toml::Value::try_from(Theme::default())?;
+    if let Some(colours) = value.get_mut("colors").and_then(toml::Value::as_table_mut) {
+        for scheme in ["dark", "light"] {
+            if let Some(palette) = colours.get_mut(scheme).and_then(toml::Value::as_table_mut) {
+                palette.remove("accents");
+            }
+        }
+    }
+    toml::to_string_pretty(&value)
 }
 
 impl Theme {
@@ -107,10 +117,15 @@ impl Theme {
         if !diagnostics.is_empty() {
             return Err(diagnostics);
         }
+        let uses_provider_accents = mambo_colour::uses_provider_accents(&self.colors);
+        let mut theme = self.clone();
+        if uses_provider_accents {
+            mambo_colour::resolve_accents(&mut theme.colors, accent_seed);
+        }
         Ok(CompiledTheme {
-            theme: self.clone(),
-            css: css::render(self, accent_seed),
-            typescript: typescript::render(self),
+            css: css::render(&theme, (!uses_provider_accents).then_some(accent_seed)),
+            typescript: typescript::render(&theme),
+            theme,
         })
     }
 }

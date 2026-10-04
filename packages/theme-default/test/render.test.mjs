@@ -81,6 +81,19 @@ test("default styles do not duplicate generated theme values as literal fallback
   assert.doesNotMatch(css, /minmax\(min\(100%, var\(--mambo-width-card-min\)/);
 });
 
+test("list collection cards use a top accent border", async () => {
+  const css = await readFile(new URL("../src/styles/default.css", import.meta.url), "utf8");
+
+  assert.match(
+    css,
+    /\.mambo-collection--list \.mambo-content-card\s*\{[^}]*border-block-start-color: var\(--mambo-card-accent\)/s,
+  );
+  assert.doesNotMatch(
+    css,
+    /\.mambo-collection--list \.mambo-content-card\s*\{[^}]*border-inline-start-color:/s,
+  );
+});
+
 test("header scroll behavior ignores jitter and follows deliberate direction", () => {
   assert.equal(headerHiddenForScroll(100, 107, 80), undefined);
   assert.equal(headerHiddenForScroll(100, 108, 80), true);

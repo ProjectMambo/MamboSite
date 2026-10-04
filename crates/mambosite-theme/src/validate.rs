@@ -46,8 +46,20 @@ pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
         ));
     }
 
-    validate_palette("colors.dark", &theme.colors.dark, &mut diagnostics);
-    validate_palette("colors.light", &theme.colors.light, &mut diagnostics);
+    let provider_accents =
+        theme.colors.dark.accents.is_empty() && theme.colors.light.accents.is_empty();
+    validate_palette(
+        "colors.dark",
+        &theme.colors.dark,
+        provider_accents,
+        &mut diagnostics,
+    );
+    validate_palette(
+        "colors.light",
+        &theme.colors.light,
+        provider_accents,
+        &mut diagnostics,
+    );
     if theme.colors.dark.accents.len() != theme.colors.light.accents.len() {
         diagnostics.push(ThemeDiagnostic::new(
             "MST1106",
@@ -174,6 +186,7 @@ pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
 fn validate_palette(
     prefix: &str,
     palette: &crate::model::ColorPalette,
+    allow_provider_default: bool,
     diagnostics: &mut Vec<ThemeDiagnostic>,
 ) {
     for (field, value) in [
@@ -198,7 +211,7 @@ fn validate_palette(
     ] {
         validate_css(&format!("{prefix}.{field}"), value, diagnostics);
     }
-    if palette.accents.is_empty() || palette.accents.len() > 12 {
+    if (!allow_provider_default && palette.accents.is_empty()) || palette.accents.len() > 12 {
         diagnostics.push(ThemeDiagnostic::new(
             "MST1101",
             format!("{prefix}.accents"),

@@ -500,7 +500,12 @@ mod tests {
         let temporary = tempfile::tempdir().unwrap();
         let config = site_config(temporary.path());
         let default_theme = compile_project_theme(temporary.path(), 0).unwrap();
-        assert_eq!(default_theme.theme, Theme::default());
+        let mut resolved = default_theme.theme;
+        assert_eq!(resolved.colors.dark.accents.len(), 6);
+        assert_eq!(resolved.colors.light.accents.len(), 6);
+        resolved.colors.dark.accents.clear();
+        resolved.colors.light.accents.clear();
+        assert_eq!(resolved, Theme::default());
         assert_eq!(
             run(config.clone(), BuildMode::Check, ChildStdout::Stdout)
                 .unwrap()

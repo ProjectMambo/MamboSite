@@ -54,7 +54,7 @@ The presentation implementation is split into independently versioned packages:
 @mambosite/next           static Next.js route and metadata adapter
 ```
 
-The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. Its checked-in colour model is generated through MamboColour's public CLI, and its package bundles MamboFont web assets generated through MamboFont's public CLI. MamboFolio and MamboWiki consume that self-contained default package without invoking either provider during ordinary builds.
+The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. The Rust theme crate directly pins MamboColour and maps its stable role methods and seeded colour selection into MamboSite's semantic model. MamboColour embeds its CSV data in the provider crate, so MamboSite neither materializes those values into its source tree nor reads provider palette files at runtime. The default package separately bundles MamboFont web assets generated through MamboFont's public CLI; MamboFolio and MamboWiki consume those committed font files without invoking that provider during ordinary builds.
 
 Compatibility has three explicit versions:
 
@@ -90,7 +90,6 @@ MamboSite/
 │   ├── theme-default/           # default components, CSS, and font assets
 │   └── next/                    # static Next.js adapter
 ├── script/
-│   ├── sync_mambocolour.mjs     # refresh the checked-in colour model
 │   └── sync_mambofont.mjs       # refresh bundled web fonts and CSS
 └── templates/default/           # scaffold embedded by `mbsite init`
 ```
@@ -99,13 +98,13 @@ Responsibilities:
 
 - `mambosite-core` owns the compiler pipeline and all semantic models.
 - `mambosite-codegen-ts` converts the validated intermediate representation into deterministic TypeScript modules.
-- `mambosite-theme` validates a complete settings model and compiles CSS and TypeScript metadata deterministically for a supplied accent seed.
+- `mambosite-theme` validates a complete settings model, maps MamboColour's public Rust API into semantic defaults, and compiles CSS and TypeScript metadata deterministically for a supplied accent seed.
 - `mambosite-cli` handles lifecycle commands, safe paths, subprocess boundaries, terminal output, and exit codes.
 - `packages/runtime` defines the generated contract and immutable graph/query API.
 - `packages/react` renders normalized nodes through a complete typed registry.
 - `packages/theme-default` supplies the replaceable MamboFolio-inspired presentation and bundled MamboFont assets.
 - `packages/next` contains only Next-specific navigation, base-path, route, and metadata behavior.
-- `script/sync_mambocolour.mjs` and `script/sync_mambofont.mjs` are maintainer-only consumer adapters for the providers' installed CLIs. They update reviewed, checked-in inputs; normal package and site builds remain self-contained.
+- `script/sync_mambofont.mjs` is the maintainer-only adapter for the pinned MamboFont CLI. It updates reviewed, checked-in font inputs; normal package and site builds do not invoke MamboFont.
 - `templates/default` is the allowlisted scaffold embedded into the CLI.
 
 Do not split every core module into a crate initially. A new crate is justified only when it has a stable public boundary or independent consumers.
@@ -215,7 +214,7 @@ The first release targets static hosting. It must not depend on cookies, server 
 
 ### Complete builds first
 
-The current implementation performs a complete build on every invocation. Semantic content, routes, page modules, and copied assets remain deterministic. The CLI records one build epoch in the manifest and gives collection accents a fresh build seed; `SOURCE_DATE_EPOCH` fixes both values when byte-reproducible output is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
+The current implementation performs a complete build on every invocation. Semantic content, routes, page modules, and copied assets remain deterministic. The CLI records one build epoch in the manifest and gives collection accents a fresh build seed. That seed selects paired provider values when accent arrays are omitted and shuffles card assignment when a site explicitly owns custom arrays; `SOURCE_DATE_EPOCH` fixes both epoch and seed when byte-reproducible output is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
 
 ### Safe defaults
 
@@ -231,6 +230,8 @@ mambosite-cli
 
 mambosite-codegen-ts
     -> serializable validated site data (no core crate dependency)
+
+mambosite-theme -> mambocolour (exact Git revision)
 
 @mambosite/react -> @mambosite/runtime
 @mambosite/theme-default -> @mambosite/react + @mambosite/runtime
