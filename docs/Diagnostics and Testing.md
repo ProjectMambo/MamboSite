@@ -46,7 +46,7 @@ MamboSite currently rejects:
 - Empty or duplicate routes, invalid mount sources/routes, overlapping mount paths, and physical pages inside mounted namespaces.
 - Missing or ambiguous note targets/fragments, unsafe URL schemes, and note-embed cycles or excessive depth.
 - Missing, escaping, symlinked, unsupported, or normalized-colliding content assets.
-- Invalid theme schemas/tokens—including mismatched or empty accent palettes—and unsafe or unowned generated-output directories.
+- Invalid theme schemas/tokens—including explicit empty or one-sided accent keys, mismatched custom palettes, and unsafe or unowned generated-output directories.
 
 Current warnings are multiple H1 headings, heading-level jumps, raw HTML when disabled, and unresolved/ambiguous note references when `markdown.strict_links = false`. There is no `--deny-warnings` option yet.
 
@@ -64,7 +64,7 @@ Compilation or theme-validation errors leave existing generated trees untouched.
 
 ## Current tests
 
-Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, footer context, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, build timestamps, MamboColour role mapping, paired seeded default accents, explicit custom-accent provenance and shuffle behavior, absence of private palette/file coupling, CLI parsing, init safety, build orchestration, and deploy decisions.
+Rust tests live beside their modules, with theme integration tests under `crates/mambosite-theme/tests/`. They cover configuration/path safety, frontmatter, route and mount discovery, Markdown lowering, directives, footer context, reference and asset resolution, binary asset publication, deterministic TypeScript generation, managed writers, build timestamps, MamboColour role mapping, paired seeded default accents (including the `u64` build-seed/slot mix into provider `u32` seeds), explicit custom-accent provenance and shuffle behavior, serialized/default scaffold omission of empty accent keys, rejection of explicit empty or one-sided accent inputs, absence of private palette/file coupling, expanded status-role contrast against both background and surface, CLI parsing, init safety, build orchestration, and deploy decisions. These tests retain regression coverage for provider-versus-custom provenance so key presence cannot silently change ownership.
 
 The npm workspace has focused Node tests for:
 

@@ -1,8 +1,12 @@
 use crate::error::ThemeDiagnostic;
 use crate::model::{Responsive, THEME_SCHEMA_VERSION, TextStyle, Theme};
+use crate::resolve::AccentOverrides;
 
 #[allow(clippy::too_many_lines)]
-pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
+pub(crate) fn validate(
+    theme: &Theme,
+    accent_overrides: Option<AccentOverrides>,
+) -> Vec<ThemeDiagnostic> {
     let mut diagnostics = Vec::new();
 
     if theme.schema != THEME_SCHEMA_VERSION {
@@ -46,8 +50,10 @@ pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
         ));
     }
 
-    let provider_accents =
-        theme.colors.dark.accents.is_empty() && theme.colors.light.accents.is_empty();
+    let provider_accents = accent_overrides.map_or_else(
+        || theme.colors.dark.accents.is_empty() && theme.colors.light.accents.is_empty(),
+        AccentOverrides::provider_managed,
+    );
     validate_palette(
         "colors.dark",
         &theme.colors.dark,
@@ -60,11 +66,13 @@ pub(crate) fn validate(theme: &Theme) -> Vec<ThemeDiagnostic> {
         provider_accents,
         &mut diagnostics,
     );
-    if theme.colors.dark.accents.len() != theme.colors.light.accents.len() {
+    if theme.colors.dark.accents.len() != theme.colors.light.accents.len()
+        || accent_overrides.is_some_and(AccentOverrides::one_sided)
+    {
         diagnostics.push(ThemeDiagnostic::new(
             "MST1106",
             "colors",
-            "dark and light schemes must define the same number of accent slots",
+            "custom accents require both dark and light keys with the same number of slots",
         ));
     }
 

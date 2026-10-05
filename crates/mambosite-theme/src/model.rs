@@ -14,7 +14,13 @@ fn default_extends() -> String {
     "default".to_owned()
 }
 
-/// A complete theme after the built-in defaults have been applied.
+/// A theme after the built-in defaults have been applied.
+///
+/// The built-in value keeps both accent vectors empty as the marker for
+/// provider-managed accents. Compilation resolves those vectors in the returned
+/// [`crate::CompiledTheme`] without mutating this value. In TOML, omit both
+/// `colors.*.accents` keys to use that mode; explicitly empty or one-sided
+/// accent arrays are invalid.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Theme {
@@ -206,6 +212,7 @@ pub struct ColorPalette {
     pub danger: String,
     pub header_background: String,
     pub shadow: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub accents: Vec<String>,
 }
 

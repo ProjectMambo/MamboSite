@@ -45,7 +45,16 @@ fn default_interaction_colours_meet_contrast_thresholds() {
             assert!(contrast(colour, &palette.background) >= 4.5);
             assert!(contrast(colour, &palette.on_brand) >= 4.5);
         }
-        assert!(contrast(&palette.focus, &palette.background) >= 3.0);
+        for indicator in [
+            &palette.selection,
+            &palette.focus,
+            &palette.success,
+            &palette.warning,
+            &palette.danger,
+        ] {
+            assert!(contrast(indicator, &palette.background) >= 3.0);
+            assert!(contrast(indicator, &palette.surface) >= 3.0);
+        }
     }
 }
 
@@ -60,6 +69,17 @@ fn canonical_default_toml_round_trips() {
     assert!(source.contains("[typography.heading_1]"));
     assert!(source.contains("[layout.page_with_sidebar_columns]"));
     assert!(!source.contains("accents ="));
+}
+
+#[test]
+fn serialized_default_theme_round_trips() {
+    let source = toml::to_string_pretty(&Theme::default()).unwrap();
+
+    assert!(!source.contains("accents ="));
+    assert_eq!(
+        Theme::from_toml(&source, "serialized.theme.toml").unwrap(),
+        Theme::default()
+    );
 }
 
 #[test]
@@ -341,6 +361,7 @@ fn default_accents_are_paired_provider_colours_selected_by_seed() {
     let first = theme.compile_with_accent_seed(7).unwrap();
     let repeated = theme.compile_with_accent_seed(7).unwrap();
     let second = theme.compile_with_accent_seed(8).unwrap();
+    let high = theme.compile_with_accent_seed((1_u64 << 48) | 7).unwrap();
 
     assert_eq!(first, repeated);
     assert_ne!(
@@ -353,6 +374,14 @@ fn default_accents_are_paired_provider_colours_selected_by_seed() {
     );
     assert_ne!(first.css, second.css);
     assert_eq!(first.typescript, second.typescript);
+    assert_ne!(
+        first.theme.colors.dark.accents,
+        high.theme.colors.dark.accents
+    );
+    assert_ne!(
+        first.theme.colors.light.accents,
+        high.theme.colors.light.accents
+    );
 
     for (slot, (dark, light)) in first
         .theme
@@ -363,9 +392,7 @@ fn default_accents_are_paired_provider_colours_selected_by_seed() {
         .zip(&first.theme.colors.light.accents)
         .enumerate()
     {
-        let provider_seed = 7_u64
-            .wrapping_mul(6)
-            .wrapping_add(u64::try_from(slot).unwrap());
+        let provider_seed = expected_provider_seed(7, slot);
         assert_eq!(
             dark,
             mambo_theme(Scheme::Dark)
@@ -379,6 +406,62 @@ fn default_accents_are_paired_provider_colours_selected_by_seed() {
                 .colour()
                 .random_seeded(provider_seed)
                 .hex()
+        );
+    }
+}
+
+fn expected_provider_seed(seed: u64, slot: usize) -> u32 {
+    let mut mixed = seed.wrapping_add(
+        u64::try_from(slot + 1)
+            .unwrap()
+            .wrapping_mul(0x9e37_79b9_7f4a_7c15),
+    );
+    mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    mixed ^= mixed >> 31;
+    let bytes = mixed.to_le_bytes();
+    u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+        ^ u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
+}
+
+#[test]
+fn explicit_empty_accents_are_not_provider_defaults() {
+    for source in [
+        "[colors.dark]\naccents=[]\n[colors.light]\naccents=[]\n",
+        "[colors.dark]\naccents=[]\n",
+    ] {
+        let error = Theme::from_toml(source, "accent.theme.toml").unwrap_err();
+        let ThemeError::Validation { diagnostics, .. } = error else {
+            panic!("expected validation error");
+        };
+
+        assert!(
+            diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "MST1101")
+        );
+    }
+}
+
+#[test]
+fn both_accent_keys_are_required_for_custom_palettes() {
+    for source in [
+        "[colors.dark]\naccents=[\"red\"]\n",
+        "[colors.light]\naccents=[\"blue\"]\n",
+    ] {
+        let error = Theme::from_toml(source, "accent.theme.toml").unwrap_err();
+        let ThemeError::Validation { diagnostics, .. } = error else {
+            panic!("expected validation error");
+        };
+
+        let diagnostic = diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.code == "MST1106")
+            .expect("one-sided accents should report MST1106");
+        assert_eq!(diagnostic.field, "colors");
+        assert_eq!(
+            diagnostic.message,
+            "custom accents require both dark and light keys with the same number of slots"
         );
     }
 }

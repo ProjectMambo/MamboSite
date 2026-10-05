@@ -39,15 +39,7 @@ pub struct CompiledTheme {
 /// Returns a TOML serialization error if a future schema adds a value that
 /// TOML cannot represent.
 pub fn default_theme_toml() -> Result<String, toml::ser::Error> {
-    let mut value = toml::Value::try_from(Theme::default())?;
-    if let Some(colours) = value.get_mut("colors").and_then(toml::Value::as_table_mut) {
-        for scheme in ["dark", "light"] {
-            if let Some(palette) = colours.get_mut(scheme).and_then(toml::Value::as_table_mut) {
-                palette.remove("accents");
-            }
-        }
-    }
-    toml::to_string_pretty(&value)
+    toml::to_string_pretty(&Theme::default())
 }
 
 impl Theme {
@@ -72,11 +64,12 @@ impl Theme {
     /// Returns a TOML parse or structured validation error labelled with `path`.
     pub fn from_toml(source: &str, path: impl AsRef<Path>) -> Result<Self, ThemeError> {
         let path = path.as_ref();
-        let theme: Self = resolve::from_toml(source).map_err(|source| ThemeError::Parse {
-            path: path.to_path_buf(),
-            source,
-        })?;
-        let diagnostics = theme.validate();
+        let (theme, accent_overrides) =
+            resolve::from_toml(source).map_err(|source| ThemeError::Parse {
+                path: path.to_path_buf(),
+                source,
+            })?;
+        let diagnostics = validate::validate(&theme, Some(accent_overrides));
         if diagnostics.is_empty() {
             Ok(theme)
         } else {
@@ -88,7 +81,7 @@ impl Theme {
     }
 
     pub fn validate(&self) -> Vec<ThemeDiagnostic> {
-        validate::validate(self)
+        validate::validate(self, None)
     }
 
     /// Generates deterministic CSS and TypeScript metadata from a valid theme.

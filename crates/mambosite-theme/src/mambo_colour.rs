@@ -53,13 +53,22 @@ fn palette(scheme: Scheme) -> ColorPalette {
 fn accents(scheme: Scheme, seed: u64) -> Vec<String> {
     let palette = theme(scheme).colour();
     (0..ACCENT_COUNT)
-        .map(|slot| {
-            let seed = seed
-                .wrapping_mul(ACCENT_COUNT as u64)
-                .wrapping_add(slot as u64);
-            hex(palette.random_seeded(seed))
-        })
+        .map(|slot| hex(palette.random_seeded(provider_seed(seed, slot))))
         .collect()
+}
+
+fn provider_seed(seed: u64, slot: usize) -> u32 {
+    let mut mixed = seed.wrapping_add(
+        u64::try_from(slot + 1)
+            .expect("accent slot fits u64")
+            .wrapping_mul(0x9e37_79b9_7f4a_7c15),
+    );
+    mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    mixed ^= mixed >> 31;
+    let bytes = mixed.to_le_bytes();
+    u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+        ^ u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
 }
 
 fn hex(colour: Colour) -> String {
@@ -69,4 +78,30 @@ fn hex(colour: Colour) -> String {
 fn alpha(colour: Colour, percent: u8) -> String {
     let [red, green, blue] = colour.rgb();
     format!("rgb({red} {green} {blue} / {percent}%)")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::provider_seed;
+
+    #[test]
+    fn provider_seed_mixes_slots_and_high_build_seed_bits() {
+        let first = (0..6)
+            .map(|slot| provider_seed(7, slot))
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            first,
+            (0..6)
+                .map(|slot| provider_seed(7, slot))
+                .collect::<Vec<_>>()
+        );
+        assert!(first.windows(2).all(|seeds| seeds[0] != seeds[1]));
+        assert!(
+            first
+                .windows(2)
+                .all(|seeds| seeds[1] != seeds[0].wrapping_add(1))
+        );
+        assert_ne!(provider_seed(7, 0), provider_seed((1_u64 << 48) | 7, 0));
+    }
 }

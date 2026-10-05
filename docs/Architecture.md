@@ -54,7 +54,7 @@ The presentation implementation is split into independently versioned packages:
 @mambosite/next           static Next.js route and metadata adapter
 ```
 
-The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. The Rust theme crate directly pins MamboColour and maps its stable role methods and seeded colour selection into MamboSite's semantic model. MamboColour embeds its CSV data in the provider crate, so MamboSite neither materializes those values into its source tree nor reads provider palette files at runtime. The default package separately bundles MamboFont web assets generated through MamboFont's public CLI; MamboFolio and MamboWiki consume those committed font files without invoking that provider during ordinary builds.
+The default theme is not compiled into the Markdown language. A site may replace a theme package or override individual registry entries while retaining the same compiler and content. The Rust theme crate pins MamboColour Rust crate `0.2.0` at revision `39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0` and maps its stable role methods and seeded colour selection into MamboSite's semantic model. MamboSite mixes its `u64` build seed with each accent slot before passing a `u32` seed to MamboColour, using the same slot seed for paired light/dark selection. MamboColour embeds its CSV data in the provider crate, so MamboSite neither materializes those values into its source tree nor reads provider palette files at runtime. The default package separately bundles MamboFont web assets generated through MamboFont's public CLI; MamboFolio and MamboWiki consume those committed font files without invoking that provider during ordinary builds.
 
 Compatibility has three explicit versions:
 
@@ -214,7 +214,7 @@ The first release targets static hosting. It must not depend on cookies, server 
 
 ### Complete builds first
 
-The current implementation performs a complete build on every invocation. Semantic content, routes, page modules, and copied assets remain deterministic. The CLI records one build epoch in the manifest and gives collection accents a fresh build seed. That seed selects paired provider values when accent arrays are omitted and shuffles card assignment when a site explicitly owns custom arrays; `SOURCE_DATE_EPOCH` fixes both epoch and seed when byte-reproducible output is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
+The current implementation performs a complete build on every invocation. Semantic content, routes, page modules, and copied assets remain deterministic. The CLI records one build epoch in the manifest and gives collection accents a fresh `u64` build seed. Omitted accent keys select provider mode: MamboSite mixes that seed with each slot, converts to provider `u32` seeds, and selects paired light/dark values. Either explicit accent key selects custom mode, which requires both non-empty arrays and shuffles card assignment; `SOURCE_DATE_EPOCH` fixes both epoch and seed when byte-reproducible output is required. Watch mode and incremental caching come only after complete builds and dependency tracking are proven correct.
 
 ### Safe defaults
 

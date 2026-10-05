@@ -36,7 +36,7 @@ These are defaults, not parser rules. A future theme may change spacing, typogra
 
 Every site may provide `mambo.theme.toml`. It contains presentation settings only and overrides the built-in default recursively; omit it when the default is sufficient. Schema 1 accepts only `extends = "default"`; named third-party preset inheritance is not implemented.
 
-The file emitted by `mbsite init` is human-editable but deliberately omits `colors.dark.accents` and `colors.light.accents`. Omission keeps both arrays provider-managed, allowing each build seed to select paired MamboColour values. Adding either `accents` key selects site-owned custom mode—even when the explicit values equal the current provider defaults—and both arrays are then required.
+The file emitted by `mbsite init` is human-editable but deliberately omits `colors.dark.accents` and `colors.light.accents`. The built-in theme and its serialized/default scaffold form omit empty accent keys as well. Omission keeps both arrays provider-managed, allowing each build seed to select paired MamboColour values. Adding either `accents` key selects site-owned custom mode—even when the explicit values equal the current provider defaults—so explicit empty arrays and one-sided keys fail validation; custom mode requires both arrays with the same non-empty length.
 
 ```toml
 schema = 1
@@ -93,7 +93,7 @@ MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours
 
 ## Provider boundaries
 
-The Rust `mambosite-theme` crate directly depends on MamboColour revision `1c6f928991b3c15f740aa5d5754344ab086e2399`, pinned in both `Cargo.toml` and `Cargo.lock`. Its small consumer adapter calls stable UI role methods for the semantic defaults and `random_seeded()` for paired card accents. MamboColour embeds its CSV palettes in the provider crate, so ordinary Rust builds compile against the API without another installed command, runtime palette files, or materialized provider values in MamboSite source. Updating MamboColour means changing the manifest revision, refreshing the lockfile, and running the Rust theme and workspace tests.
+The Rust `mambosite-theme` crate directly depends on MamboColour Rust crate `0.2.0` at revision `39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0`, pinned in both `Cargo.toml` and `Cargo.lock`. Its small consumer adapter calls stable UI role methods for the semantic defaults and `random_seeded()` for paired card accents. MamboSite mixes its `u64` build seed with each accent slot before folding the mixed value into the provider API's `u32` seed domain, then passes the same slot seed to light and dark selection. MamboColour embeds its CSV palettes in the provider crate, so ordinary Rust builds compile against the API without another installed command, runtime palette files, or materialized provider values in MamboSite source. Updating MamboColour means changing the manifest revision, refreshing the lockfile, and running the Rust theme and workspace tests.
 
 MamboFont remains a maintainer-time generated-asset dependency. Its adapter exposes these existing umbrella commands:
 
@@ -108,7 +108,7 @@ The font command must come from MamboFont revision `62f199e3bc49f921434ff0082947
 
 The font adapter is the generated-asset boundary: provider output is reviewed and committed in MamboSite, while ordinary compiler, package, MamboFolio, and MamboWiki builds use the repository-local files. The MamboColour boundary is instead the exact Cargo dependency and its public Rust API.
 
-The current MamboColour dependency is commit `1c6f928991b3c15f740aa5d5754344ab086e2399`. The current MamboFont snapshot was reviewed with commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
+The current MamboColour dependency is crate `0.2.0` at commit `39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0`. The current MamboFont snapshot was reviewed with commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
 
@@ -223,9 +223,9 @@ The default package currently renders direct child list/grid/card views and grid
 
 Content cards and `button variant="card"` action cells draw accents from paired dark/light slots. Provider-managed defaults and site-owned custom arrays intentionally use different selection paths.
 
-When both accent keys are omitted, each output-producing `mbsite build` chooses a fresh standard-library-backed seed. MamboSite derives six slot seeds and calls MamboColour `random_seeded()` with the same slot seed for the light and dark schemes. Because the provider files have matching order, each slot remains paired across schemes. Cards use the resulting six slots in order and repeat the cycle; provider selection does not promise six unique colours.
+When both accent keys are omitted, the theme is in provider mode and each output-producing `mbsite build` chooses a fresh standard-library-backed `u64` build seed. MamboSite mixes that build seed with each of the six slots, converts each mixed value to the provider's `u32` seed domain, and calls MamboColour `random_seeded()` with the resulting slot seed for both light and dark schemes. Because the provider files have matching order, each slot remains paired across schemes while high build-seed bits still affect selection. Cards use the resulting six slots in order and repeat the cycle; provider selection does not promise six unique colours.
 
-When either accent key is present, both resolved arrays are site-owned. They must have the same length from 1 to 12, and every entry may be any valid CSS colour. MamboSite preserves the configured arrays in the compiled model and applies its existing seeded shuffle only to card assignment. Within each collection or action grid, every custom slot is used once before the shuffled order repeats; light and dark use the same shuffled indices.
+When either accent key is present, the theme is in site-owned custom mode. Both keys must be present, neither array may be empty, and the arrays must have the same length from 1 to 12; otherwise validation fails. Every entry may be any valid CSS colour. MamboSite preserves the configured arrays in the compiled model and applies its existing seeded shuffle only to card assignment. Within each collection or action grid, every custom slot is used once before the shuffled order repeats; light and dark use the same shuffled indices.
 
 `SOURCE_DATE_EPOCH=<unsigned-integer>` fixes the provider selection or custom-array shuffle together with the manifest build timestamp for reproducible builds. Separate unseeded builds may occasionally produce the same finite result. The mapping is compiled into CSS and needs no browser-side randomization.
 
@@ -343,7 +343,7 @@ These are release requirements, not a claim that a complete automated accessibil
 - Images require meaningful alt text where content-bearing.
 - Decorative canvases and images are marked accordingly.
 - Colour is not the only carrier of status.
-- Light and dark theme tokens must satisfy readable contrast.
+- Light and dark theme tokens must satisfy readable contrast; selection, focus, success, warning, and danger roles are checked against both background and surface.
 - Motion respects `prefers-reduced-motion`.
 - Embedded documents expose their source and boundary accessibly.
 
