@@ -286,8 +286,8 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "mambocolour"
-version = "0.2.0"
-source = "git+https://github.com/ProjectMambo/MamboColour?rev=39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0#39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0"
+version = "0.3.0"
+source = "git+https://github.com/ProjectMambo/MamboColour?rev=c703092a619b3ee9b05503eaf2a553ae52595d35#c703092a619b3ee9b05503eaf2a553ae52595d35"
 
 [[package]]
 name = "mambosite-cli"

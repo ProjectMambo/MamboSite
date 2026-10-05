@@ -93,7 +93,7 @@ MamboSite validates this file and generates `theme.ts` plus `theme.css`. Colours
 
 ## Provider boundaries
 
-The Rust `mambosite-theme` crate directly depends on MamboColour Rust crate `0.2.0` at revision `39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0`, pinned in both `Cargo.toml` and `Cargo.lock`. Its small consumer adapter calls stable UI role methods for the semantic defaults and `random_seeded()` for paired card accents. MamboSite mixes its `u64` build seed with each accent slot before folding the mixed value into the provider API's `u32` seed domain, then passes the same slot seed to light and dark selection. MamboColour embeds its CSV palettes in the provider crate, so ordinary Rust builds compile against the API without another installed command, runtime palette files, or materialized provider values in MamboSite source. Updating MamboColour means changing the manifest revision, refreshing the lockfile, and running the Rust theme and workspace tests.
+The Rust `mambosite-theme` crate directly depends on MamboColour Rust crate `0.3.0` at revision `c703092a619b3ee9b05503eaf2a553ae52595d35`, pinned in both `Cargo.toml` and `Cargo.lock`. Its small consumer adapter calls stable UI role methods for semantic defaults and zero-based `get(index)` with `len()` to import every paired card-accent position. MamboSite applies its `u64` build seed to one shared position shuffle, so light and dark remain paired while the complete palette is used before repetition. MamboColour embeds its CSV palettes in the provider crate, so ordinary Rust builds compile against the API without another installed command, runtime palette files, or materialized provider values in MamboSite source. Updating MamboColour means changing the manifest revision, refreshing the lockfile, and running the Rust theme and workspace tests.
 
 MamboFont remains a maintainer-time generated-asset dependency. Its adapter exposes these existing umbrella commands:
 
@@ -108,7 +108,7 @@ The font command must come from MamboFont revision `62f199e3bc49f921434ff0082947
 
 The font adapter is the generated-asset boundary: provider output is reviewed and committed in MamboSite, while ordinary compiler, package, MamboFolio, and MamboWiki builds use the repository-local files. The MamboColour boundary is instead the exact Cargo dependency and its public Rust API.
 
-The current MamboColour dependency is crate `0.2.0` at commit `39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0`. The current MamboFont snapshot was reviewed with commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
+The current MamboColour dependency is crate `0.3.0` at commit `c703092a619b3ee9b05503eaf2a553ae52595d35`. The current MamboFont snapshot was reviewed with commit `62f199e3bc49f921434ff0082947441dd0fde07c`; the bundled font filenames carry artifact version `0.2.4`.
 
 CSS custom properties carry values such as colours and spacing. Breakpoint thresholds cannot use CSS variables in normal media queries, so MamboSite writes the configured breakpoint values as literal generated media rules. Complex structural redesigns remain component overrides rather than an attempt to encode arbitrary CSS in TOML.
 
@@ -223,11 +223,11 @@ The default package currently renders direct child list/grid/card views and grid
 
 Content cards and `button variant="card"` action cells draw accents from paired dark/light slots. Provider-managed defaults and site-owned custom arrays intentionally use different selection paths.
 
-When both accent keys are omitted, the theme is in provider mode and each output-producing `mbsite build` chooses a fresh standard-library-backed `u64` build seed. MamboSite mixes that build seed with each of the six slots, converts each mixed value to the provider's `u32` seed domain, and calls MamboColour `random_seeded()` with the resulting slot seed for both light and dark schemes. Because the provider files have matching order, each slot remains paired across schemes while high build-seed bits still affect selection. Cards use the resulting six slots in order and repeat the cycle; provider selection does not promise six unique colours.
+When both accent keys are omitted, the theme is in provider mode and each output-producing `mbsite build` chooses a fresh standard-library-backed `u64` build seed. MamboSite reads all 21 positions from both MamboColour schemes, shuffles their shared index order with that seed, and emits one CSS assignment cycle. Every provider colour appears exactly once before the cycle repeats, and each position switches to its paired value when the page scheme changes.
 
-When either accent key is present, the theme is in site-owned custom mode. Both keys must be present, neither array may be empty, and the arrays must have the same length from 1 to 12; otherwise validation fails. Every entry may be any valid CSS colour. MamboSite preserves the configured arrays in the compiled model and applies its existing seeded shuffle only to card assignment. Within each collection or action grid, every custom slot is used once before the shuffled order repeats; light and dark use the same shuffled indices.
+When either accent key is present, the theme is in site-owned custom mode. Both keys must be present, neither array may be empty, and the arrays must have the same length from 1 to 21; otherwise validation fails. Every entry may be any valid CSS colour. MamboSite preserves the configured arrays in the compiled model and applies the same seeded shuffle only to card assignment. Within each collection or action grid, every custom slot is used once before the shuffled order repeats; light and dark use the same shuffled indices.
 
-`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes the provider selection or custom-array shuffle together with the manifest build timestamp for reproducible builds. Separate unseeded builds may occasionally produce the same finite result. The mapping is compiled into CSS and needs no browser-side randomization.
+`SOURCE_DATE_EPOCH=<unsigned-integer>` fixes the provider or custom-array shuffle together with the manifest build timestamp for reproducible builds. Separate unseeded builds may occasionally produce the same finite permutation. The mapping is compiled into CSS and needs no browser-side randomization.
 
 ### Site shell and layouts
 

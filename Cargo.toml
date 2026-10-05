@@ -17,7 +17,7 @@ repository = "https://github.com/ProjectMambo/MamboSite"
 [workspace.dependencies]
 clap = { version = "4.6", features = ["derive"] }
 comrak = { version = "0.54", default-features = false }
-mambocolour = { git = "https://github.com/ProjectMambo/MamboColour", rev = "39f0b4e45ce3bb7be8a3ecda8081d7f77c6948e0" }
+mambocolour = { git = "https://github.com/ProjectMambo/MamboColour", rev = "c703092a619b3ee9b05503eaf2a553ae52595d35" }
 serde = { version = "1.0", features = ["derive"] }
 serde-saphyr = { version = "1.1", default-features = false, features = ["deserialize"] }
 serde_json = "1.0"

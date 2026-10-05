@@ -96,8 +96,8 @@ impl Theme {
 
     /// Generates theme output with a caller-provided presentation seed.
     ///
-    /// The CLI uses this to vary collection accents between builds while the
-    /// ordinary library API remains deterministic.
+    /// The CLI uses this to vary the collection-accent order between builds
+    /// while the ordinary library API remains deterministic.
     ///
     /// # Errors
     ///
@@ -113,10 +113,10 @@ impl Theme {
         let uses_provider_accents = mambo_colour::uses_provider_accents(&self.colors);
         let mut theme = self.clone();
         if uses_provider_accents {
-            mambo_colour::resolve_accents(&mut theme.colors, accent_seed);
+            mambo_colour::resolve_accents(&mut theme.colors);
         }
         Ok(CompiledTheme {
-            css: css::render(&theme, (!uses_provider_accents).then_some(accent_seed)),
+            css: css::render(&theme, accent_seed),
             typescript: typescript::render(&theme),
             theme,
         })

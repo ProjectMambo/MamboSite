@@ -356,34 +356,32 @@ fn compilation_is_byte_for_byte_deterministic() {
 }
 
 #[test]
-fn default_accents_are_paired_provider_colours_selected_by_seed() {
+fn default_accents_use_the_complete_paired_provider_palette() {
     let theme = Theme::default();
     let first = theme.compile_with_accent_seed(7).unwrap();
     let repeated = theme.compile_with_accent_seed(7).unwrap();
     let second = theme.compile_with_accent_seed(8).unwrap();
     let high = theme.compile_with_accent_seed((1_u64 << 48) | 7).unwrap();
+    let dark = mambo_theme(Scheme::Dark).colour();
+    let light = mambo_theme(Scheme::Light).colour();
 
     assert_eq!(first, repeated);
-    assert_ne!(
+    assert_eq!(
         first.theme.colors.dark.accents,
         second.theme.colors.dark.accents
     );
-    assert_ne!(
+    assert_eq!(
         first.theme.colors.light.accents,
         second.theme.colors.light.accents
     );
     assert_ne!(first.css, second.css);
     assert_eq!(first.typescript, second.typescript);
-    assert_ne!(
-        first.theme.colors.dark.accents,
-        high.theme.colors.dark.accents
-    );
-    assert_ne!(
-        first.theme.colors.light.accents,
-        high.theme.colors.light.accents
-    );
+    assert_eq!(first.theme, high.theme);
+    assert_ne!(first.css, high.css);
+    assert_eq!(first.theme.colors.dark.accents.len(), dark.len());
+    assert_eq!(first.theme.colors.light.accents.len(), light.len());
 
-    for (slot, (dark, light)) in first
+    for (index, (dark_accent, light_accent)) in first
         .theme
         .colors
         .dark
@@ -392,36 +390,32 @@ fn default_accents_are_paired_provider_colours_selected_by_seed() {
         .zip(&first.theme.colors.light.accents)
         .enumerate()
     {
-        let provider_seed = expected_provider_seed(7, slot);
         assert_eq!(
-            dark,
-            mambo_theme(Scheme::Dark)
-                .colour()
-                .random_seeded(provider_seed)
-                .hex()
+            dark_accent,
+            dark.get(index).expect("provider index exists").hex()
         );
         assert_eq!(
-            light,
-            mambo_theme(Scheme::Light)
-                .colour()
-                .random_seeded(provider_seed)
-                .hex()
+            light_accent,
+            light.get(index).expect("provider index exists").hex()
         );
     }
-}
 
-fn expected_provider_seed(seed: u64, slot: usize) -> u32 {
-    let mut mixed = seed.wrapping_add(
-        u64::try_from(slot + 1)
-            .unwrap()
-            .wrapping_mul(0x9e37_79b9_7f4a_7c15),
+    let rules = first
+        .css
+        .lines()
+        .filter(|line| line.contains("[data-mambo-accent-item]:nth-child("))
+        .collect::<Vec<_>>();
+    assert_eq!(rules.len(), dark.len());
+    assert!(
+        rules
+            .iter()
+            .all(|line| line.contains(&format!("nth-child({}n +", dark.len())))
     );
-    mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-    mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-    mixed ^= mixed >> 31;
-    let bytes = mixed.to_le_bytes();
-    u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
-        ^ u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]])
+    for slot in 1..=dark.len() {
+        assert!(rules.iter().any(|line| line.contains(&format!(
+            "--mambo-card-accent: var(--mambo-color-accent-{slot})"
+        ))));
+    }
 }
 
 #[test]

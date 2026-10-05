@@ -219,11 +219,11 @@ fn validate_palette(
     ] {
         validate_css(&format!("{prefix}.{field}"), value, diagnostics);
     }
-    if (!allow_provider_default && palette.accents.is_empty()) || palette.accents.len() > 12 {
+    if (!allow_provider_default && palette.accents.is_empty()) || palette.accents.len() > 21 {
         diagnostics.push(ThemeDiagnostic::new(
             "MST1101",
             format!("{prefix}.accents"),
-            "accent palettes must contain between 1 and 12 colors",
+            "accent palettes must contain between 1 and 21 colors",
         ));
     }
     for (index, value) in palette.accents.iter().enumerate() {

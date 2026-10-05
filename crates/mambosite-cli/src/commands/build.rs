@@ -501,8 +501,8 @@ mod tests {
         let config = site_config(temporary.path());
         let default_theme = compile_project_theme(temporary.path(), 0).unwrap();
         let mut resolved = default_theme.theme;
-        assert_eq!(resolved.colors.dark.accents.len(), 6);
-        assert_eq!(resolved.colors.light.accents.len(), 6);
+        assert_eq!(resolved.colors.dark.accents.len(), 21);
+        assert_eq!(resolved.colors.light.accents.len(), 21);
         resolved.colors.dark.accents.clear();
         resolved.colors.light.accents.clear();
         assert_eq!(resolved, Theme::default());
