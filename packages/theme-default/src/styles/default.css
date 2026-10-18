@@ -330,6 +330,14 @@ a:active {
   margin-block-start: 0;
 }
 
+:where(.mambo-page-article, .mambo-site-footer) :is(strong, em) {
+  color: var(--mambo-color-brand);
+}
+
+:where(.mambo-page-article, .mambo-site-footer) a :is(strong, em) {
+  color: inherit;
+}
+
 .mambo-page-article h1,
 .mambo-page-article h2,
 .mambo-page-article h3,

@@ -70,6 +70,14 @@ test("default styles do not duplicate generated theme values as literal fallback
   assert.match(css, /@media \(hover: hover\)[\s\S]*\.mambo-tooltip:hover/);
   assert.doesNotMatch(css, /\.mambo-tooltip:focus-within/);
   assert.match(css, /a:active\s*\{[^}]*--mambo-color-brand-active/s);
+  assert.match(
+    css,
+    /:where\(\.mambo-page-article, \.mambo-site-footer\) :is\(strong, em\)\s*\{[^}]*color: var\(--mambo-color-brand\)/s,
+  );
+  assert.match(
+    css,
+    /:where\(\.mambo-page-article, \.mambo-site-footer\) a :is\(strong, em\)\s*\{[^}]*color: inherit/s,
+  );
   assert.match(css, /\.mambo-site-header:has\([^}]*\{[^}]*translateY\(0\)/s);
   assert.match(css, /\.mambo-back-link--top\s*\{[^}]*grid-column: 1 \/ -1/s);
   assert.match(css, /\.mambo-page-sidebar--inline \.mambo-toc__disclosure\s*\{[^}]*display: block/s);

@@ -26,6 +26,7 @@ The current MamboFolio establishes a recognizable Project Mambo style:
 - Square colour canvases or images as card headers.
 - Responsive grid and list presentations for projects, posts, and galleries.
 - Clear metadata chips, descriptions, dates, and external links.
+- Brand-coloured strong and emphasized authored text in pages and footers.
 - A sticky navigation bar with a vertically centered rectangular brand control and accessible theme switch.
 - A conditional table-of-contents navigator for long documents.
 - Restrained hover, active, page-entry, and header transitions rather than heavy animation.
