@@ -292,7 +292,7 @@ The compiler recognizes some forward-looking values so sites can override compon
 | buttons | safe web URLs and ordinary site routes | compiler-authoritative note-style directive targets |
 | raw HTML | displayed as code text | trusted HTML rendering |
 
-Use [[Markdown and Directives]] for the exact directive grammar, property types, defaults, and contexts. Never copy a planned value from [[Roadmap]] into authored content as though it already renders.
+Use [[Markdown and Directives]] for the exact directive grammar, property types, defaults, and contexts. Never copy a planned value from [[Development Plan]] into authored content as though it already renders.
 
 ## 8. Validate the result
 

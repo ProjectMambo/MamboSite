@@ -239,3 +239,5 @@ mambosite-theme -> mambocolour (exact Git revision)
 ```
 
 Core parsing and resolution must be usable as a library without invoking the CLI or writing files. This keeps unit tests fast and permits future editor tooling.
+
+[[Development Plan]] owns the dependency order, per-stage exit gates, provider-before-consumer delivery, and release milestones. Update it with this architecture whenever implementation evidence changes a boundary or compatibility decision.
